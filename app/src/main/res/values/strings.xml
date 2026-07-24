@@ -297,4 +297,5 @@
     <string name="avf_action_use_one_core">Use 1 core</string>
     <string name="avf_action_switch_qemu">Switch to QEMU</string>
     <string name="avf_action_retry">Retry</string>
+    <string name="avf_net_workaround_failed">A compatibility step needed for AVF networking failed on this device. Linux may start without network access. If so, switch the backend to QEMU.</string>
 </resources>

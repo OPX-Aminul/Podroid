@@ -151,6 +151,21 @@ class HomeViewModel @Inject constructor(
                 com.excp.podroid.engine.avf.AvfFailureGuidance.Advice.SWITCH_TO_QEMU,
             )
 
+    /** True while an AVF VM is starting/running and the headless-GPU networking
+     *  workaround failed to attach (see [com.excp.podroid.engine.avf.AvfReflect.GpuConfigOutcome.FAILED]),
+     *  which predicts virtmgr routing the VM onto crosvm_minimal (no virtio-net).
+     *  AvfEngine always requests networking, so every AVF VM is affected.
+     *  Combined live (not sampled) so the flag appears as soon as the outcome
+     *  is recorded during startup. */
+    val avfNetWorkaroundFailed: StateFlow<Boolean> = combine(
+        vmState,
+        com.excp.podroid.engine.avf.AvfReflect.lastGpuConfigOutcome,
+    ) { state, outcome ->
+        engine.backendId == "avf" &&
+            (state is VmState.Running || state is VmState.Starting) &&
+            outcome == com.excp.podroid.engine.avf.AvfReflect.GpuConfigOutcome.FAILED
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
     fun useOneCoreAndRetry() {
         viewModelScope.launch {
             settingsRepository.setVmCpus(1)

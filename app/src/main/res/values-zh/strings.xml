@@ -298,4 +298,5 @@
     <string name="avf_action_use_one_core">使用 1 个核心</string>
     <string name="avf_action_switch_qemu">切换至 QEMU</string>
     <string name="avf_action_retry">重试</string>
+    <string name="avf_net_workaround_failed">此设备上 AVF 联网所需的兼容性设置失败，Linux 系统启动后可能没有网络连接。如果网络不可用，请将后端切换至 QEMU。</string>
 </resources>

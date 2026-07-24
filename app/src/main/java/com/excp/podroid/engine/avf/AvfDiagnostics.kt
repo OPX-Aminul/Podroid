@@ -35,6 +35,8 @@ data class AvfReport(
     val capabilitiesRaw: Int = 0,
     val capabilitiesDecoded: String = "n/a",
     val activeBackend: String = "?",
+    val gpuConfigApiPresent: Boolean = false,
+    val lastGpuConfigAttempt: String = "not attempted (no AVF VM started this process)",
 ) {
     fun pretty(): String = buildString {
         appendLine("Active backend")
@@ -63,6 +65,10 @@ data class AvfReport(
         appendLine()
         appendLine("Hypervisor capabilities")
         appendLine("  raw = $capabilitiesRaw ($capabilitiesDecoded)")
+        appendLine()
+        appendLine("Headless GPU declaration (net-capable crosvm workaround)")
+        appendLine("  API present = $gpuConfigApiPresent")
+        appendLine("  last attempt = $lastGpuConfigAttempt")
         if (smokeTestResult != null) {
             appendLine()
             appendLine("Smoke test")
@@ -116,6 +122,13 @@ object AvfDiagnostics {
             runCatching { AvfReflect.getCapabilities(AvfReflect.manager(context)) }.getOrDefault(0)
         } else 0
 
+        val lastGpuConfigAttempt = when (AvfReflect.lastGpuConfigOutcome.value) {
+            null -> "not attempted (no AVF VM started this process)"
+            AvfReflect.GpuConfigOutcome.ATTACHED -> "attached"
+            AvfReflect.GpuConfigOutcome.UNSUPPORTED -> "unsupported (API absent, benign; full crosvm already in use)"
+            AvfReflect.GpuConfigOutcome.FAILED -> "FAILED (API present, call threw; guest networking may not come up)"
+        }
+
         return AvfReport(
             featureSupported = featureSupported,
             managePermissionGranted = managePermissionGranted,
@@ -127,6 +140,8 @@ object AvfDiagnostics {
             smokeTestResult = null,
             capabilitiesRaw = capabilitiesRaw,
             capabilitiesDecoded = AvfCapabilities.decode(capabilitiesRaw),
+            gpuConfigApiPresent = AvfReflect.gpuConfigApiPresent(),
+            lastGpuConfigAttempt = lastGpuConfigAttempt,
         )
     }
 

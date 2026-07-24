@@ -82,6 +82,7 @@ fun HomeScreen(
     val showAvfHint by viewModel.showAvfHint.collectAsStateWithLifecycle()
     val avfBootFailure by viewModel.avfBootFailure.collectAsStateWithLifecycle()
     val avfFailureAdvice by viewModel.avfFailureAdvice.collectAsStateWithLifecycle()
+    val avfNetWorkaroundFailed by viewModel.avfNetWorkaroundFailed.collectAsStateWithLifecycle()
     val stopping by viewModel.stopping.collectAsStateWithLifecycle()
     val containerCount by viewModel.containerCount.collectAsStateWithLifecycle()
 
@@ -185,6 +186,7 @@ fun HomeScreen(
                             containerCount = containerCount,
                             avfBootFailure = avfBootFailure,
                             avfFailureAdvice = avfFailureAdvice,
+                            avfNetWorkaroundFailed = avfNetWorkaroundFailed,
                             onUseOneCore = { viewModel.useOneCoreAndRetry() },
                             onSwitchToQemu = { viewModel.switchToQemuAndRetry() },
                             onRetry = { viewModel.restartVm() },
@@ -236,6 +238,7 @@ fun HomeScreen(
                         containerCount = containerCount,
                         avfBootFailure = avfBootFailure,
                         avfFailureAdvice = avfFailureAdvice,
+                        avfNetWorkaroundFailed = avfNetWorkaroundFailed,
                         onUseOneCore = { viewModel.useOneCoreAndRetry() },
                         onSwitchToQemu = { viewModel.switchToQemuAndRetry() },
                         onRetry = { viewModel.restartVm() },
@@ -313,6 +316,7 @@ private fun HomeStatusBlock(
     containerCount: Int? = null,
     avfBootFailure: Boolean = false,
     avfFailureAdvice: AvfFailureGuidance.Advice = AvfFailureGuidance.Advice.SWITCH_TO_QEMU,
+    avfNetWorkaroundFailed: Boolean = false,
     onUseOneCore: () -> Unit = {},
     onSwitchToQemu: () -> Unit = {},
     onRetry: () -> Unit = {},
@@ -365,6 +369,14 @@ private fun HomeStatusBlock(
             text = meta.resourcesLabel,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+    if (avfNetWorkaroundFailed) {
+        Spacer(Modifier.height(PodroidTokens.Spacing.MD))
+        Text(
+            text = stringResource(R.string.avf_net_workaround_failed),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
         )
     }
     if (!isRunning && !isStarting && !isStopping) {

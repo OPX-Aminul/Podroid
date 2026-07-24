@@ -13,6 +13,9 @@
 package com.excp.podroid.engine.avf
 
 import android.content.Context
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import java.lang.reflect.InvocationHandler
 import java.lang.reflect.Method
 import java.lang.reflect.Proxy
@@ -334,6 +337,17 @@ object AvfReflect {
         if (!ok) android.util.Log.w("AvfReflect", "no useNetwork/setNetworkSupported on this AVF API; VM may have no network")
     }
 
+    /** Result of the last [setGpuConfig] attempt. See that function for what each predicts. */
+    enum class GpuConfigOutcome { ATTACHED, UNSUPPORTED, FAILED }
+
+    /** Whether the GpuConfig API classes are present on this device, independent of any VM start. */
+    fun gpuConfigApiPresent(): Boolean = GPU_B != null && GPU != null
+
+    private val _lastGpuConfigOutcome = MutableStateFlow<GpuConfigOutcome?>(null)
+
+    /** Outcome of the most recent [setGpuConfig] call; null until one runs in this process. */
+    val lastGpuConfigOutcome: StateFlow<GpuConfigOutcome?> = _lastGpuConfigOutcome.asStateFlow()
+
     /**
      * Attaches a minimal headless virtio-GPU (backend=2d, surfaceless; NO
      * DisplayConfig, so no display surface is required) to the custom-image
@@ -347,24 +361,43 @@ object AvfReflect {
      * `net`. Google's own Terminal app never hits this because it always declares
      * a GPU; declaring one here routes us onto the same net-capable binary.
      *
-     * Returns true if a GPU was attached. No-op (returns false) on AVF revisions
-     * that predate the GpuConfig API — those use the full crosvm already, so a
-     * headless networked VM is unaffected.
+     * Outcomes (never throws):
+     * - [GpuConfigOutcome.ATTACHED] the declaration took effect; this VM gets the
+     *   full net-capable crosvm.
+     * - [GpuConfigOutcome.UNSUPPORTED] the GpuConfig API is absent on this AVF
+     *   revision. Benign: those revisions run the full crosvm already, so a
+     *   headless networked VM is unaffected.
+     * - [GpuConfigOutcome.FAILED] the API exists but the call did not take effect
+     *   (a reflective step threw, or `build()` returned null). Predicts
+     *   crosvm_minimal routing, i.e. no virtio-net in the guest.
+     *
+     * The result is also published on [lastGpuConfigOutcome] for diagnostics.
      */
-    fun setGpuConfig(b: Any): Boolean = runCatching {
-        val gpuBuilderCls = GPU_B ?: return false
-        val gpuCls = GPU ?: return false
-        val gpuB = gpuBuilderCls.getDeclaredConstructor().apply { isAccessible = true }.newInstance()
-        invokeDecl(gpuB, "setBackend", String::class.java to "2d")
-        // Surfaceless keeps the virtio-GPU off any scanout/window; harmless if the
-        // API revision ignores it (wrapped so a missing setter is not fatal).
-        runCatching { invokeDecl(gpuB, "setRendererUseSurfaceless", Boolean::class.javaPrimitiveType!! to true) }
-        val gpu = invokeDecl(gpuB, "build") ?: return false
-        invokeDecl(b, "setGpuConfig", gpuCls to gpu)
-        true
-    }.getOrElse { e ->
-        android.util.Log.w("AvfReflect", "setGpuConfig unavailable on this AVF API (continuing without GPU)", e)
-        false
+    fun setGpuConfig(b: Any): GpuConfigOutcome {
+        val outcome = runCatching {
+            val gpuBuilderCls = GPU_B ?: return@runCatching GpuConfigOutcome.UNSUPPORTED
+            val gpuCls = GPU ?: return@runCatching GpuConfigOutcome.UNSUPPORTED
+            val gpuB = gpuBuilderCls.getDeclaredConstructor().apply { isAccessible = true }.newInstance()
+            invokeDecl(gpuB, "setBackend", String::class.java to "2d")
+            // Surfaceless keeps the virtio-GPU off any scanout/window; harmless if the
+            // API revision ignores it (wrapped so a missing setter is not fatal).
+            runCatching { invokeDecl(gpuB, "setRendererUseSurfaceless", Boolean::class.javaPrimitiveType!! to true) }
+            // Past the class lookups the API exists, so a null build() is a real
+            // failure, not an absent API: route it through the FAILED log below.
+            val gpu = invokeDecl(gpuB, "build") ?: error("GpuConfig.Builder.build() returned null")
+            invokeDecl(b, "setGpuConfig", gpuCls to gpu)
+            GpuConfigOutcome.ATTACHED
+        }.getOrElse { e ->
+            android.util.Log.w(
+                "AvfReflect",
+                "setGpuConfig FAILED though the GpuConfig API is present; " +
+                    "virtmgr may route this VM to crosvm_minimal (no virtio-net)",
+                e,
+            )
+            GpuConfigOutcome.FAILED
+        }
+        _lastGpuConfigOutcome.value = outcome
+        return outcome
     }
 
     /**
