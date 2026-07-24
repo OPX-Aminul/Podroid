@@ -205,7 +205,7 @@ RUN cd /rootfs && find . | cpio -o -H newc 2>/dev/null | gzip -9 > /output/initr
 # ==============================================================================
 
 FROM debian:bookworm AS qemu-builder
-ARG QEMU_VERSION=11.0.0
+ARG QEMU_VERSION=11.0.2
 ENV QEMU_DIR=qemu-${QEMU_VERSION}
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
