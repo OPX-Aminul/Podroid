@@ -54,6 +54,21 @@
       <h2>Self-hosting via containers</h2>
       <p>Rootless Podman, Docker and LXC are all ready the moment the VM boots: Podman needs no daemon, and the Docker and LXC services are enabled in the default runlevel, so they start automatically. You can run any ARM64 container image from Docker Hub or GHCR.</p>
       <p>Port forwarding rules (see <a href="networking.html">Networking &amp; ports</a>) expose guest ports on the phone's real IP. Use a host port above 1024 for anything you expose, because an unprivileged Android app cannot bind host ports below 1024.</p>
+      <p>If you have never run a container before, start with this. It serves one page and proves the whole chain works, from the container to your phone's browser:</p>
+      <pre><code><span class="c"># 1. write a page for it to serve</span>
+<span class="p">$</span> mkdir -p ~/site &amp;&amp; echo '&lt;h1&gt;Hello from Podroid&lt;/h1&gt;' &gt; ~/site/index.html
+
+<span class="c"># 2. run nginx, serving that folder on guest port 80</span>
+<span class="p">$</span> podman run -d --name hello \
+    -p 8080:80 \
+    -v ~/site:/usr/share/nginx/html:ro \
+    docker.io/library/nginx:alpine
+
+<span class="c"># 3. check it from inside the VM</span>
+<span class="p">$</span> wget -qO- http://localhost:8080</code></pre>
+      <p>To open it from the phone's browser or another device, add a port forward for host port <code>8080</code> in Settings, then visit <code>http://&lt;phone-address&gt;:8080</code>. The <strong>Status</strong> screen lists the phone's addresses; use the one on the same network as the device you are browsing from.</p>
+
+      <p>The same pattern scales to real services:</p>
       <pre><code><span class="c"># Pi-hole (DNS + ad-blocking)</span>
 <span class="p">$</span> podman run -d --name pihole \
     -p 8080:80 -p 5353:53/tcp \
