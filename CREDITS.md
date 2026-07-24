@@ -11,14 +11,14 @@ If something you maintain is included here and we missed you, please open an iss
 These projects make up the actual Linux system that runs inside Podroid.
 
 ### Linux kernel
-Podroid ships a custom build of the upstream Linux kernel (currently 7.0.10) configured specifically for OCI-compatible containers under QEMU TCG.
+Podroid ships a custom build of the upstream Linux kernel (currently 7.1.5) configured specifically for OCI-compatible containers under QEMU TCG.
 
 - Project: https://kernel.org
 - License: GNU General Public License v2.0
 - Maintainers: Linus Torvalds and the Linux kernel community
 
 ### Alpine Linux
-The guest userspace is a slightly customized Alpine Linux 3.23 root filesystem.
+The guest userspace is a slightly customized Alpine Linux 3.24 root filesystem.
 
 - Project: https://alpinelinux.org
 - License: per-package (see Alpine's individual package licenses)

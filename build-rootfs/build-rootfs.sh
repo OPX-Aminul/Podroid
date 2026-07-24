@@ -2,9 +2,9 @@
 set -eu
 ROOTFS=/work/rootfs
 
-# ALPINE_VERSION comes from the Dockerfile ENV (full release like 3.23.4).
-# Strip the patch component to get the major branch (e.g. 3.23) used in repo URLs.
-: "${ALPINE_VERSION:?ALPINE_VERSION must be set (e.g. 3.23.4)}"
+# ALPINE_VERSION comes from the Dockerfile ENV (full release like 3.24.1).
+# Strip the patch component to get the major branch (e.g. 3.24) used in repo URLs.
+: "${ALPINE_VERSION:?ALPINE_VERSION must be set (e.g. 3.24.1)}"
 ALPINE_BRANCH="${ALPINE_VERSION%.*}"
 
 mkdir -p "$ROOTFS/etc/apk"

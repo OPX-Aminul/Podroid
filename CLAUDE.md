@@ -4,7 +4,7 @@ Guidance for Claude Code (and any AI assistant or new contributor) working in th
 
 ## What Is This
 
-Podroid is an Android app that runs a real **Alpine 3.23** Linux VM on stock Android 8+ (arm64) to provide rootless **Podman / Docker / LXC** containers and an in-app **X11 desktop** - no root, no custom recovery.
+Podroid is an Android app that runs a real **Alpine 3.24** Linux VM on stock Android 8+ (arm64) to provide rootless **Podman / Docker / LXC** containers and an in-app **X11 desktop** - no root, no custom recovery.
 
 - **Two interchangeable VM backends** behind one interface (`VmEngine`):
   - **QEMU (TCG)** - software emulation, the default, needs no special permission.
@@ -20,7 +20,7 @@ Podroid is an Android app that runs a real **Alpine 3.23** Linux VM on stock And
 | Version | `versionName` / `versionCode` in `app/build.gradle.kts` |
 | Min / target SDK | 26 (Android 8) / 36 |
 | Architecture | arm64 (`aarch64`) only |
-| Guest | Alpine 3.23 squashfs + persistent ext4 overlay, OpenRC PID 1 |
+| Guest | Alpine 3.24 squashfs + persistent ext4 overlay, OpenRC PID 1 |
 | Kernel | custom Linux, version pinned by `podroidKernelVersion` in `gradle.properties` |
 | QEMU | version pinned by `podroidQemuVersion` in `gradle.properties` |
 | UI | Jetpack Compose + Material 3, single Activity |

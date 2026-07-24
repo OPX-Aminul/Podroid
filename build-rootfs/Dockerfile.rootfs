@@ -2,7 +2,7 @@
 
 # ── Stage 1: cross-compile podroid-vsock-agent (musl-static aarch64) ────────
 # Uses qemu-user under the hood — no separate cross-toolchain needed.
-FROM --platform=linux/arm64 alpine:3.23 AS vsock-builder
+FROM --platform=linux/arm64 alpine:3.24 AS vsock-builder
 RUN apk add --no-cache musl-dev gcc make linux-headers
 WORKDIR /work
 COPY vsock-agent /work/vsock-agent
@@ -13,9 +13,9 @@ COPY overlay-normalize /work/overlay-normalize
 RUN cd /work/overlay-normalize && make CC=gcc
 
 # ── Stage 2: build the Alpine rootfs squashfs ───────────────────────────────
-FROM alpine:3.23 AS builder
+FROM alpine:3.24 AS builder
 
-ARG ALPINE_RELEASE=3.23.4
+ARG ALPINE_RELEASE=3.24.1
 ARG ALPINE_ARCH=aarch64
 
 RUN apk add --no-cache curl squashfs-tools tar openssl libcap-utils

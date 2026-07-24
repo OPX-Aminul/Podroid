@@ -7,7 +7,7 @@
 # SECTION 0: Custom Kernel Build (aarch64) — Image + modules
 # ==============================================================================
 FROM debian:bookworm AS kernel-builder
-ARG KERNEL_VERSION=7.0.10
+ARG KERNEL_VERSION=7.1.5
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget ca-certificates xz-utils make gcc gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu \
@@ -169,16 +169,16 @@ RUN mkdir -p /output \
 # ==============================================================================
 
 # Stage 1: Download Alpine aarch64 artifacts
-FROM alpine:3.23 AS downloader
+FROM alpine:3.24 AS downloader
 RUN apk add --no-cache wget cpio gzip tar xorriso
 WORKDIR /downloads
-RUN wget -q https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/aarch64/alpine-netboot-3.23.3-aarch64.tar.gz \
-    && mkdir -p /netboot && tar -xf alpine-netboot-3.23.3-aarch64.tar.gz -C /netboot
-RUN wget -q https://dl-cdn.alpinelinux.org/alpine/v3.23/releases/aarch64/alpine-virt-3.23.3-aarch64.iso \
-    && mkdir -p /iso && xorriso -osirrox on -indev alpine-virt-3.23.3-aarch64.iso -extract / /iso 2>/dev/null || true
+RUN wget -q https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/aarch64/alpine-netboot-3.24.1-aarch64.tar.gz \
+    && mkdir -p /netboot && tar -xf alpine-netboot-3.24.1-aarch64.tar.gz -C /netboot
+RUN wget -q https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/aarch64/alpine-virt-3.24.1-aarch64.iso \
+    && mkdir -p /iso && xorriso -osirrox on -indev alpine-virt-3.24.1-aarch64.iso -extract / /iso 2>/dev/null || true
 
 # Stage 2: Build the custom rootfs (aarch64) — no linux-virt; modules come from kernel-builder
-FROM --platform=linux/arm64/v8 alpine:3.23 AS rootfs-builder
+FROM --platform=linux/arm64/v8 alpine:3.24 AS rootfs-builder
 RUN apk update && apk add --no-cache \
     bash busybox busybox-extras ttyd podman \
     netavark aardvark-dns fuse-overlayfs slirp4netns iptables ip6tables \
@@ -189,7 +189,7 @@ RUN chmod +x /init
 RUN rm -rf /var/cache/apk/* /tmp/* /var/tmp/* /usr/share/man /usr/share/doc
 
 # Stage 3: Pack Initramfs
-FROM alpine:3.23 AS packer
+FROM alpine:3.24 AS packer
 RUN apk add --no-cache cpio gzip findutils
 COPY --from=kernel-builder /output/vmlinuz-virt /output/vmlinuz-virt
 COPY --from=rootfs-builder / /rootfs/
