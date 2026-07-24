@@ -125,6 +125,18 @@ fun StatusScreen(
                     value = ui.phoneIp,
                     mono = true,
                 )
+                // A phone can hold several addresses at once (mobile data plus a WiFi or
+                // USB tether). Forwards listen on all of them, so listing the rest saves
+                // the user guessing which one a given PC can actually reach.
+                ui.phoneAddresses
+                    .filter { it.address != ui.phoneIp }
+                    .forEach { extra ->
+                        PodroidListRow(
+                            label = stringResource(R.string.phone_ip_also, extra.iface),
+                            value = extra.address,
+                            mono = true,
+                        )
+                    }
 
                 Text(
                     text = stringResource(R.string.status_vm_load_graph_title),

@@ -19,6 +19,7 @@
     <!-- Network -->
     <string name="network">Network</string>
     <string name="phone_ip">Phone IP</string>
+    <string name="phone_ip_also">Also on %1$s</string>
     <string name="ssh">SSH</string>
     <string name="port_forwards">Port forwards</string>
 

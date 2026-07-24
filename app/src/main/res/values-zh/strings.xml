@@ -19,6 +19,7 @@
     <!-- Network -->
     <string name="network">网络</string>
     <string name="phone_ip">手机 IP</string>
+    <string name="phone_ip_also">另一地址 (%1$s)</string>
     <string name="ssh">SSH</string>
     <string name="port_forwards">端口转发</string>
 

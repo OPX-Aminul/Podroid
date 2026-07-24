@@ -31,6 +31,8 @@ data class StatusUiState(
     val engineSelection: EngineSelection = EngineSelection.AUTO,
     val uptimeLabel: String? = null,
     val phoneIp: String = "—",
+    /** Every reachable IPv4 address, so a peer on a tether or second network is not left guessing. */
+    val phoneAddresses: List<NetworkUtils.LocalAddress> = emptyList(),
     val vmRamMb: Int = 512,
     val vmCpus: Int = 2,
     val storageSizeGb: Int = 8,
@@ -104,6 +106,7 @@ class StatusViewModel @Inject constructor(
             engineSelection = b[1] as EngineSelection,
             uptimeLabel = uptimeLabel(vmState, tick),
             phoneIp = NetworkUtils.localIpv4(context),
+            phoneAddresses = NetworkUtils.allLocalIpv4(context),
             vmRamMb = a[1] as Int,
             vmCpus = a[2] as Int,
             storageSizeGb = a[3] as Int,
