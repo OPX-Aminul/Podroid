@@ -59,7 +59,7 @@ adb shell run-as com.excp.podroid.debug cat files/console.log
 
 1. Fork the repository and create a topic branch (`fix/issue-42`, `feature/whatever`).
 2. Keep pull requests focused: one fix or one feature per PR.
-3. Test on a real arm64 device before submitting. Emulators do not exercise the QEMU + native binary path the way real hardware does.
+3. Test on a real arm64 device before submitting. Emulators do not exercise the QEMU + native binary path the way real hardware does. If your change touches the engine boundary or AVF, note that only a device reporting `android.software.virtualization_framework` (`adb shell pm list features | grep virtualization`) can exercise the AVF backend at all; see [Proving a change on a device](CLAUDE.md#proving-a-change-on-a-device) for the grant sequence and for which backend needs which device. Say in the PR which backends you actually tested on.
 4. If your change is user-facing, update [`README.md`](README.md). If it changes the architecture, boot pipeline, terminal layer, or kernel options, update [`CLAUDE.md`](CLAUDE.md) too.
 5. Match the existing code style of the file you are editing.
 

@@ -115,6 +115,12 @@ Lets guest processes call back to Android. Guest side: `podroid-hostd` (multi-ca
 
 > **Gotcha:** `/dev/hvc2` is a virtio-console **TTY** that defaults to echo on. The daemon must `cfmakeraw()` it, or the TTY echoes Android's responses back and the protocol desyncs after the first request. AVF (a raw vsock socket) is unaffected.
 
+### Downloads sharing over 9p (`engine/avf/AvfDownloadsShare.kt` + `engine/avf/ninep/`)
+
+**AVF only.** Serves the real Android Downloads directory into the guest by running an in-process **9p2000.L** server (`Ninep2000LServer.kt`, ~886 LoC; wire format in `NinepCodec.kt`) over vsock. This is why the guest can read and write user files without the app holding broad storage permissions, and it is how `podroid-backup` archives land in `Downloads/Podroid/backups` for `ContainerBackupRepository` to list.
+
+There is no QEMU equivalent, so any feature built on the share is backend-asymmetric by construction and must degrade cleanly on QEMU.
+
 ### USB passthrough (`engine/usb/UsbPassthroughManager.kt`)
 
 QEMU backend only. An unprivileged app can't open `/dev/bus/usb`, so it takes the already-open fd from `UsbManager`/`UsbDeviceConnection` and streams it to QEMU over `qmp.sock` as SCM_RIGHTS (`add-fd`), then hot-plugs with `device_add usb-host,hostdevice=/dev/fdset/N`. A code-registered `BroadcastReceiver` (no manifest `device_filter.xml`) is live only while the VM is `Running`. Gated by the `usb_passthrough_enabled` setting, which also makes `buildCommand()` emit `-device qemu-xhci`. Needs a libusb-enabled QEMU build.
@@ -149,14 +155,18 @@ Single-activity Compose app: `ui/navigation/NavGraph.kt` routes `setup → home 
 │       │   │   ├── QmpClient.kt          # QMP: port forwards + USB add-fd
 │       │   │   ├── ResizeNotifyingSession.kt, VmState.kt
 │       │   │   ├── avf/                  # AVF/pKVM backend (engine, reflection, vsock, console)
+│       │   │   │   ├── AvfDownloadsShare.kt  # live Downloads share, AVF only (see below)
+│       │   │   │   ├── AvfDiagnostics.kt     # AVF diagnostic + smoke-test entry point
+│       │   │   │   └── ninep/                # in-process 9p2000.L server (Ninep2000LServer, NinepCodec)
 │       │   │   ├── hostbridge/           # guest->Android bridge (transport, server, dispatcher, notify)
+│       │   │   │   └── HeadlessModeManager.kt # single source of truth for server (headless) mode
 │       │   │   └── usb/                  # UsbPassthroughManager
 │       │   ├── service/PodroidService.kt # foreground service; owns VM lifecycle, wakelock, notification
-│       │   ├── data/repository/          # Settings, PortForward, Update, Language (all DataStore)
+│       │   ├── data/repository/          # Settings, PortForward, Update, Language, ContainerBackup, ContainerStats (all DataStore)
 │       │   ├── di/                       # Hilt module
-│       │   ├── util/                     # NetworkUtils etc.
+│       │   ├── util/                     # NetworkUtils, ShellQuote, HostMetrics + VmLoadSampler (Status screen), DeviceResourcePolicy (load-balance sizing)
 │       │   ├── x11/                      # X11/VNC viewer engine
-│       │   └── ui/                       # Compose: navigation, theme, screens/{setup,home,terminal,settings,x11}, components
+│       │   └── ui/                       # Compose: navigation, theme, screens/{setup,home,terminal,settings,x11,status,backup}, components
 │       ├── res/values, res/values-zh/    # strings (EN + Chinese)
 │       ├── assets/                       # vmlinuz-virt, initrd.img, alpine-rootfs.squashfs (all gitignored, built locally),
 │       │                                 # qemu/, colors/ (122), fonts/ (13), ui-fonts/
@@ -240,3 +250,28 @@ The guest system layer updates across app versions with **no VM reset and no dat
 - **New setting** → add a DataStore key + Flow in `SettingsRepository`, UI in `SettingsScreen`, setter in `SettingsViewModel`, and plumb into `VmConfig`/`buildCommand()` if it affects the VM.
 - **New user-facing string** → add to `res/values` AND `res/values-zh`, use `stringResource`.
 - **Verify before "done"**: compile, run `:app:testDebugUnitTest`, and for behavior changes install and walk the flow on a device (unit tests don't catch DI/graph or backend-specific issues).
+
+## Proving a change on a device
+
+Unit tests cover pure logic only. Anything touching VM behavior, the engine boundary, or a user-visible flow is unproven until it runs on hardware, and **the two backends need two different devices**:
+
+| Backend | Device requirement | Extra setup |
+|---|---|---|
+| QEMU | any arm64 Android 8+ device | none; this is the default path |
+| AVF | a device reporting `android.software.virtualization_framework` (Pixel-class) | `pm grant` both `MANAGE_VIRTUAL_MACHINE` and `USE_CUSTOM_VIRTUAL_MACHINE`, then force-stop the app |
+
+Check AVF capability before assuming a device can exercise it:
+
+```bash
+adb shell pm list features | grep virtualization
+```
+
+A device without that feature can *never* run `AvfEngine`, no matter the `EngineSelection` setting. `EngineHolder.pick()` re-evaluates only at process start, so a fresh `pm grant` does not take effect until the app is force-stopped and relaunched.
+
+**A change that touches both backends is unproven until it has been installed and walked on both.** Backend asymmetry is the #1 source of bugs (see Quirks & gotchas), and `AvfEngine.kt` is the most-churned file in the repository, so a QEMU-only test is the easiest way to ship a regression.
+
+Reading the VM console depends on build type: `run-as` works on debug, but **release builds are not `run-as`-able**, so use `su` or **Settings → Diagnostics → Export Log** there.
+
+```bash
+adb shell run-as com.excp.podroid.debug cat files/console.log   # debug only
+```
