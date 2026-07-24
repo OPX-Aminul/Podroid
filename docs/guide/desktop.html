@@ -83,6 +83,35 @@
 <span class="p">$</span> firefox &amp;</code></pre>
       <p>The app will appear in the viewer as soon as it opens a window.</p>
 
+      <h2>Complete example: Xfce from a fresh VM</h2>
+      <p>Every command in order, starting from a VM you have just booted for the first time. Run these in the Podroid terminal:</p>
+      <pre><code><span class="c"># 1. install the desktop (about 400 MB)</span>
+<span class="p">#</span> apk add xfce4 xfce4-terminal
+
+<span class="c"># 2. start it; it keeps running in the background</span>
+<span class="p">#</span> startxfce4 &amp;</code></pre>
+      <p>Now tap the monitor icon in the terminal's top bar. The desktop appears in the built-in viewer. There is nothing to configure, no VNC server to install, and no ports to forward: <code>Xvnc</code> is already running as the X server and Podroid already forwards it to the viewer.</p>
+
+      <h2>Connecting from another computer</h2>
+      <p>The built-in viewer is the intended way to use the desktop, and it needs no setup. Reaching that same desktop from a PC takes one extra step, because of a deliberate safety decision.</p>
+
+      <div class="callout warn">
+        <span class="label">Why your VNC client cannot reach port 5900 directly</span>
+        <p>The X session inside the VM runs with no password (<code>-SecurityTypes None</code>). To stop that from becoming an open desktop for everyone on your network, Podroid forwards port <code>5900</code> to <code>127.0.0.1</code> on the phone only, so nothing outside the phone can dial it. Host ports <code>5900</code> and <code>4713</code> are reserved for this reason, and adding your own forwarding rule on them is refused with "Port 5900 is reserved for the in-app desktop".</p>
+      </div>
+
+      <p>The recommended way in is an SSH tunnel, which carries the desktop over the SSH connection you already have. Enable SSH in Podroid's settings first, then run this <strong>on your computer</strong>:</p>
+      <pre><code><span class="c"># replace with the phone's address shown on the Status screen</span>
+<span class="p">$</span> ssh -p 9922 -L 5900:127.0.0.1:5900 root@192.168.1.50</code></pre>
+      <p>Leave that connection open, then point any VNC client at <code>localhost:5900</code>. The desktop is encrypted in transit, needs no extra forwarding rule, and works from whichever network the phone and PC share.</p>
+
+      <div class="callout note">
+        <span class="label">If the phone has several addresses</span>
+        <p>A phone on mobile data that is also sharing its connection has more than one address at once, and only one of them reaches your PC. The <strong>Status</strong> screen lists every address the phone can be reached on. Use the one on the same network as the computer you are connecting from.</p>
+      </div>
+
+      <p>If you would rather expose VNC directly instead of tunnelling, add a port forward from a host port other than 5900 (for example <code>5901</code>) to guest port <code>5900</code>, then connect to <code>phone-address:5901</code>. Be aware of what that means: the session has no password, so anyone on that network can open your desktop. Only do this on a network you trust.</p>
+
       <h2>Viewer settings reference</h2>
       <p>Tap the tune/gear icon in the X11 viewer's top bar to open viewer settings.</p>
 
