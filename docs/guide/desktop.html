@@ -112,6 +112,51 @@
 
       <p>If you would rather expose VNC directly instead of tunnelling, add a port forward from a host port other than 5900 (for example <code>5901</code>) to guest port <code>5900</code>, then connect to <code>phone-address:5901</code>. Be aware of what that means: the session has no password, so anyone on that network can open your desktop. Only do this on a network you trust.</p>
 
+      <h2>Connecting with RDP instead</h2>
+      <p>An SSH tunnel assumes the other computer has an SSH client. Older Windows machines often do not, while every one of them has a Remote Desktop client built in. Alpine has <code>xrdp</code> in its repositories, so the guest can speak RDP as well. Nothing needs to be installed on the Windows side.</p>
+
+      <p>This is not shipped in the VM image, and it does not replace the built-in viewer, which keeps working exactly as before. It is a few commands inside the guest.</p>
+
+      <pre><code><span class="c"># inside the VM, over SSH or the in-app terminal</span>
+<span class="p">#</span> apk add xrdp openssl
+
+<span class="c"># xrdp needs a TLS certificate. Without one it falls back to legacy RDP</span>
+<span class="c"># security, which current Windows and FreeRDP clients refuse to complete.</span>
+<span class="p">#</span> cd /etc/xrdp
+<span class="p">#</span> openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
+      -keyout key.pem -out cert.pem -subj "/CN=podroid"
+<span class="p">#</span> chmod 600 key.pem
+
+<span class="c"># tell the session what desktop to start, using whichever one you installed</span>
+<span class="p">#</span> echo '#!/bin/sh'      &gt; /root/.xsession
+<span class="p">#</span> echo 'exec startxfce4' &gt;&gt; /root/.xsession
+<span class="p">#</span> chmod +x /root/.xsession
+
+<span class="c"># both services are required: xrdp speaks the protocol, sesman logs you in</span>
+<span class="p">#</span> rc-service xrdp-sesman start
+<span class="p">#</span> rc-service xrdp start
+<span class="p">#</span> rc-update add xrdp-sesman
+<span class="p">#</span> rc-update add xrdp</code></pre>
+
+      <p>Then add a port forward in <strong>Settings &rarr; Port forwards</strong> from host port <code>3389</code> to VM port <code>3389</code>, and connect from the PC to <code>phone-address:3389</code>. At the xrdp login screen choose the <strong>Xvnc</strong> session, and sign in with the guest's own credentials: user <code>root</code>, password <code>podroid</code> unless you changed it.</p>
+
+      <div class="callout warn">
+        <span class="label">Change the root password before doing this</span>
+        <p>Port forwards bind every interface, so an RDP listener is reachable by anyone on the same network. Unlike the VNC path above, this one does ask for a password, which is worth having. It is also the guest's well-known default password, which is not. Run <code>passwd</code> in the guest first.</p>
+      </div>
+
+      <p>The session you get this way is its own desktop on display <code>:10</code>, separate from the one the in-app viewer shows. That is usually what you want from a PC. If you would rather see the <em>same</em> screen as the phone, add this section to <code>/etc/xrdp/xrdp.ini</code> and set <code>autorun=podroid</code> in its <code>[Globals]</code> block, which points RDP at the running X session instead of starting a new one:</p>
+
+      <pre><code>[podroid]
+name=Podroid desktop
+lib=libvnc.so
+ip=127.0.0.1
+port=5900
+username=na
+password=na</code></pre>
+
+      <p>That variant inherits the in-app session's lack of a password, so it hands the desktop to anyone who can reach port 3389. Use it over an SSH tunnel, or on a network you control, and prefer the authenticated login above otherwise.</p>
+
       <h2>Viewer settings reference</h2>
       <p>Tap the tune/gear icon in the X11 viewer's top bar to open viewer settings.</p>
 
