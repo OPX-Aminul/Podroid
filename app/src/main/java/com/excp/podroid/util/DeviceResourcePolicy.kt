@@ -48,7 +48,10 @@ object DeviceResourcePolicy {
     }
 
     fun balancedCpus(cpuCount: Int): Int {
-        // Half the host cores, capped at 4 for battery/thermals on phones.
+        // Half the host cores, capped at 4. Battery and thermals are the obvious
+        // reason; the measured one is that the cap is also simply faster. On an
+        // 8-core phone under TCG, 8 vCPUs came out slower than 4 on every metric
+        // (boot, sha256, xz, bc, and the node workloads), reproduced across two runs.
         val target = (cpuCount / 2).coerceAtLeast(1).coerceAtMost(4)
         return nearestAtMost(CPU_OPTIONS, target)
     }

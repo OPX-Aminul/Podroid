@@ -550,7 +550,10 @@ class QemuEngine @Inject constructor(
         val userKernelExtras = config.kernelExtraCmdline.trim()
 
         args += "-M"; args += "virt,gic-version=3"
-        // pauth-impdef swaps QEMU's slow QARMA5 PAuth for a fast non-crypto impl (≤50% TCG win on aarch64-on-aarch64).
+        // pauth-impdef swaps QEMU's slow QARMA5 PAuth for a fast non-crypto impl. The 50%
+        // figure quoted upstream does not show up here: measured against a QARMA5 control
+        // it is worth a few percent on xz and bc and nothing on boot or sha256, because
+        // the Alpine musl userspace is not built with PAC branch protection. Still free.
         args += "-cpu"; args += "max,pauth-impdef=on"
         val tbSizeMb = if (config.ramMb >= 2048) 512 else 256
         // thread=multi: one host thread per vCPU; larger tb-size reduces re-translation for JIT-heavy guests.
