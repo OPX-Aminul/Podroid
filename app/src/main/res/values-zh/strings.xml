@@ -50,6 +50,7 @@
     <string name="vm_config_description">默认配置针对性能和电池进行了优化。随时可在设置中更改。</string>
     <string name="resources">资源</string>
     <string name="cpu_cores">CPU 核心数</string>
+    <string name="cpu_cores_hint">核心越多不一定越快：在 QEMU (TCG) 后端，实测 8 核比 4 核更慢。AVF 后端可正常扩展。</string>
     <string name="ram_label">内存</string>
     <string name="network_label">网络</string>
     <string name="ssh_access">SSH 访问</string>

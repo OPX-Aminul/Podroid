@@ -50,6 +50,7 @@
     <string name="vm_config_description">Defaults tuned for performance and battery. Change anytime in Settings.</string>
     <string name="resources">Resources</string>
     <string name="cpu_cores">CPU cores</string>
+    <string name="cpu_cores_hint">More is not always faster: on the QEMU (TCG) backend 8 cores measured slower than 4. AVF scales normally.</string>
     <string name="ram_label">RAM</string>
     <string name="network_label">Network</string>
     <string name="ssh_access">SSH access</string>

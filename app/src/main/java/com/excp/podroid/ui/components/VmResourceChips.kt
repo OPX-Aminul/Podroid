@@ -108,6 +108,14 @@ fun VmCpuChips(
                 )
             }
         }
+        // The high chips read as "more power" and are the opposite under emulation,
+        // so say so where the choice is made rather than leaving it to be discovered.
+        Text(
+            text = stringResource(R.string.cpu_cores_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = PodroidTokens.Spacing.SM),
+        )
         if (showDivider) {
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outline,
