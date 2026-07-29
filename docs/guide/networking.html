@@ -214,6 +214,64 @@ podroid-server status</code></pre>
 <span class="c"># Then reach it from outside:</span>
 <span class="p">$</span> curl http://&lt;phone-ip&gt;:8080</code></pre>
 
+      <h2>Sharing files over the network</h2>
+      <p>Getting files in and out of the guest from another computer is a common first task, and which protocols can work is decided almost entirely by the privileged-port rule above. This section gives the one that works well, the one that works with a caveat, and the ones that cannot work at all, so you are not left testing them one by one.</p>
+
+      <h3>SFTP, the one to reach for first</h3>
+      <p>SSH is already running on host port <code>9922</code>, so file transfer needs no second service and no extra rule. The guest ships dropbear without the SFTP helper binary, so install it once:</p>
+
+      <pre><code><span class="c"># inside the VM</span>
+<span class="p">#</span> apk add openssh-sftp-server</code></pre>
+
+      <p>That is the whole setup. Any SFTP client then connects to <code>&lt;phone-ip&gt;</code> on port <code>9922</code> with the guest's own credentials. WinSCP and FileZilla both speak it, as does the command line:</p>
+
+      <pre><code><span class="p">$</span> sftp -P 9922 root@&lt;phone-ip&gt;</code></pre>
+
+      <p>It is encrypted, it needs one port instead of a range, and it goes through the rule the app already creates for you.</p>
+
+      <h3>FTP, when the client cannot do anything else</h3>
+      <p>Some old clients only speak FTP. It works, but passive mode needs care: the server tells the client which port to open for the data connection, so that port has to be forwarded too. Pin the passive range to a handful of ports rather than forwarding hundreds, and forward each one to the same number on both sides.</p>
+
+      <pre><code><span class="c"># inside the VM</span>
+<span class="p">#</span> apk add vsftpd
+
+<span class="c"># /etc/vsftpd/vsftpd.conf</span>
+listen=YES
+listen_ipv6=NO
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+chroot_local_user=YES
+allow_writeable_chroot=YES
+seccomp_sandbox=NO
+pasv_enable=YES
+pasv_min_port=42100
+pasv_max_port=42109
+pasv_address=&lt;phone-ip&gt;
+pasv_addr_resolve=NO
+
+<span class="p">#</span> rc-service vsftpd start
+<span class="p">#</span> rc-update add vsftpd</code></pre>
+
+      <p>Then add eleven forwards: host <code>2121</code> to VM <code>21</code> for the control connection (21 is privileged on the Android side, so it cannot be the host port), and <code>42100</code> through <code>42109</code> to the same numbers. Connect to <code>ftp://&lt;phone-ip&gt;:2121</code>.</p>
+
+      <div class="callout warn">
+        <span class="label">Why it works in FileZilla but not in Windows Explorer</span>
+        <p>Modern clients use the extended passive command, which returns only a port and reuses the address they are already connected to, so they work whether or not <code>pasv_address</code> is set. Windows Explorer uses the older command, which returns an address as well, and the guest fills that in with its internal address <code>10.0.2.15</code>. The client then tries to open the data connection to an address that does not exist on your network and hangs, usually after the directory listing appears to start. Setting <code>pasv_address</code> to the phone's own address is what fixes it. The phone's address changes when it moves between networks, so it has to be updated to match; the <strong>Status</strong> screen lists every address the phone currently has.</p>
+      </div>
+
+      <h3>What cannot work</h3>
+      <p>These are not missing features, they are consequences of running as an ordinary app on a stock phone:</p>
+
+      <ul>
+        <li><strong>SMB or Windows file sharing from the guest.</strong> Windows only speaks SMB on port 445, and an unprivileged app cannot bind any port below 1024. A Samba server inside the guest will start, but no Windows machine can be pointed at it on a different port.</li>
+        <li><strong>Mounting a Windows share inside the guest.</strong> The kernel is built without <code>cifs</code>, so there is no client side either.</li>
+        <li><strong>Running an NFS server in the guest.</strong> The kernel has no NFS server support, and the portmapper it needs would want port 111 in any case. Mounting a <em>remote</em> NFS export from inside the guest does work: the NFS client is built in.</li>
+        <li><strong>Serving DNS or PXE to other machines on the network.</strong> DNS is port 53, DHCP is 67 and 68, TFTP is 69: all privileged, and Android owns DHCP on a tethered network regardless.</li>
+      </ul>
+
+      <p>Where a protocol is blocked only by the port number, the same workaround as elsewhere applies: run it on a high port and point clients at that port. It works for anything whose client lets you choose the port, which rules out Windows file sharing but not much else.</p>
+
       <h2>Port forwarding on AVF</h2>
       <p>On the AVF backend, port forwarding is implemented over <strong>vsock</strong> rather than SLIRP hostfwd. Each rule creates a listener on <code>0.0.0.0:hostPort</code> on the Android side, which is bridged to a vsock port on the guest via the <code>podroid-vsock-agent</code> service. The privileged-port limit applies here too, for the same reason.</p>
 
