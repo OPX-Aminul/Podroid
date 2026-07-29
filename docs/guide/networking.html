@@ -218,16 +218,16 @@ podroid-server status</code></pre>
       <p>Getting files in and out of the guest from another computer is a common first task, and which protocols can work is decided almost entirely by the privileged-port rule above. This section gives the one that works well, the one that works with a caveat, and the ones that cannot work at all, so you are not left testing them one by one.</p>
 
       <h3>SFTP, the one to reach for first</h3>
-      <p>SSH is already running on host port <code>9922</code>, so file transfer needs no second service and no extra rule. The guest ships dropbear without the SFTP helper binary, so install it once:</p>
-
-      <pre><code><span class="c"># inside the VM</span>
-<span class="p">#</span> apk add openssh-sftp-server</code></pre>
-
-      <p>That is the whole setup. Any SFTP client then connects to <code>&lt;phone-ip&gt;</code> on port <code>9922</code> with the guest's own credentials. WinSCP and FileZilla both speak it, as does the command line:</p>
+      <p>SSH is already running on host port <code>9922</code>, so file transfer needs no second service, no extra rule, and no setup at all: the guest ships the SFTP helper alongside dropbear. Turn SSH on in Settings and connect. Any SFTP client reaches <code>&lt;phone-ip&gt;</code> on port <code>9922</code> with the guest's own credentials. WinSCP and FileZilla both speak it, as does the command line:</p>
 
       <pre><code><span class="p">$</span> sftp -P 9922 root@&lt;phone-ip&gt;</code></pre>
 
       <p>It is encrypted, it needs one port instead of a range, and it goes through the rule the app already creates for you.</p>
+
+      <div class="callout note">
+        <span class="label">On an older VM image, one more line</span>
+        <p>The helper ships from v1.2.7 onwards. If <code>sftp</code> connects and then closes immediately, the image predates it: run <code>apk add openssh-sftp-server</code> in the guest once.</p>
+      </div>
 
       <h3>FTP, when the client cannot do anything else</h3>
       <p>Some old clients only speak FTP. It works, but passive mode needs care: the server tells the client which port to open for the data connection, so that port has to be forwarded too. Pin the passive range to a handful of ports rather than forwarding hundreds, and forward each one to the same number on both sides.</p>
@@ -285,7 +285,7 @@ pasv_addr_resolve=NO
         <a class="prev" href="backends.html"><span class="dir">Previous</span>&larr; Backends: QEMU &amp; AVF</a>
         <a class="next" href="packages.html"><span class="dir">Next</span>Packages &amp; services &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.5. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.7. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
     </main>
   </div>
 
