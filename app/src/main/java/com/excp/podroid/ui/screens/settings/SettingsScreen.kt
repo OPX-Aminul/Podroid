@@ -76,6 +76,8 @@ import com.excp.podroid.data.repository.PortForwardRule
 import com.excp.podroid.engine.EngineSelection
 import com.excp.podroid.engine.VmState
 import com.excp.podroid.engine.avf.AvfDiagnostics
+import com.excp.podroid.service.PodroidService
+import com.excp.podroid.x11.X11Constants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -282,6 +284,7 @@ fun SettingsScreen(
                 )
                 PortForwardSection(
                     rules = portForwardRules,
+                    sshEnabled = ui.sshEnabled,
                     onAdd = { showAddDialog = true },
                     onRemove = { viewModel.removePortForward(it) },
                 )
@@ -523,12 +526,38 @@ fun SettingsScreen(
 @Composable
 private fun PortForwardSection(
     rules: List<PortForwardRule>,
+    sshEnabled: Boolean,
     onAdd: () -> Unit,
     onRemove: (PortForwardRule) -> Unit,
 ) {
     PodroidListRow(
         label = stringResource(R.string.port_forwards_count, rules.size),
         rightSlot = { PodroidInlineAction(label = stringResource(R.string.add_btn), onClick = onAdd) },
+    )
+
+    // The forwards Podroid sets up itself. They never appear in the rule list
+    // because they are not user rules, which left people reading netstat in the
+    // guest and guessing what had claimed a port, or trying to add a rule on one
+    // and getting a refusal with no visible reason.
+    ReservedForwardRow(
+        hostPort = PodroidService.SSH_HOST_PORT,
+        guestPort = 22,
+        purpose = stringResource(
+            if (sshEnabled) R.string.port_forward_purpose_ssh else R.string.port_forward_purpose_ssh_off
+        ),
+        dimmed = !sshEnabled,
+    )
+    ReservedForwardRow(
+        hostPort = X11Constants.VNC_PORT,
+        guestPort = X11Constants.VNC_PORT,
+        purpose = stringResource(R.string.port_forward_purpose_vnc),
+        dimmed = false,
+    )
+    ReservedForwardRow(
+        hostPort = X11Constants.AUDIO_PORT,
+        guestPort = X11Constants.AUDIO_PORT,
+        purpose = stringResource(R.string.port_forward_purpose_audio),
+        dimmed = false,
     )
     rules.forEach { rule ->
         key(rule.hostPort, rule.protocol) {
@@ -560,6 +589,41 @@ private fun PortForwardSection(
             )
         }
     }
+}
+
+/** One of Podroid's own forwards: shown for reference, with no delete action. */
+@Composable
+private fun ReservedForwardRow(
+    hostPort: Int,
+    guestPort: Int,
+    purpose: String,
+    dimmed: Boolean,
+) {
+    val tint = MaterialTheme.colorScheme.onSurfaceVariant
+        .copy(alpha = if (dimmed) 0.5f else 1f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = PodroidTokens.Spacing.SM),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(
+            text = "$hostPort → $guestPort (tcp)",
+            style = MaterialTheme.typography.bodyMedium,
+            color = tint,
+            fontFamily = PodroidTokens.mono(),
+        )
+        Text(
+            text = purpose,
+            style = MaterialTheme.typography.bodySmall,
+            color = tint,
+        )
+    }
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outline,
+        thickness = 1.dp,
+    )
 }
 
 /**

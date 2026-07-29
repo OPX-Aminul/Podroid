@@ -120,6 +120,10 @@
     <string name="port_forward_table_full">Limit of %1$d port forwards reached. Remove one first.</string>
     <string name="reset">Reset</string>
     <string name="remove">Remove</string>
+    <string name="port_forward_purpose_ssh">SSH</string>
+    <string name="port_forward_purpose_ssh_off">SSH (off)</string>
+    <string name="port_forward_purpose_vnc">Desktop, this phone only</string>
+    <string name="port_forward_purpose_audio">Desktop audio, this phone only</string>
     <string name="port_forwards_count">Port forwards (%1$d)</string>
     <string name="none">None</string>
     <string name="active">active</string>

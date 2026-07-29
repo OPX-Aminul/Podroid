@@ -120,6 +120,10 @@
     <string name="port_forward_table_full">端口转发已达上限 %1$d 条，请先删除一条。</string>
     <string name="reset">重置</string>
     <string name="remove">删除</string>
+    <string name="port_forward_purpose_ssh">SSH</string>
+    <string name="port_forward_purpose_ssh_off">SSH (已关闭)</string>
+    <string name="port_forward_purpose_vnc">桌面，仅限本机</string>
+    <string name="port_forward_purpose_audio">桌面音频，仅限本机</string>
     <string name="port_forwards_count">端口转发 (%1$d)</string>
     <string name="none">无</string>
     <string name="active">活动</string>
