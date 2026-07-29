@@ -266,7 +266,7 @@ pasv_addr_resolve=NO
       <ul>
         <li><strong>SMB or Windows file sharing from the guest.</strong> Windows only speaks SMB on port 445, and an unprivileged app cannot bind any port below 1024. A Samba server inside the guest will start, but no Windows machine can be pointed at it on a different port.</li>
         <li><strong>Mounting a Windows share inside the guest.</strong> The kernel is built without <code>cifs</code>, so there is no client side either.</li>
-        <li><strong>Running an NFS server in the guest.</strong> The kernel has no NFS server support, and the portmapper it needs would want port 111 in any case. Mounting a <em>remote</em> NFS export from inside the guest does work: the NFS client is built in.</li>
+        <li><strong>Running an NFS server in the guest.</strong> The kernel is built without NFS server support, so <code>rpc.nfsd</code> cannot start: it fails on a missing <code>/proc/fs/nfsd</code>. Mounting a <em>remote</em> NFS export from inside the guest does work, since the client side is built in. Note that Windows' own NFS client speaks version 3, which also needs the portmapper on port 111, so even an NFS server would not reach it.</li>
         <li><strong>Serving DNS or PXE to other machines on the network.</strong> DNS is port 53, DHCP is 67 and 68, TFTP is 69: all privileged, and Android owns DHCP on a tethered network regardless.</li>
       </ul>
 
