@@ -1,7 +1,13 @@
 # Podroid X11 environment — sourced by /etc/profile for login shells.
 # Apps launched from the user's shell inherit a working DISPLAY and
 # PULSE_SERVER without any setup, so `xeyes` / `firefox` etc. just work.
-export DISPLAY=:0
+#
+# Only default it: a shell that already has a display of its own keeps it.
+# `ssh -X` sets DISPLAY to its forwarding socket, and xrdp sources this file
+# before starting a session, so overwriting it would send those sessions'
+# windows to the in-app desktop and leave the remote screen black.
+: "${DISPLAY:=:0}"
+export DISPLAY
 
 # PulseAudio: point clients (Firefox, mpv, etc.) at the native control
 # socket exposed by module-native-protocol-unix in podroid-x11. The TCP
