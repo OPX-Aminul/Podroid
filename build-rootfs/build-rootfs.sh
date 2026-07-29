@@ -31,6 +31,7 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     bridge-utils \
     iproute2 \
     dropbear dropbear-openrc \
+    openssh-sftp-server \
     curl \
     ca-certificates \
     shadow shadow-uidmap \
