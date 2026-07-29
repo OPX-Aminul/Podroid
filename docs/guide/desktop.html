@@ -120,6 +120,10 @@
       <pre><code><span class="c"># inside the VM, over SSH or the in-app terminal</span>
 <span class="p">#</span> apk add xrdp openssl
 
+<span class="c"># plus a desktop for the session to start, if you have not installed one</span>
+<span class="c"># already. openbox and xterm are the smallest pair that works.</span>
+<span class="p">#</span> apk add openbox xterm
+
 <span class="c"># xrdp needs a TLS certificate. Without one it falls back to legacy RDP</span>
 <span class="c"># security, which current Windows and FreeRDP clients refuse to complete.</span>
 <span class="p">#</span> cd /etc/xrdp
@@ -127,10 +131,14 @@
       -keyout key.pem -out cert.pem -subj "/CN=podroid"
 <span class="p">#</span> chmod 600 key.pem
 
-<span class="c"># tell the session what desktop to start, using whichever one you installed</span>
-<span class="p">#</span> echo '#!/bin/sh'      &gt; /root/.xsession
-<span class="p">#</span> echo 'exec startxfce4' &gt;&gt; /root/.xsession
-<span class="p">#</span> chmod +x /root/.xsession
+<span class="c"># xrdp offers its Xorg backend first and Alpine ships no xorgxrdp, so a</span>
+<span class="c"># login would fail with "X server could not be started". Pin it to Xvnc.</span>
+<span class="p">#</span> sed -i 's/^autorun=$/autorun=Xvnc/' /etc/xrdp/xrdp.ini
+
+<span class="c"># tell the session what to start. On Alpine, xrdp runs the system xinitrc,</span>
+<span class="c"># which reads ~/.xinitrc; it never looks at ~/.xsession.</span>
+<span class="p">#</span> echo 'xterm &amp;'             &gt; /root/.xinitrc
+<span class="p">#</span> echo 'exec openbox-session' &gt;&gt; /root/.xinitrc
 
 <span class="c"># both services are required: xrdp speaks the protocol, sesman logs you in</span>
 <span class="p">#</span> rc-service xrdp-sesman start
@@ -138,14 +146,19 @@
 <span class="p">#</span> rc-update add xrdp-sesman
 <span class="p">#</span> rc-update add xrdp</code></pre>
 
-      <p>Then add a port forward in <strong>Settings &rarr; Port forwards</strong> from host port <code>3389</code> to VM port <code>3389</code>, and connect from the PC to <code>phone-address:3389</code>. At the xrdp login screen choose the <strong>Xvnc</strong> session, and sign in with the guest's own credentials: user <code>root</code>, password <code>podroid</code> unless you changed it.</p>
+      <p>Then add a port forward in <strong>Settings &rarr; Port forwards</strong> from host port <code>3389</code> to VM port <code>3389</code>, and connect from the PC to <code>phone-address:3389</code> with the guest's own credentials: user <code>root</code>, password <code>podroid</code> unless you changed it. The desktop can look blank for the first moment while the session is still starting; it fills in as soon as anything draws, and opening a window from the window manager's menu is enough to force it.</p>
+
+      <div class="callout note">
+        <span class="label">On an older VM image, one more line</span>
+        <p>The guest sets <code>DISPLAY</code> for you so that programs started from the terminal appear on the in-app desktop, and xrdp reads the same profile before starting your session. Older images set it unconditionally, which sends an RDP session's windows to the phone's screen and leaves the remote desktop black. Check with <code>grep DISPLAY /etc/profile.d/podroid-x11.sh</code>: if it reads <code>export DISPLAY=:0</code> rather than <code>: "${DISPLAY:=:0}"</code>, run <code>sed -i 's/^export DISPLAY=:0$/: "${DISPLAY:=:0}"; export DISPLAY/' /etc/profile.d/podroid-x11.sh</code> once.</p>
+      </div>
 
       <div class="callout warn">
         <span class="label">Change the root password before doing this</span>
         <p>Port forwards bind every interface, so an RDP listener is reachable by anyone on the same network. Unlike the VNC path above, this one does ask for a password, which is worth having. It is also the guest's well-known default password, which is not. Run <code>passwd</code> in the guest first.</p>
       </div>
 
-      <p>The session you get this way is its own desktop on display <code>:10</code>, separate from the one the in-app viewer shows. That is usually what you want from a PC. If you would rather see the <em>same</em> screen as the phone, add this section to <code>/etc/xrdp/xrdp.ini</code> and set <code>autorun=podroid</code> in its <code>[Globals]</code> block, which points RDP at the running X session instead of starting a new one:</p>
+      <p>The session you get this way is its own desktop, separate from the one the in-app viewer shows, and it survives a disconnect: reconnecting drops you back into the same windows. That is usually what you want from a PC. If you would rather see the <em>same</em> screen as the phone, add this section to <code>/etc/xrdp/xrdp.ini</code> and set <code>autorun=podroid</code> instead of <code>autorun=Xvnc</code>, which points RDP at the running X session rather than starting a new one:</p>
 
       <pre><code>[podroid]
 name=Podroid desktop
