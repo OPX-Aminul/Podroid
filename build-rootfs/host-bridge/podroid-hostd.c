@@ -110,8 +110,16 @@ static int write_line(int fd, const char *s) {
     return write_all(fd, "\n", 1);
 }
 
+/* A line longer than the caller's buffer. Distinct from -1 so callers can say
+ * so instead of acting on a silently cut-off line: a truncated FWD-LIST used to
+ * print as a short but plausible-looking table, and truncated base64 decodes to
+ * garbage rather than failing. */
+#define LINE_TOO_LONG (-2)
+
 /* Reads one LF-terminated line into buf (NUL-terminated, LF stripped).
- * Returns line length, 0 on EOF, -1 on error/timeout. */
+ * Returns line length, 0 on EOF, -1 on error/timeout, LINE_TOO_LONG if the line
+ * did not fit. In that case the rest of the line is consumed, so the stream is
+ * still positioned at the start of the next one. */
 static int read_line(int fd, char *buf, size_t cap) {
     size_t n = 0;
     while (n < cap - 1) {
@@ -119,11 +127,22 @@ static int read_line(int fd, char *buf, size_t cap) {
         ssize_t r = read(fd, &c, 1);
         if (r < 0) { if (errno == EINTR) continue; return -1; }
         if (r == 0) return n == 0 ? 0 : (int)n;
-        if (c == '\n') break;
+        if (c == '\n') { buf[n] = '\0'; return (int)n; }
         buf[n++] = c;
     }
     buf[n] = '\0';
-    return (int)n;
+    /* Buffer full. If the next byte ends the line then it fit exactly; otherwise
+     * discard the overflow so the next read starts on a line boundary. Either
+     * way the terminator is consumed, which the plain loop above cannot do. */
+    int over = 0;
+    for (;;) {
+        char c;
+        ssize_t r = read(fd, &c, 1);
+        if (r < 0) { if (errno == EINTR) continue; return -1; }
+        if (r == 0 || c == '\n') break;
+        over = 1;
+    }
+    return over ? LINE_TOO_LONG : (int)n;
 }
 
 /* Like read_line but waits at most timeout_s for activity before each byte;
@@ -140,11 +159,23 @@ static int read_line_timeout(int fd, char *buf, size_t cap, int timeout_s) {
         ssize_t r = read(fd, &c, 1);
         if (r < 0) { if (errno == EINTR) continue; return -1; }
         if (r == 0) return n == 0 ? 0 : (int)n;
-        if (c == '\n') break;
+        if (c == '\n') { buf[n] = '\0'; return (int)n; }
         buf[n++] = c;
     }
     buf[n] = '\0';
-    return (int)n;
+    int over = 0;  /* see read_line: distinguish an exact fit from an overflow */
+    for (;;) {
+        struct pollfd pfd = { .fd = fd, .events = POLLIN };
+        int pr = poll(&pfd, 1, timeout_s * 1000);
+        if (pr < 0) { if (errno == EINTR) continue; return -1; }
+        if (pr == 0) return -1;
+        char c;
+        ssize_t r = read(fd, &c, 1);
+        if (r < 0) { if (errno == EINTR) continue; return -1; }
+        if (r == 0 || c == '\n') break;
+        over = 1;
+    }
+    return over ? LINE_TOO_LONG : (int)n;
 }
 
 /* Discard any bytes already readable on the host channel before we send a new
@@ -174,7 +205,17 @@ static int cli_roundtrip(const char *req, char *resp, size_t cap) {
     if (write_line(fd, req) < 0) { close(fd); return -1; }
     int n = read_line(fd, resp, cap);
     close(fd);
+    if (n == LINE_TOO_LONG) return LINE_TOO_LONG;
     return n <= 0 ? -1 : 0;
+}
+
+/* Both failures are < 0, so callers keep a single error branch. */
+static int cli_roundtrip_failed(int rc) {
+    if (rc == LINE_TOO_LONG)
+        fprintf(stderr, "podroid: the reply is too long to show in full\n");
+    else
+        fprintf(stderr, "podroid: host bridge not available\n");
+    return 1;
 }
 
 static int cli_report(const char *resp, int list_decode) {
@@ -238,9 +279,8 @@ static int cli_notify(int argc, char **argv) {
     }
 
     char resp[8192];
-    if (cli_roundtrip(req, resp, sizeof(resp)) < 0) {
-        fprintf(stderr, "podroid: host bridge not available\n"); return 1;
-    }
+    int rc = cli_roundtrip(req, resp, sizeof(resp));
+    if (rc < 0) return cli_roundtrip_failed(rc);
     return cli_report(resp, 0);
 }
 
@@ -268,9 +308,8 @@ static int cli_forward(int argc, char **argv) {
         return 2;
     }
     char resp[8192];
-    if (cli_roundtrip(req, resp, sizeof(resp)) < 0) {
-        fprintf(stderr, "podroid: host bridge not available\n"); return 1;
-    }
+    int rc = cli_roundtrip(req, resp, sizeof(resp));
+    if (rc < 0) return cli_roundtrip_failed(rc);
     return cli_report(resp, list_decode);
 }
 
@@ -281,9 +320,8 @@ static int cli_open(int argc, char **argv) {
     snprintf(req, sizeof(req), "OPEN %s", b64 ? b64 : "");
     free(b64);
     char resp[8192];
-    if (cli_roundtrip(req, resp, sizeof(resp)) < 0) {
-        fprintf(stderr, "podroid: host bridge not available\n"); return 1;
-    }
+    int rc = cli_roundtrip(req, resp, sizeof(resp));
+    if (rc < 0) return cli_roundtrip_failed(rc);
     return cli_report(resp, 0);
 }
 
@@ -292,9 +330,8 @@ static int cli_power(int argc, char **argv) {
     char req[64];
     snprintf(req, sizeof(req), "POWER %s", argv[1]);
     char resp[256];
-    if (cli_roundtrip(req, resp, sizeof(resp)) < 0) {
-        fprintf(stderr, "podroid: host bridge not available\n"); return 1;
-    }
+    int rc = cli_roundtrip(req, resp, sizeof(resp));
+    if (rc < 0) return cli_roundtrip_failed(rc);
     return cli_report(resp, 0);
 }
 
@@ -303,9 +340,8 @@ static int cli_headless(int argc, char **argv) {
     char req[64];
     snprintf(req, sizeof(req), "HEADLESS %s", argv[1]);
     char resp[256];
-    if (cli_roundtrip(req, resp, sizeof(resp)) < 0) {
-        fprintf(stderr, "podroid: host bridge not available\n"); return 1;
-    }
+    int rc = cli_roundtrip(req, resp, sizeof(resp));
+    if (rc < 0) return cli_roundtrip_failed(rc);
     return cli_report(resp, 0);
 }
 
@@ -384,6 +420,9 @@ static int daemon_main(void) {
          * hang every other podroid-* call. The host channel below already uses
          * the same timeout; the CLI side must too. */
         int rn = read_line_timeout(cli, req, sizeof(req), HOST_TIMEOUT_S);
+        /* "request too long": relaying a cut-off request would have Android act
+         * on a mangled command rather than reject it. */
+        if (rn == LINE_TOO_LONG) { write_line(cli, "ERR cmVxdWVzdCB0b28gbG9uZw=="); close(cli); continue; }
         if (rn <= 0) { close(cli); continue; }
 
         if (host_fd < 0) {
@@ -398,8 +437,14 @@ static int daemon_main(void) {
 
         char resp[8192];
         drain_pending(host_fd);  /* clear any stale/orphaned bytes so resp matches this req */
-        if (write_line(host_fd, req) < 0 ||
-            read_line_timeout(host_fd, resp, sizeof(resp), HOST_TIMEOUT_S) <= 0) {
+        int hn = write_line(host_fd, req) < 0
+            ? -1
+            : read_line_timeout(host_fd, resp, sizeof(resp), HOST_TIMEOUT_S);
+        /* "response too long": the channel is still aligned, since the reader
+         * consumed the rest of the line, so keep the connection and just refuse
+         * to pass on a half a reply. */
+        if (hn == LINE_TOO_LONG) { write_line(cli, "ERR cmVzcG9uc2UgdG9vIGxvbmc="); close(cli); continue; }
+        if (hn <= 0) {
             close(host_fd); host_fd = -1;
             write_line(cli, "ERR dGltZW91dA==");
             close(cli);
