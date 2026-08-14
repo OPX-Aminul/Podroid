@@ -11,7 +11,7 @@ import android.content.Context
 import android.os.StatFs
 
 object DeviceResourcePolicy {
-    val RAM_OPTIONS_MB = listOf(512, 1024, 2048, 4096)
+    val RAM_OPTIONS_MB = listOf(512, 1024, 2048, 4096, 6144, 8192, 12288, 16384)
     val CPU_OPTIONS = listOf(1, 2, 4, 6, 8)
     /** 0 = unlimited */
     val BANDWIDTH_OPTIONS_MBPS = listOf(0, 10, 50, 100, 500)
@@ -36,6 +36,14 @@ object DeviceResourcePolicy {
     fun deviceAvailableStorageGb(context: Context): Int {
         val stat = StatFs(context.filesDir.absolutePath)
         return (stat.availableBytes / (1024L * 1024 * 1024)).toInt()
+    }
+
+    /** RAM options that fit the device, leaving ~3 GB for Android. Always at
+     * least the first three options, so small devices still get a usable list. */
+    fun ramOptionsFor(totalRamMb: Long): List<Int> {
+        val cap = totalRamMb - 3072
+        val filtered = RAM_OPTIONS_MB.filter { it <= cap }
+        return if (filtered.size >= 3) filtered else RAM_OPTIONS_MB.take(3)
     }
 
     fun nearestAtMost(options: List<Int>, target: Int): Int =

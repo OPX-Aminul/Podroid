@@ -13,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,12 +39,16 @@ fun VmRamChips(
                 bottom = PodroidTokens.Spacing.SM,
             ),
         )
+        val totalRamMb = DeviceResourcePolicy.deviceTotalRamMb(LocalContext.current)
+        val ramOptions = DeviceResourcePolicy.ramOptionsFor(totalRamMb).let { options ->
+            if (currentMb in options) options else options + currentMb
+        }
         FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(PodroidTokens.Spacing.SM),
             verticalArrangement = Arrangement.spacedBy(PodroidTokens.Spacing.SM),
         ) {
-            DeviceResourcePolicy.RAM_OPTIONS_MB.forEach { mb ->
+            ramOptions.forEach { mb ->
                 FilterChip(
                     selected = mb == currentMb,
                     enabled = enabled,

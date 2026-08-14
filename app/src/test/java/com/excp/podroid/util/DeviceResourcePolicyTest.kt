@@ -33,4 +33,21 @@ class DeviceResourcePolicyTest {
         assertEquals(4, DeviceResourcePolicy.nearestAtMost(listOf(2, 4, 8), 5))
         assertEquals(2, DeviceResourcePolicy.nearestAtMost(listOf(2, 4, 8), 1))
     }
+
+    @Test
+    fun ramOptionsFor_capsToLeaveHeadroomForAndroid() {
+        // 6 GB device: only options <= 3072 MB fit, but the floor guarantees
+        // at least the first three options anyway.
+        assertEquals(listOf(512, 1024, 2048), DeviceResourcePolicy.ramOptionsFor(6_144))
+    }
+
+    @Test
+    fun ramOptionsFor_returnsFullListOnBigDevice() {
+        assertEquals(DeviceResourcePolicy.RAM_OPTIONS_MB, DeviceResourcePolicy.ramOptionsFor(24_576))
+    }
+
+    @Test
+    fun ramOptionsFor_neverDropsBelowThreeOptions() {
+        assertEquals(listOf(512, 1024, 2048), DeviceResourcePolicy.ramOptionsFor(2_048))
+    }
 }
