@@ -574,6 +574,7 @@ class QemuEngine @Inject constructor(
                 if (config.sshEnabled) append(" ssh=1")
                 append(" podroid.x11.dpi=").append(config.x11Dpi)
                 if (config.bandwidthMbps > 0) append(" podroid.bandwidth=").append(config.bandwidthMbps)
+                if (config.dnsServers.isNotEmpty()) append(" podroid.dns=").append(config.dnsServers.joinToString(","))
             }
             args += "-append"; args += cmdline
         } else {

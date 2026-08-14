@@ -51,8 +51,47 @@ start() {
         # is faster + matches every existing user's setup. Original behavior.
         ip addr add 10.0.2.15/24 dev "$NETIF" 2>/dev/null
         ip route add default via 10.0.2.2 dev "$NETIF" 2>/dev/null
-        printf 'nameserver 10.0.2.3\nnameserver 8.8.8.8\nnameserver 1.1.1.1\n' \
-            > /etc/resolv.conf
+        # SLIRP's 10.0.2.3 DNS forwarder is dead on Android (it reads the
+        # host's /etc/resolv.conf, which doesn't exist here). QemuEngine
+        # passes the device's own resolvers via podroid.dns= when it has any;
+        # re-validate rather than trust the cmdline, and use only the first
+        # one that parses as a dotted quad. It replaces just the 10.0.2.3
+        # slot - 8.8.8.8 and 1.1.1.1 stay in place either way.
+        DNS_RAW=$(sed -n 's/.*podroid\.dns=\([0-9.,]*\).*/\1/p' /proc/cmdline 2>/dev/null)
+        DEVICE_DNS=""
+        if [ -n "$DNS_RAW" ]; then
+            _ifs=$IFS
+            IFS=,
+            set -- $DNS_RAW
+            IFS=$_ifs
+            for _cand in "$@"; do
+                _dots=$IFS
+                IFS=.
+                set -- $_cand
+                IFS=$_dots
+                if [ $# -eq 4 ]; then
+                    _ok=1
+                    for _o in "$1" "$2" "$3" "$4"; do
+                        case "$_o" in ''|*[!0-9]*) _ok=0 ;; esac
+                        if [ "$_ok" = 1 ] && [ "$_o" -gt 255 ] 2>/dev/null; then
+                            _ok=0
+                        fi
+                    done
+                    if [ "$_ok" = 1 ]; then
+                        DEVICE_DNS="$_cand"
+                        break
+                    fi
+                fi
+            done
+        fi
+        if [ -n "$DEVICE_DNS" ]; then
+            printf 'nameserver %s\nnameserver 8.8.8.8\nnameserver 1.1.1.1\n' "$DEVICE_DNS" \
+                > /etc/resolv.conf
+        else
+            printf 'nameserver 10.0.2.3\nnameserver 8.8.8.8\nnameserver 1.1.1.1\n' \
+                > /etc/resolv.conf
+        fi
+        echo "DNS: ${DEVICE_DNS:-10.0.2.3} 8.8.8.8" > /dev/console
         # Mirror the AVF post-check: if the static assignment didn't stick
         # (wrong NIC, link not up), don't report success. Dependents that
         # `need` us would assume the link is up and then SSH/apk fail with no

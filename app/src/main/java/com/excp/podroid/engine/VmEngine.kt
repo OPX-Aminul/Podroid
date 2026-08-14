@@ -113,6 +113,7 @@ data class VmConfig(
     val cpus: Int = 1,
     val sshEnabled: Boolean = false,
     val androidIp: String = "unknown",
+    val dnsServers: List<String> = emptyList(),
     val storageSizeGb: Int = 2,
     val storageAccessEnabled: Boolean = false,
     val qemuExtraArgs: String = "",

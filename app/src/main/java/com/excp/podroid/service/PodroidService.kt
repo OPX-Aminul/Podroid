@@ -348,6 +348,7 @@ class PodroidService : Service() {
                         cpus = settingsRepository.getVmCpusSnapshot(),
                         sshEnabled = sshEnabled,
                         androidIp = NetworkUtils.localIpv4(this@PodroidService),
+                        dnsServers = NetworkUtils.dnsServers(this@PodroidService),
                         storageSizeGb = settingsRepository.getStorageSizeGbSnapshot(),
                         storageAccessEnabled = settingsRepository.getStorageAccessEnabledSnapshot(),
                         qemuExtraArgs = settingsRepository.getQemuExtraArgsSnapshot(),

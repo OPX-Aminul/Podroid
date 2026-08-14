@@ -94,6 +94,52 @@ object NetworkUtils {
             addr.startsWith("172.") && addr.substringAfter('.').substringBefore('.').toIntOrNull()
                 ?.let { it in 16..31 } == true
 
+    /**
+     * The DNS resolvers the active network handed the device over DHCP/RA, most useful
+     * first, capped and sanitized for injection into the guest's `/etc/resolv.conf`
+     * (see [sanitizeDnsList]).
+     *
+     * IPv4-only here on purpose: musl's resolver in the Alpine guest reads a plain
+     * `nameserver <addr>` line per line, and the guest network stack this feeds (see
+     * `podroid-network`) is IPv4-only, so a literal we can't reach is worse than none.
+     */
+    fun dnsServers(context: Context): List<String> = try {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val servers = cm?.let { it.getLinkProperties(it.activeNetwork) }
+            ?.dnsServers
+            ?.filterIsInstance<Inet4Address>()
+            ?.map { it.hostAddress }
+            .orEmpty()
+        sanitizeDnsList(servers)
+    } catch (_: Exception) {
+        emptyList()
+    }
+
+    /**
+     * Pure validation/cleanup so [dnsServers]'s output is safe to write into a guest
+     * config file: reject anything that isn't a plain dotted-quad IPv4 literal (kills
+     * IPv6 literals, whitespace, and shell metacharacters in one check), drop loopback
+     * and the unspecified address, de-duplicate, and cap at 2 - musl reads at most 3
+     * `nameserver` lines and one slot is reserved for a public fallback the guest writes.
+     */
+    internal fun sanitizeDnsList(addresses: List<String?>): List<String> =
+        addresses
+            .mapNotNull { it?.trim() }
+            .filter { it.isNotEmpty() }
+            .filter { it.all { c -> c.isDigit() || c == '.' } }
+            .filter { isDottedQuad(it) }
+            .filterNot { it.startsWith("127.") || it == "0.0.0.0" }
+            .distinct()
+            .take(2)
+
+    private fun isDottedQuad(addr: String): Boolean {
+        val octets = addr.split(".")
+        if (octets.size != 4) return false
+        return octets.all { octet ->
+            octet.isNotEmpty() && octet.toIntOrNull()?.let { it in 0..255 } == true
+        }
+    }
+
     private val TRANSPORT_PREFERENCE = intArrayOf(
         NetworkCapabilities.TRANSPORT_WIFI,
         NetworkCapabilities.TRANSPORT_ETHERNET,
