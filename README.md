@@ -51,6 +51,7 @@ docker run -d -p 8080:80 nginx
 # expose that container to your phone and LAN, right from the VM shell
 podroid-forward add 8080 8080 tcp     # TCP or UDP, on both the QEMU and AVF backends
 curl http://<phone-ip>:8080
+podroid-forward clean                 # remove every rule you added, in one go
 
 # SSH in from your laptop (enable SSH in the setup wizard or Settings)
 ssh root@<phone-ip> -p 9922        # password: podroid

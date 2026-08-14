@@ -161,7 +161,7 @@ Single-activity Compose app: `ui/navigation/NavGraph.kt` routes `setup → home 
 │       │   │   ├── hostbridge/           # guest->Android bridge (transport, server, dispatcher, notify)
 │       │   │   │   └── HeadlessModeManager.kt # single source of truth for server (headless) mode
 │       │   │   └── usb/                  # UsbPassthroughManager
-│       │   ├── service/PodroidService.kt # foreground service; owns VM lifecycle, wakelock, notification
+│       │   ├── service/PodroidService.kt # foreground service; owns VM lifecycle, wakelock, notification; also VmControlReceiver (boot autostart + START_VM/STOP_VM automation intents)
 │       │   ├── data/repository/          # Settings, PortForward, Update, Language, ContainerBackup, ContainerStats (all DataStore)
 │       │   ├── di/                       # Hilt module
 │       │   ├── util/                     # NetworkUtils, ShellQuote, HostMetrics + VmLoadSampler (Status screen), DeviceResourcePolicy (load-balance sizing)

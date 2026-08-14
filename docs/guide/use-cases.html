@@ -107,7 +107,7 @@
       <p>It uses a <code>podroid-backup</code> helper when one is present in the guest, and falls back to plain <code>podman save</code> / <code>podman export</code> otherwise. Backups are written inside the guest to <code>/mnt/downloads/Podroid/backups</code>. With <a href="settings.html">Downloads folder sharing</a> enabled, that path appears on the phone under <code>Download/Podroid/backups</code>; with sharing off, backups stay inside the VM at <code>/var/backups/podroid</code>.</p>
 
       <h2>Checking VM and phone status</h2>
-      <p>The <strong>Status</strong> screen (the home screen's <strong>Status</strong> button, or the monitor icon in the header) gives a single view of both sides of the system: phone RAM, storage, CPU cores, and load average (when readable) alongside the VM's status, uptime, active backend (QEMU or AVF), and the phone's IP.</p>
+      <p>The <strong>Status</strong> screen (the home screen's <strong>Status</strong> button, or the monitor icon in the header) gives a single view of both sides of the system: phone RAM, storage, CPU cores, and load average (when readable) alongside the VM's status, uptime, active backend (QEMU or AVF), and the phone's IP. The backend shown is the one actually running: when a forced AVF selection falls back to QEMU, Status says so explicitly ("AVF unavailable, running QEMU").</p>
       <p>It also shows a VM CPU-load graph, available on the QEMU backend only - on AVF the screen shows a note that the graph is QEMU-only - plus the VM's allocated RAM, CPU cores, disk-image usage, and bandwidth limit.</p>
 
       <h2>Local Linux development environment</h2>
@@ -174,13 +174,12 @@
         <li><strong>Wayland desktops</strong> - GNOME Wayland, Plasma Wayland, sway, and Hyprland do not render in the X11 viewer. Use XFCE or another X11 session instead.</li>
         <li><strong>Heavy compilation on TCG</strong> - building LLVM, the Linux kernel, or large Rust crates inside the VM is feasible but very slow (hours, not minutes). Cross-compile on a real machine and copy the result over SSH.</li>
         <li><strong>x86 Docker images</strong> - pulling an <code>linux/amd64</code> image runs it under double emulation (QEMU TCG emulating ARM64 guest, which then runs QEMU user-mode emulating x86). Expect 50-100x slowdown. Always prefer <code>linux/arm64</code> images.</li>
-        <li><strong>UDP port forwarding on AVF</strong> - UDP rules are silently ignored on the AVF backend; switch to QEMU if you need UDP (e.g. a game server or DNS resolver serving LAN clients).</li>
         <li><strong>A full desktop environment at 512 MB RAM</strong> - XFCE with a browser open will page heavily into ZRAM swap at 512 MB. Set RAM to 1 GB or more in Settings if you plan to run a desktop regularly.</li>
       </ul>
 
       <div class="callout tip">
         <span class="label">Getting better performance</span>
-        <p>If TCG is too slow for your workload, the most impactful step is switching to the <a href="backends.html">AVF backend</a> on a Pixel 8 or later - it provides near-native CPU speed. Bumping RAM above 1 GB also helps containers and desktops avoid swap pressure. The <a href="performance.html">Performance &amp; why it's slow</a> page covers every tuning option in detail. For hard limits such as Wayland or UDP-on-AVF, see <a href="limitations.html">Limitations &amp; troubleshooting</a>.</p>
+        <p>If TCG is too slow for your workload, the most impactful step is switching to the <a href="backends.html">AVF backend</a> on a Pixel 8 or later - it provides near-native CPU speed. Bumping RAM above 1 GB also helps containers and desktops avoid swap pressure. The <a href="performance.html">Performance &amp; why it's slow</a> page covers every tuning option in detail. For hard limits such as Wayland, see <a href="limitations.html">Limitations &amp; troubleshooting</a>.</p>
       </div>
 
       <div class="pagenav">

@@ -55,7 +55,7 @@
       <p>Go to <strong>Settings &rarr; Advanced &rarr; Backend</strong>. The three options are:</p>
       <ul>
         <li><strong>Auto</strong> (default) - Podroid probes the device at startup and uses AVF if the feature, both permissions, and non-protected VM support are all present; otherwise it falls back to QEMU. This is the right choice for most users.</li>
-        <li><strong>AVF (KVM)</strong> - always use AVF; the VM will fail to start if the prerequisites are not met.</li>
+        <li><strong>AVF (KVM)</strong> - always use AVF. On a device that cannot run it, the VM runs on QEMU instead, and the app states why: a notice on Home, a suffix on the Status screen, and a caption under the AVF chip in Settings.</li>
         <li><strong>QEMU (TCG)</strong> - always use software emulation, even on a device that supports AVF.</li>
       </ul>
 
@@ -95,7 +95,7 @@
       <p>The two <code>pm grant</code> permissions <strong>persist across reboots and in-place app updates</strong>. You do not need to re-grant them after an OTA or a Podroid update installed over the existing app. However, they are <strong>lost on uninstall</strong>: if you uninstall and reinstall Podroid, run the two <code>pm grant</code> commands again before using AVF.</p>
 
       <h2>How Auto-selection works</h2>
-      <p>When the backend is set to Auto, Podroid checks four conditions at startup: (1) the <code>android.software.virtualization_framework</code> feature is present, (2) <code>MANAGE_VIRTUAL_MACHINE</code> is granted, (3) <code>USE_CUSTOM_VIRTUAL_MACHINE</code> is granted, and (4) the device advertises support for <strong>non-protected VMs</strong>. All four must pass. If any fails, Podroid silently falls back to QEMU - no error, the VM just starts with software emulation.</p>
+      <p>When the backend is set to Auto, Podroid checks four conditions at startup: (1) the <code>android.software.virtualization_framework</code> feature is present, (2) <code>MANAGE_VIRTUAL_MACHINE</code> is granted, (3) <code>USE_CUSTOM_VIRTUAL_MACHINE</code> is granted, and (4) the device advertises support for <strong>non-protected VMs</strong>. All four must pass. If any fails, Podroid falls back to QEMU and the VM starts with software emulation - announced in the same places as a forced-AVF fallback: a Home notice, a Status suffix, and a caption under the AVF chip in Settings.</p>
 
       <p>Condition (4) is the non-obvious one. pKVM can operate in two modes: <em>protected</em> (guest memory is encrypted and the host cannot inspect it) and <em>non-protected</em>. Podroid's guest image is a standard Alpine Linux squashfs - it does not meet the signing and measurement requirements for protected VMs. A device that only advertises protected VM support cannot run Podroid's image under AVF, so Auto falls back to QEMU on such devices.</p>
 
@@ -133,7 +133,7 @@
           <tr>
             <td>Port forwarding protocols</td>
             <td>TCP and UDP</td>
-            <td>TCP only (UDP rules are silently ignored)</td>
+            <td>TCP and UDP</td>
           </tr>
           <tr>
             <td>vCPU count</td>

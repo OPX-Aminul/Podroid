@@ -61,12 +61,12 @@
         <tbody>
           <tr><td><code>10.0.2.15/24</code></td><td>Guest IP (eth0)</td></tr>
           <tr><td><code>10.0.2.2</code></td><td>Default gateway (SLIRP host)</td></tr>
-          <tr><td><code>10.0.2.3</code></td><td>Built-in DNS resolver</td></tr>
+          <tr><td><code>10.0.2.3</code></td><td>SLIRP's DNS forwarder - dead on Android, which has no host <code>/etc/resolv.conf</code> for it to read</td></tr>
           <tr><td><code>8.8.8.8</code>, <code>1.1.1.1</code></td><td>Fallback DNS (in <code>/etc/resolv.conf</code>)</td></tr>
         </tbody>
       </table>
 
-      <p>IPv6 is disabled on the QEMU netdev (<code>ipv6=off</code>). Outbound TCP and UDP both work. The <code>podroid-network</code> OpenRC service brings up eth0 with these addresses at boot.</p>
+      <p>IPv6 is disabled on the QEMU netdev (<code>ipv6=off</code>). Outbound TCP and UDP both work. The <code>podroid-network</code> OpenRC service brings up eth0 with these addresses at boot. Because SLIRP's own forwarder is dead, the guest's <code>/etc/resolv.conf</code> lists the device's own resolver first (passed to the guest via <code>podroid.dns=</code> on the kernel command line), then <code>8.8.8.8</code> and <code>1.1.1.1</code>. In airplane mode there is no device resolver, so the list falls back to <code>10.0.2.3</code>, <code>8.8.8.8</code>, <code>1.1.1.1</code>.</p>
 
       <div class="callout note">
         <span class="label">AVF backend</span>
@@ -108,7 +108,7 @@
       <p>The SSH forward is conditional: if you turn SSH off in Settings, the 9922&rarr;22 rule is not added and dropbear does not start inside the guest. The VNC and PulseAudio forwards are unconditional because the in-app X11 viewer depends on them.</p>
 
       <h2>Adding your own rules</h2>
-      <p>Open <strong>Settings &rarr; Port forwards &rarr; Add</strong>. Enter a host port (on the Android device), a VM port (inside the guest), and pick TCP, UDP, or Both. On the QEMU backend rules apply live via the QMP protocol - no VM restart is needed. Rules are persisted across reboots.</p>
+      <p>Open <strong>Settings &rarr; Port forwards &rarr; Add</strong>. Enter a host port (on the Android device), a VM port (inside the guest), and pick TCP, UDP, or Both. On the QEMU backend rules apply live via the QMP protocol - no VM restart is needed. Rules are persisted across reboots. Next to Add there is also a <strong>Clean all</strong> button that removes every user rule at once, behind a confirmation dialog; the app's own SSH, display, and audio forwards are not affected.</p>
 
       <p>A typical setup for a container service listening on guest port 8080:</p>
 
@@ -126,7 +126,7 @@ curl http://&lt;phone-ip&gt;:8080</code></pre>
       <h3>Limits on the rule list</h3>
       <p>A host port that something else on the phone is already using cannot be forwarded. That rule alone fails and is retried whenever the list changes; the VM keeps running and every other rule is unaffected. Android hands out ports from 32768 upwards to ordinary apps, so a rule in that range is the most likely one to collide - pick host ports below it when you have the choice.</p>
 
-      <p>Up to 128 rules can be saved. The limit exists because each rule is a listening socket and a row in Settings, and because a shell loop can otherwise add thousands of them in a second. <code>podroid-forward</code> reports an error rather than reporting success once the list is full.</p>
+      <p>Up to 2048 rules can be saved. The limit exists because each rule is a listening socket and a row in Settings, and because a shell loop can otherwise add thousands of them in a second. <code>podroid-forward</code> reports an error rather than reporting success once the list is full.</p>
 
       <h2>Talking back to Android from the guest</h2>
       <p>Several command-line tools ship inside the VM so scripts and shell sessions can reach the Android side directly, without the in-app UI. They all work on the QEMU and AVF backends.</p>
@@ -139,8 +139,10 @@ podroid-forward 8888 80
 <span class="c"># list current rules</span>
 podroid-forward list
 <span class="c"># drop a rule</span>
-podroid-forward remove 8888 tcp</code></pre>
-      <p>Rules created this way are identical to ones added in Settings: they apply live, persist across reboots, and appear in the Settings list. Both TCP and UDP work on either backend.</p>
+podroid-forward remove 8888 tcp
+<span class="c"># drop every user rule at once (replies "removed N")</span>
+podroid-forward clean</code></pre>
+      <p>Rules created this way are identical to ones added in Settings: they apply live, persist across reboots, and appear in the Settings list. Both TCP and UDP work on either backend. <code>clean</code> removes only user rules - the app's own SSH, display, and audio forwards are untouched.</p>
 
       <h3><code>podroid-notify</code> - post an Android notification</h3>
       <pre><code><span class="c"># simplest form</span>
@@ -260,13 +262,15 @@ pasv_addr_resolve=NO
         <p>Modern clients use the extended passive command, which returns only a port and reuses the address they are already connected to, so they work whether or not <code>pasv_address</code> is set. Windows Explorer uses the older command, which returns an address as well, and the guest fills that in with its internal address <code>10.0.2.15</code>. The client then tries to open the data connection to an address that does not exist on your network and hangs, usually after the directory listing appears to start. Setting <code>pasv_address</code> to the phone's own address is what fixes it. The phone's address changes when it moves between networks, so it has to be updated to match; the <strong>Status</strong> screen lists every address the phone currently has.</p>
       </div>
 
+      <h3>NFS and iSCSI</h3>
+      <p>The kernel ships an NFSv4 server and client, so the guest can serve NFS - with one constraint. The export must live on an ext4-backed path such as <code>/mnt/persist</code> and be exported with <code>fsid=0</code>, because the overlay root cannot produce NFS filehandles by design. Note that Windows' own NFS client speaks version 3, which also needs the portmapper on port 111 - privileged, so Windows still cannot reach it. The kernel also ships the LIO iSCSI target (<code>targetcli</code>, with fileio and iblock backstores) and the TCP initiator.</p>
+
       <h3>What cannot work</h3>
       <p>These are not missing features, they are consequences of running as an ordinary app on a stock phone:</p>
 
       <ul>
         <li><strong>SMB or Windows file sharing from the guest.</strong> Windows only speaks SMB on port 445, and an unprivileged app cannot bind any port below 1024. A Samba server inside the guest will start, but no Windows machine can be pointed at it on a different port.</li>
         <li><strong>Mounting a Windows share inside the guest.</strong> The kernel is built without <code>cifs</code>, so there is no client side either.</li>
-        <li><strong>Running an NFS server in the guest.</strong> The kernel is built without NFS server support, so <code>rpc.nfsd</code> cannot start: it fails on a missing <code>/proc/fs/nfsd</code>. Mounting a <em>remote</em> NFS export from inside the guest does work, since the client side is built in. Note that Windows' own NFS client speaks version 3, which also needs the portmapper on port 111, so even an NFS server would not reach it.</li>
         <li><strong>Serving DNS or PXE to other machines on the network.</strong> DNS is port 53, DHCP is 67 and 68, TFTP is 69: all privileged, and Android owns DHCP on a tethered network regardless.</li>
       </ul>
 

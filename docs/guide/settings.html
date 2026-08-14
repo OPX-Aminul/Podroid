@@ -114,8 +114,8 @@
           </tr>
           <tr>
             <td>RAM</td>
-            <td>512 MB / 1 GB / 2 GB / 4 GB</td>
-            <td>Memory allocated to the VM. Requires a VM restart. Locked while running.</td>
+            <td>512 MB to 16 GB</td>
+            <td>Memory allocated to the VM. The options run from 512 MB up to 16 GB, filtered to what the device can spare (total memory minus about 3 GB of headroom); small phones always keep at least 512 MB / 1 GB / 2 GB. Requires a VM restart. Locked while running.</td>
           </tr>
           <tr>
             <td>CPU cores</td>
@@ -126,6 +126,11 @@
             <td>Storage size</td>
             <td>Set at first-run setup</td>
             <td>The size of the persistent overlay image (<code>storage.img</code>). Set during setup; changing it requires a full VM reset.</td>
+          </tr>
+          <tr>
+            <td>Start VM on boot</td>
+            <td>Toggle</td>
+            <td>Off by default. When on, the VM boots after the phone starts - on a PIN-locked phone, after the first unlock. Automation apps can also start and stop the VM with the intent actions <code>com.excp.podroid.action.START_VM</code> (activity intent) and <code>com.excp.podroid.action.STOP_VM</code> (broadcast).</td>
           </tr>
         </tbody>
       </table>
@@ -147,8 +152,8 @@
           </tr>
           <tr>
             <td>Port forwards</td>
-            <td>Add / Remove</td>
-            <td>Add TCP, UDP, or both forwarding rules. Changes apply live via QMP without a VM restart. Can also be managed from inside the VM with <code>podroid-forward</code> (see <a href="networking.html">Networking</a>). The rules the app manages itself - SSH, and the desktop's screen and audio channels - are listed above your own as read-only entries, so a port that is already taken is visible before you try to reuse it.</td>
+            <td>Add / Remove / Clean all</td>
+            <td>Add TCP, UDP, or both forwarding rules. Changes apply live via QMP without a VM restart. Clean all removes every user rule after a confirmation; the app-managed SSH, display, and audio rows are unaffected. Can also be managed from inside the VM with <code>podroid-forward</code> (see <a href="networking.html">Networking</a>). The rules the app manages itself - SSH, and the desktop's screen and audio channels - are listed above your own as read-only entries, so a port that is already taken is visible before you try to reuse it.</td>
           </tr>
           <tr>
             <td>Bandwidth limit</td>
@@ -181,7 +186,7 @@
           <tr>
             <td>Backend</td>
             <td>Auto / AVF (KVM) / QEMU (TCG)</td>
-            <td>Auto picks AVF when the device supports it, otherwise QEMU. Requires a VM restart. See the <a href="backends.html">Backends</a> page for details.</td>
+            <td>Auto picks AVF when the device supports it, otherwise QEMU. Forcing AVF on a device that cannot run it falls back to QEMU, and the app says so: the AVF chip gains a caption with the reason, the Home screen shows a notice, and Status appends "AVF unavailable, running QEMU". Requires a VM restart. See the <a href="backends.html">Backends</a> page for details.</td>
           </tr>
           <tr>
             <td>Extra QEMU args</td>
