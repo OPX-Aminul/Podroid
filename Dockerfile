@@ -117,6 +117,20 @@ RUN printf '%s\n' \
     'CONFIG_VSOCKETS=y' \
     'CONFIG_VSOCKETS_DIAG=y' \
     'CONFIG_VIRTIO_VSOCKETS=y' \
+    'CONFIG_NFSD=y' \
+    'CONFIG_NFSD_V4=y' \
+    'CONFIG_NFS_FS=y' \
+    'CONFIG_NFS_V4=y' \
+    'CONFIG_CONFIGFS_FS=y' \
+    'CONFIG_TARGET_CORE=y' \
+    'CONFIG_TCM_IBLOCK=y' \
+    'CONFIG_TCM_FILEIO=y' \
+    'CONFIG_ISCSI_TARGET=y' \
+    'CONFIG_ISCSI_TCP=y' \
+    'CONFIG_SCSI_ISCSI_ATTRS=y' \
+    'CONFIG_ANDROID_BINDER_IPC=y' \
+    'CONFIG_ANDROID_BINDERFS=y' \
+    'CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder"' \
     > /tmp/forced_builtin.config
 RUN cd linux-${KERNEL_VERSION} \
     && make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig \
@@ -141,7 +155,10 @@ RUN cd linux-${KERNEL_VERSION} \
                   RTW88_8821AU RTW88_8812AU RTW88_8814AU \
                   FW_LOADER_COMPRESS FW_LOADER_COMPRESS_ZSTD UNICODE \
                   USB_XHCI_HCD USB_XHCI_PCI USB_STORAGE USB_UAS \
-                  SCSI BLK_DEV_SD VFAT_FS EXFAT_FS; do \
+                  SCSI BLK_DEV_SD VFAT_FS EXFAT_FS \
+                  NFSD NFSD_V4 NFS_FS NFS_V4 SUNRPC CONFIGFS_FS \
+                  TARGET_CORE TCM_IBLOCK TCM_FILEIO ISCSI_TARGET ISCSI_TCP \
+                  ANDROID_BINDER_IPC ANDROID_BINDERFS; do \
            grep -q "^CONFIG_${opt}=y\$" .config \
                || { echo "FATAL: CONFIG_${opt} is not =y after merge" >&2; \
                     grep "CONFIG_${opt}" .config >&2; exit 1; }; \

@@ -35,6 +35,11 @@ start() {
         -o noexec,nosuid,nodev,size=64m
     mountpoint -q /dev/mqueue || mount -t mqueue mqueue /dev/mqueue \
         -o noexec,nosuid,nodev
+    # configfs backs the LIO iSCSI target (targetcli); without it apk-added
+    # targetcli has nothing to write into.
+    mkdir -p /sys/kernel/config 2>/dev/null
+    mountpoint -q /sys/kernel/config || mount -t configfs -o nosuid,nodev,noexec \
+        configfs /sys/kernel/config || true
     [ -c /dev/ptmx ] || mknod /dev/ptmx c 5 2 2>/dev/null
     chmod 0666 /dev/ptmx /dev/pts/ptmx 2>/dev/null
 
