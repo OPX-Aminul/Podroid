@@ -75,6 +75,8 @@ class SettingsRepository @Inject constructor(
         val KEY_LOAD_BALANCE_ENABLED    = booleanPreferencesKey("load_balance_enabled")
         /** Guest egress cap via `podroid.bandwidth=` cmdline + tc. 0 = unlimited. */
         val KEY_BANDWIDTH_MBPS          = intPreferencesKey("bandwidth_mbps")
+        /** Start the VM automatically on BOOT_COMPLETED. Read by VmControlReceiver. */
+        val KEY_AUTOSTART_ON_BOOT       = booleanPreferencesKey("autostart_on_boot")
 
         val KEY_X11_RES_MODE        = stringPreferencesKey("x11_resolution_mode")
         val KEY_X11_RES_PRESET      = stringPreferencesKey("x11_resolution_preset")
@@ -156,6 +158,7 @@ class SettingsRepository @Inject constructor(
     val usbPassthroughEnabled = pref(KEY_USB_PASSTHROUGH_ENABLED, false)
     val loadBalanceEnabled    = pref(KEY_LOAD_BALANCE_ENABLED, false)
     val bandwidthMbps         = pref(KEY_BANDWIDTH_MBPS, 0)
+    val autostartOnBoot       = pref(KEY_AUTOSTART_ON_BOOT, false)
     val avfVerboseLogging: Flow<Boolean> = context.dataStore.data
         .catch { e -> if (e is IOException) emit(androidx.datastore.preferences.core.emptyPreferences()) else throw e }
         .map { prefs -> prefs[KEY_AVF_VERBOSE_LOGGING] ?: false }
@@ -205,6 +208,7 @@ class SettingsRepository @Inject constructor(
     suspend fun setUsbPassthroughEnabled(value: Boolean) = set(KEY_USB_PASSTHROUGH_ENABLED, value)
     suspend fun setLoadBalanceEnabled(value: Boolean)    = set(KEY_LOAD_BALANCE_ENABLED, value)
     suspend fun setBandwidthMbps(value: Int)             = set(KEY_BANDWIDTH_MBPS, value.coerceAtLeast(0))
+    suspend fun setAutostartOnBoot(value: Boolean)       = set(KEY_AUTOSTART_ON_BOOT, value)
 
     /**
      * Persists all first-run setup choices in a single transaction so a process
@@ -285,4 +289,5 @@ class SettingsRepository @Inject constructor(
     suspend fun getUsbPassthroughEnabledSnapshot() = usbPassthroughEnabled.first()
     suspend fun getLoadBalanceEnabledSnapshot()    = loadBalanceEnabled.first()
     suspend fun getBandwidthMbpsSnapshot()         = bandwidthMbps.first()
+    suspend fun getAutostartOnBootSnapshot()       = autostartOnBoot.first()
 }

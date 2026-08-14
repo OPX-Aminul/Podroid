@@ -210,6 +210,13 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setUsbPassthroughEnabled(value) }
     }
 
+    val autostartOnBoot: StateFlow<Boolean> = settingsRepository.autostartOnBoot
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun setAutostartOnBoot(value: Boolean) {
+        viewModelScope.launch { settingsRepository.setAutostartOnBoot(value) }
+    }
+
     suspend fun setLanguage(value: String) {
         Log.d(TAG, "setLanguage: $value")
         languageManager.setLanguage(value)

@@ -64,6 +64,7 @@ class DataStoreKeyContractTest {
         SettingsRepository.KEY_X11_SHOW_EXTRA_KEYS.name to "x11_show_extra_keys",
         SettingsRepository.KEY_X11_DPI.name to "x11_dpi",
         SettingsRepository.KEY_LANGUAGE.name to "language",
+        SettingsRepository.KEY_AUTOSTART_ON_BOOT.name to "autostart_on_boot",
     )
 
     @Test

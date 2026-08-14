@@ -14,6 +14,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -537,5 +538,79 @@ class PodroidService : Service() {
                 action = ACTION_STOP
             })
         }
+    }
+}
+
+/**
+ * Boot autostart + Tasker/automation intent entry point (#78). Exported with no
+ * required permission (see the manifest declaration): automation apps can't hold
+ * custom permissions, and every action here only starts/stops the VM through
+ * [PodroidService]'s own companion, so there's nothing privileged to gate. Kept
+ * dumb on purpose - no work beyond dispatching to the existing start()/stop().
+ *
+ * Fix round (device-observed): a cold background receiver may NOT be allowed
+ * to start the foreground service - Android denies it with
+ * "Background started FGS: Disallowed" and throws
+ * ForegroundServiceStartNotAllowedException (API 31+, extends
+ * IllegalStateException; pre-31 the same denial surfaces as a plain
+ * IllegalStateException from startService()). BOOT_COMPLETED itself is
+ * platform-exempt, but START_VM/STOP_VM fired cold are not. [dispatch] keeps
+ * every call here from crashing the receiver process on that denial.
+ */
+class VmControlReceiver : BroadcastReceiver() {
+
+    override fun onReceive(context: Context, intent: Intent) {
+        when (intent.action) {
+            Intent.ACTION_BOOT_COMPLETED -> {
+                // The DataStore read is async; goAsync() keeps the receiver
+                // (and process) alive long enough for it to complete, since a
+                // BroadcastReceiver's onReceive is normally torn down the
+                // instant it returns.
+                val pending = goAsync()
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val settingsRepository = SettingsRepository(context.applicationContext)
+                        if (settingsRepository.getAutostartOnBootSnapshot()) {
+                            dispatch { PodroidService.start(context.applicationContext) }
+                        }
+                    } finally {
+                        pending.finish()
+                    }
+                }
+            }
+            ACTION_START_VM -> dispatch { PodroidService.start(context.applicationContext) }
+            ACTION_STOP_VM  -> dispatch { PodroidService.stop(context.applicationContext) }
+        }
+    }
+
+    /**
+     * Runs a start()/stop() dispatch, swallowing a denied foreground-service
+     * start instead of letting it crash the receiver. Never silent: logs one
+     * warning naming the cure (launch Podroid itself so its activity's
+     * START_VM intent-filter fires the start in the foreground, or exempt
+     * the app from battery optimization so a cold background start is
+     * allowed).
+     */
+    private fun dispatch(action: () -> Unit) {
+        try {
+            action()
+        } catch (e: IllegalStateException) {
+            val backgroundFgsDenied = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                e is android.app.ForegroundServiceStartNotAllowedException
+            Log.w(
+                TAG,
+                "VmControlReceiver could not start/stop the VM from the background " +
+                    "(${if (backgroundFgsDenied) "foreground service start disallowed" else e.message}) - " +
+                    "launch Podroid so its START_VM activity intent runs in the foreground, " +
+                    "or exempt the app from battery optimization",
+                e,
+            )
+        }
+    }
+
+    companion object {
+        private const val TAG = "VmControlReceiver"
+        const val ACTION_START_VM = "com.excp.podroid.action.START_VM"
+        const val ACTION_STOP_VM  = "com.excp.podroid.action.STOP_VM"
     }
 }

@@ -76,6 +76,8 @@
     <string name="vm_resources">VM Resources</string>
     <string name="stop_vm_to_change">Stop the VM to change these settings.</string>
     <string name="storage">Storage</string>
+    <string name="autostart_on_boot">Start VM on boot</string>
+    <string name="autostart_on_boot_desc">Boot the VM automatically after the phone starts. Automation apps can also trigger it with the intent actions com.excp.podroid.action.START_VM and STOP_VM.</string>
     <string name="reset_vm">Reset VM (deletes all data)</string>
     <string name="reset_vm_description">Full App Reset?</string>
     <string name="reset_vm_text">This will clear ALL application data, including your VM storage, settings, and port rules. The app will close and return to a freshly-installed state.</string>

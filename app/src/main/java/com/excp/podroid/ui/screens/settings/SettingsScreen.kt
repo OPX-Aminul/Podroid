@@ -124,6 +124,7 @@ fun SettingsScreen(
     val vmState by viewModel.vmState.collectAsStateWithLifecycle()
     val exportError by viewModel.exportError.collectAsStateWithLifecycle()
     val usbPassthrough by viewModel.usbPassthroughEnabled.collectAsStateWithLifecycle()
+    val autostartOnBoot by viewModel.autostartOnBoot.collectAsStateWithLifecycle()
 
     var advancedExpanded by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
@@ -265,6 +266,25 @@ fun SettingsScreen(
                 PodroidListRow(
                     label = stringResource(R.string.storage),
                     value = "${ui.storageSizeGb} GB",
+                )
+                PodroidListRow(
+                    label = stringResource(R.string.autostart_on_boot),
+                    rightSlot = {
+                        PodroidSwitch(
+                            checked = autostartOnBoot,
+                            onCheckedChange = { viewModel.setAutostartOnBoot(it) },
+                        )
+                    },
+                )
+                Text(
+                    text = stringResource(R.string.autostart_on_boot_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(
+                        start = PodroidTokens.Spacing.MD,
+                        end = PodroidTokens.Spacing.MD,
+                        bottom = PodroidTokens.Spacing.SM,
+                    ),
                 )
 
                 // ── NETWORK ───────────────────────────────────────────
