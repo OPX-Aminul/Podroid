@@ -82,8 +82,12 @@ class VsockUdpForwarder(
         }
         socket = s
         Log.d(TAG, "listening udp $bindAddress:$hostPort → vsock:$guestVsockPort")
-        recvJob = scope.launch(Dispatchers.IO + children) { receiveLoop(s) }
-        reaperJob = scope.launch(Dispatchers.IO + children) { reapLoop() }
+        // Both loops block/park for the forwarder's whole lifetime (receive()
+        // and the reaper's delay loop), so they run on the shared
+        // AvfForwarderDispatcher rather than the 64-thread-capped
+        // Dispatchers.IO (see its doc). Per-flow reader jobs stay on IO.
+        recvJob = AvfForwarderDispatcher.launch(scope, children) { receiveLoop(s) }
+        reaperJob = AvfForwarderDispatcher.launch(scope, children) { reapLoop() }
     }
 
     private suspend fun receiveLoop(s: DatagramSocket) {

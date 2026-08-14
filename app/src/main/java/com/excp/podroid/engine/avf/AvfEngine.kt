@@ -697,13 +697,21 @@ class AvfEngine @Inject constructor(
                 runCatching { fw.close() }
                 return
             }
-            // Re-check Running before start() so a concurrent cleanup() doesn't
-            // orphan us. If state slipped, drop the freshly-mapped forwarder.
-            if (_state.value !is VmState.Running) {
-                forwarders.remove(vport)
-                return
+            // Re-check Running and start() as one atomic step under the same
+            // monitor onVmTerminal holds (@Synchronized -> this). The two
+            // statements alone aren't atomic across threads: a concurrent
+            // cleanup() (only reachable while Running via onVmTerminal) could
+            // otherwise land in the gap between the check and start(), tearing
+            // down AvfForwarderDispatcher just before start() recreates it -
+            // orphaning a freshly-bound ServerSocket/accept thread that no
+            // later cleanup() would know to close.
+            synchronized(this) {
+                if (_state.value !is VmState.Running) {
+                    forwarders.remove(vport)
+                    return
+                }
+                fw.start()
             }
-            fw.start()
             val ctl = control
             if (ctl != null) {
                 ctl.addForward(vport, rule.protocol, "127.0.0.1", rule.guestPort)
@@ -814,6 +822,7 @@ class AvfEngine @Inject constructor(
         // VM doesn't see late vsock connect attempts after onStopped.
         forwarders.values.forEach { runCatching { it.close() } }
         forwarders.clear()
+        AvfForwarderDispatcher.shutdown()
         lastSentRows = -1
         lastSentCols = -1
         resizeDebounceJob?.cancel()

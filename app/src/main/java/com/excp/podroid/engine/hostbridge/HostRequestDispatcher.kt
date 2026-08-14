@@ -18,6 +18,7 @@ class HostRequestDispatcher(
     private val addForward: suspend (PortForwardRule) -> AddRuleResult,
     private val removeForward: suspend (PortForwardRule) -> Unit,
     private val listForwards: suspend () -> List<PortForwardRule>,
+    private val clearForwards: suspend () -> Int,
     private val openUrl: suspend (String) -> String,
     private val power: suspend (String) -> String,
     private val setHeadless: suspend (String) -> String,
@@ -40,6 +41,7 @@ class HostRequestDispatcher(
                 "FWD-ADD" -> handleFwdAdd(parts)
                 "FWD-REMOVE" -> handleFwdRemove(parts)
                 "FWD-LIST" -> handleFwdList()
+                "FWD-CLEAN" -> handleFwdClean(parts)
                 "OPEN" -> handleOpen(parts)
                 "POWER" -> handlePower(parts)
                 "HEADLESS" -> handleHeadless(parts)
@@ -107,6 +109,13 @@ class HostRequestDispatcher(
     private suspend fun handleFwdList(): String {
         val table = listForwards().joinToString("\n") { "${it.hostPort} ${it.guestPort} ${it.protocol}" }
         return HostProtocol.ok(HostProtocol.enc(table))
+    }
+
+    // FWD-CLEAN (no arguments)
+    private suspend fun handleFwdClean(p: List<String>): String {
+        if (p.size != 1) return HostProtocol.err("bad request")
+        val removed = clearForwards()
+        return HostProtocol.ok("removed $removed")
     }
 
     // OPEN <b64url>

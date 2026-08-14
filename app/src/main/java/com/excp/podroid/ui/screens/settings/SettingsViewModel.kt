@@ -312,6 +312,11 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { portForwardRepository.removeRule(rule) }
     }
 
+    /** Removes every persisted user rule. Implicit forwards (SSH/VNC/audio) are in-memory and unaffected. */
+    fun clearPortForwards() {
+        viewModelScope.launch { portForwardRepository.clearRules() }
+    }
+
     fun resetVm() {
         viewModelScope.launch {
             withContext(Dispatchers.IO) {

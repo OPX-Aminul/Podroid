@@ -79,7 +79,10 @@ class VsockPortForwarder(
         val s = ServerSocket(hostPort, /* backlog */ 16, InetAddress.getByName(bindAddress))
         server = s
         Log.d(TAG, "listening on $bindAddress:$hostPort → vsock:$guestVsockPort")
-        acceptJob = scope.launch(Dispatchers.IO) {
+        // The accept loop blocks on ServerSocket.accept() for the forwarder's
+        // whole lifetime, so it runs on the shared AvfForwarderDispatcher
+        // rather than the 64-thread-capped Dispatchers.IO (see its doc).
+        acceptJob = AvfForwarderDispatcher.launch(scope) {
             while (!closed) {
                 val client = try { s.accept() } catch (_: SocketException) { break }
                 if (!inflight.tryAcquire()) {

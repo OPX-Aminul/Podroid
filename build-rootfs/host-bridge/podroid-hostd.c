@@ -298,13 +298,16 @@ static int cli_forward(int argc, char **argv) {
     } else if (argc >= 2 && strcmp(argv[1], "list") == 0) {
         snprintf(req, sizeof(req), "FWD-LIST");
         list_decode = 1;
+    } else if (argc >= 2 && strcmp(argv[1], "clean") == 0) {
+        snprintf(req, sizeof(req), "FWD-CLEAN");
     } else {
         fprintf(stderr,
             "usage:\n"
             "  podroid-forward <hostPort> <guestPort>\n"
             "  podroid-forward add <hostPort> <guestPort> [tcp|udp]\n"
             "  podroid-forward remove <hostPort> [tcp|udp]\n"
-            "  podroid-forward list\n");
+            "  podroid-forward list\n"
+            "  podroid-forward clean\n");
         return 2;
     }
     char resp[8192];

@@ -48,6 +48,7 @@ private fun dispatcher(
     },
     removeForward = { r -> rules.removeAll { it.hostPort == r.hostPort && it.protocol == r.protocol } },
     listForwards = { rules.toList() },
+    clearForwards = { val n = rules.size; rules.clear(); n },
     openUrl = openUrl,
     power = power,
     setHeadless = setHeadless,
@@ -143,6 +144,21 @@ class HostRequestDispatcherTest {
         assertTrue(resp.startsWith("OK "))
         val table = HostProtocol.dec(resp.removePrefix("OK "))
         assertEquals("8080 80 tcp\n9000 90 udp", table)
+    }
+
+    @Test fun fwdCleanRemovesAllAndReportsCount() = runBlocking {
+        val rules = mutableListOf(PortForwardRule(8080, 80, "tcp"), PortForwardRule(9000, 90, "udp"))
+        val d = dispatcher(rules = rules)
+        assertEquals("OK removed 2", d.handle("FWD-CLEAN"))
+        assertEquals(emptyList<PortForwardRule>(), rules)
+    }
+
+    @Test fun fwdCleanRejectsExtraTokens() = runBlocking {
+        val rules = mutableListOf(PortForwardRule(8080, 80, "tcp"))
+        val d = dispatcher(rules = rules)
+        assertTrue(d.handle("FWD-CLEAN extra").startsWith("ERR "))
+        // Rejected request must not have cleared anything.
+        assertEquals(listOf(PortForwardRule(8080, 80, "tcp")), rules)
     }
 
     @Test fun pingPongs() = runBlocking {

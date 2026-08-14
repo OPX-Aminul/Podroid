@@ -72,7 +72,7 @@ data class PortForwardRule(
  * a listening socket, a row in the Settings list, and a QMP round trip on every
  * boot. One user scripted 1005 of them and made their VM unstartable.
  */
-internal const val MAX_PORT_FORWARD_RULES = 128
+internal const val MAX_PORT_FORWARD_RULES = 2048
 
 /** Outcome of [PortForwardRepository.addRule]. */
 enum class AddRuleResult { ADDED, RESERVED, TABLE_FULL }
@@ -167,6 +167,21 @@ class PortForwardRepository @Inject constructor(
             current.remove(rule.serialize())
             prefs[KEY_PORT_FORWARDS] = current
         }
+    }
+
+    /**
+     * Removes every persisted rule and reports how many were removed. All
+     * entries in the DataStore set are user rules by construction (implicit
+     * forwards never persist), so this is a plain wipe of [KEY_PORT_FORWARDS] -
+     * no other DataStore key is touched.
+     */
+    suspend fun clearRules(): Int {
+        var removed = 0
+        context.dataStore.edit { prefs ->
+            removed = prefs[KEY_PORT_FORWARDS]?.size ?: 0
+            prefs[KEY_PORT_FORWARDS] = emptySet()
+        }
+        return removed
     }
 
     suspend fun getRulesSnapshot(): List<PortForwardRule> =

@@ -18,8 +18,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -48,7 +51,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -287,6 +289,7 @@ fun SettingsScreen(
                     sshEnabled = ui.sshEnabled,
                     onAdd = { showAddDialog = true },
                     onRemove = { viewModel.removePortForward(it) },
+                    onClean = { viewModel.clearPortForwards() },
                 )
 
                 // ── STORAGE / SHARING ─────────────────────────────────
@@ -529,10 +532,23 @@ private fun PortForwardSection(
     sshEnabled: Boolean,
     onAdd: () -> Unit,
     onRemove: (PortForwardRule) -> Unit,
+    onClean: () -> Unit,
 ) {
+    var showCleanConfirm by remember { mutableStateOf(false) }
+
     PodroidListRow(
         label = stringResource(R.string.port_forwards_count, rules.size),
-        rightSlot = { PodroidInlineAction(label = stringResource(R.string.add_btn), onClick = onAdd) },
+        rightSlot = {
+            Row(horizontalArrangement = Arrangement.spacedBy(PodroidTokens.Spacing.SM)) {
+                if (rules.isNotEmpty()) {
+                    PodroidInlineAction(
+                        label = stringResource(R.string.port_forwards_clean),
+                        onClick = { showCleanConfirm = true },
+                    )
+                }
+                PodroidInlineAction(label = stringResource(R.string.add_btn), onClick = onAdd)
+            }
+        },
     )
 
     // The forwards Podroid sets up itself. They never appear in the rule list
@@ -559,8 +575,10 @@ private fun PortForwardSection(
         purpose = stringResource(R.string.port_forward_purpose_audio),
         dimmed = false,
     )
-    rules.forEach { rule ->
-        key(rule.hostPort, rule.protocol) {
+    LazyColumn(
+        modifier = Modifier.heightIn(max = 360.dp),
+    ) {
+        items(rules, key = { "${it.protocol}:${it.hostPort}" }) { rule ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -588,6 +606,27 @@ private fun PortForwardSection(
                 thickness = 1.dp,
             )
         }
+    }
+
+    if (showCleanConfirm) {
+        AlertDialog(
+            onDismissRequest = { showCleanConfirm = false },
+            title = { Text(stringResource(R.string.port_forwards_clean_confirm_title)) },
+            text = { Text(stringResource(R.string.port_forwards_clean_confirm_body, rules.size)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    onClean()
+                    showCleanConfirm = false
+                }) {
+                    Text(stringResource(R.string.port_forwards_clean_confirm_btn), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showCleanConfirm = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
     }
 }
 

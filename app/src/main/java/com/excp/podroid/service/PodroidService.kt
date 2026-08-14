@@ -285,6 +285,7 @@ class PodroidService : Service() {
             addForward = { portForwardRepository.addRule(it) },
             removeForward = { portForwardRepository.removeRule(it) },
             listForwards = { portForwardRepository.getRulesSnapshot() },
+            clearForwards = { portForwardRepository.clearRules() },
             openUrl = { handleOpenUrl(it) },
             power = { handlePowerRequest(it) },
             setHeadless = { handleHeadlessRequest(it) },
