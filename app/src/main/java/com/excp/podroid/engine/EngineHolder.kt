@@ -15,12 +15,14 @@
 package com.excp.podroid.engine
 
 import android.content.Context
+import com.excp.podroid.R
 import com.excp.podroid.data.repository.PortForwardRepository
 import com.excp.podroid.data.repository.PortForwardRule
 import com.excp.podroid.data.repository.SettingsRepository
 import com.excp.podroid.engine.avf.AvfCapabilities
 import com.excp.podroid.engine.avf.AvfDiagnostics
 import com.excp.podroid.engine.avf.AvfEngine
+import com.excp.podroid.engine.avf.AvfReport
 import com.termux.terminal.TerminalSession
 import com.termux.terminal.TerminalSessionClient
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -71,7 +73,7 @@ class EngineHolder @Inject constructor(
     // with a side-effect-free QEMU singleton (its ctor starts no VM) and replace
     // it with the real pick once firstPick resolves. start() awaits firstPick
     // before delegating, so the first Start can NEVER run the seed by mistake.
-    private val firstPick: Deferred<VmEngine> =
+    private val firstPick: Deferred<PickResult> =
         scope.async { pick(settings.getEngineSelectionSnapshot()) }
 
     // start() runs on the Service's IO thread, not the holder scope, so the
@@ -83,6 +85,22 @@ class EngineHolder @Inject constructor(
         MutableStateFlow(qemuProvider.get())
     val currentFlow: StateFlow<VmEngine> = _currentFlow.asStateFlow()
     private val current: VmEngine get() = _currentFlow.value
+
+    /** Cosmetic mirror of [currentFlow]'s backendId, for UI surfaces that only
+     *  need the id (not the whole engine) and want it as a StateFlow they can
+     *  collect reactively instead of reading [VmEngine.backendId] once. */
+    val backendIdFlow: StateFlow<String> = _currentFlow
+        .map { it.backendId }
+        .stateIn(scope, SharingStarted.Eagerly, _currentFlow.value.backendId)
+
+    // Non-null only while the current pick is a forced-AVF selection that fell
+    // back to QEMU: a short, localized human reason (see FallbackReason /
+    // pick()). Updated at the same two points _currentFlow is (publishFirstPick,
+    // trySwap) so it always describes the pick that produced the active engine,
+    // even on a no-op swap where the engine instance doesn't change but the
+    // selection (and therefore the reason) does.
+    private val _backendFallback = MutableStateFlow<String?>(null)
+    val backendFallback: StateFlow<String?> = _backendFallback.asStateFlow()
 
     /** Last rule set we pushed into the engine, used to compute add/remove diffs. */
     @Volatile private var appliedRules: Set<PortForwardRule> = emptySet()
@@ -207,7 +225,11 @@ class EngineHolder @Inject constructor(
         }
     }
 
-    private fun pick(sel: EngineSelection): VmEngine {
+    /** Result of a pick: the chosen engine plus, when a forced-AVF selection
+     *  fell back to QEMU, a short localized reason for [backendFallback]. */
+    private data class PickResult(val engine: VmEngine, val fallbackMessage: String?)
+
+    private fun pick(sel: EngineSelection): PickResult {
         val probe = AvfDiagnostics.probe(context)
         val capsChoice = AvfCapabilities.choose(probe.capabilitiesRaw)
         // avfUsable = AVF can actually start here. serviceReachable is the new
@@ -223,42 +245,52 @@ class EngineHolder @Inject constructor(
             probe.serviceReachable &&
             probe.customVmConfigSupported &&
             capsChoice !is AvfCapabilities.ProtectedVmChoice.Unsupported
-        return when {
-            sel == EngineSelection.QEMU -> qemuProvider.get()
-            // Forced AVF, but AVF can't run here → transparent QEMU fallback
-            // instead of an Error state. Protected-only keeps its dedicated log.
-            sel == EngineSelection.AVF && !avfUsable -> {
-                if (capsChoice is AvfCapabilities.ProtectedVmChoice.Unsupported) {
-                    android.util.Log.w(
-                        TAG,
-                        "AVF forced but device is protected-only; falling back to QEMU. " +
-                            "caps=${probe.capabilitiesRaw}(${probe.capabilitiesDecoded})"
-                    )
-                } else {
-                    android.util.Log.w(
-                        TAG,
-                        "AVF forced but unavailable; falling back to QEMU. " +
-                            "feature=${probe.featureSupported} " +
-                            "perms=${probe.managePermissionGranted}/${probe.customPermissionGranted} " +
-                            "reachable=${probe.serviceReachable} " +
-                            "customVm=${probe.customVmConfigSupported} " +
-                            "caps=${probe.capabilitiesRaw}(${probe.capabilitiesDecoded})"
-                    )
-                }
-                qemuProvider.get()
-            }
-            sel == EngineSelection.AVF -> avfProvider.get()
-            avfUsable -> avfProvider.get()
-            else -> qemuProvider.get()
-        }.also {
-            android.util.Log.i(
+        val protectedOnly = capsChoice is AvfCapabilities.ProtectedVmChoice.Unsupported
+        val (backendId, fallbackReason) = decideBackend(sel, avfUsable, protectedOnly)
+        // Logging unchanged from the old inline branch: protected-only keeps its
+        // dedicated message, everything else logs the full prerequisite dump.
+        when (fallbackReason) {
+            FallbackReason.PROTECTED_ONLY -> android.util.Log.w(
                 TAG,
-                "pick: selection=$sel feature=${probe.featureSupported} " +
-                    "perms=${probe.managePermissionGranted}/${probe.customPermissionGranted} " +
-                    "customVm=${probe.customVmConfigSupported} " +
-                    "caps=${probe.capabilitiesRaw}(${probe.capabilitiesDecoded}) → ${it.backendId}"
+                "AVF forced but device is protected-only; falling back to QEMU. " +
+                    "caps=${probe.capabilitiesRaw}(${probe.capabilitiesDecoded})"
             )
+            FallbackReason.UNAVAILABLE -> android.util.Log.w(
+                TAG,
+                "AVF forced but unavailable; falling back to QEMU. " +
+                    "feature=${probe.featureSupported} " +
+                    "perms=${probe.managePermissionGranted}/${probe.customPermissionGranted} " +
+                    "reachable=${probe.serviceReachable} " +
+                    "customVm=${probe.customVmConfigSupported} " +
+                    "caps=${probe.capabilitiesRaw}(${probe.capabilitiesDecoded})"
+            )
+            null -> {}
         }
+        val engine = if (backendId == "avf") avfProvider.get() else qemuProvider.get()
+        android.util.Log.i(
+            TAG,
+            "pick: selection=$sel feature=${probe.featureSupported} " +
+                "perms=${probe.managePermissionGranted}/${probe.customPermissionGranted} " +
+                "customVm=${probe.customVmConfigSupported} " +
+                "caps=${probe.capabilitiesRaw}(${probe.capabilitiesDecoded}) → ${engine.backendId}"
+        )
+        val fallbackMessage = fallbackReason?.let { fallbackReasonText(it, probe) }
+        return PickResult(engine, fallbackMessage)
+    }
+
+    /** Short, localized reason for [backendFallback], reusing the same
+     *  prerequisite checks the pick() log above already dumps: feature, then
+     *  permissions, then service/custom-VM reachability, in that order - the
+     *  first one that fails is reported. */
+    private fun fallbackReasonText(reason: FallbackReason, probe: AvfReport): String {
+        val resId = when {
+            reason == FallbackReason.PROTECTED_ONLY -> R.string.backend_fallback_reason_protected_only
+            !probe.featureSupported -> R.string.backend_fallback_reason_feature
+            !probe.managePermissionGranted || !probe.customPermissionGranted ->
+                R.string.backend_fallback_reason_permissions
+            else -> R.string.backend_fallback_reason_service
+        }
+        return context.getString(resId)
     }
 
     /**
@@ -269,8 +301,9 @@ class EngineHolder @Inject constructor(
      * the sole writer thereafter — both run on the single-thread scope, so the
      * flag check + write don't interleave.
      */
-    private fun publishFirstPick(first: VmEngine) {
+    private fun publishFirstPick(result: PickResult) {
         if (!firstPickPublished.compareAndSet(false, true)) return
+        val first = result.engine
         if (first !== _currentFlow.value) {
             android.util.Log.i(TAG, "first pick: ${_currentFlow.value.backendId} → ${first.backendId}")
             // Fresh selection: this engine has not been started this cycle, so its
@@ -278,6 +311,7 @@ class EngineHolder @Inject constructor(
             startedEngine = null
             _currentFlow.value = first
         }
+        _backendFallback.value = result.fallbackMessage
     }
 
     private suspend fun trySwap(newSel: EngineSelection) {
@@ -293,7 +327,12 @@ class EngineHolder @Inject constructor(
         // when this swap fired — only possible if the user changed the backend
         // within ~ms of cold launch) can never clobber the swapped engine.
         firstPickPublished.set(true)
-        val next = pick(newSel)
+        val result = pick(newSel)
+        // Update the surfaced reason even on a no-op engine swap: forcing AVF
+        // on an already-QEMU device changes the selection (and therefore the
+        // reason) without changing the engine instance.
+        _backendFallback.value = result.fallbackMessage
+        val next = result.engine
         if (next === currentFlow.value) return
         // NOTE: AvfEngine.stop() flips state to Stopped before cleanup() finishes
         // (socket delete + coroutine cancel), so publishing `next` here can
@@ -366,7 +405,7 @@ class EngineHolder @Inject constructor(
         } catch (e: Exception) {
             android.util.Log.w(TAG, "first pick failed; recovering for start()", e)
             runCatching { pick(settings.getEngineSelectionSnapshot()) }
-                .getOrElse { _currentFlow.value }
+                .getOrElse { PickResult(_currentFlow.value, null) }
         }
         publishFirstPick(picked)
         // Capture the launch set for the diff loop's →Running seeding, and mark
@@ -400,6 +439,35 @@ class EngineHolder @Inject constructor(
 
     companion object {
         private const val TAG = "EngineHolder"
+
+        /** Coarse reason a forced-AVF selection fell back to QEMU. Protected-only
+         *  devices get their own value because pick() already logs them on a
+         *  dedicated branch (a signed pvmfw kernel can never appear later). */
+        enum class FallbackReason { UNAVAILABLE, PROTECTED_ONLY }
+
+        /**
+         * Pure backend-selection decision, extracted from pick() so it's unit
+         * testable without a Context or a binder-IPC AVF probe. Mirrors pick()'s
+         * old inline `when` exactly - no change to which backend gets chosen,
+         * only which id/reason pair describes the choice. The fine-grained
+         * human reason (which prerequisite failed) is derived separately in
+         * pick() from the raw probe, since this function only sees the already-
+         * collapsed avfUsable/protectedOnly booleans.
+         */
+        fun decideBackend(
+            selection: EngineSelection,
+            avfUsable: Boolean,
+            protectedOnly: Boolean,
+        ): Pair<String, FallbackReason?> = when {
+            selection == EngineSelection.QEMU -> "qemu" to null
+            // Forced AVF, but AVF can't run here → transparent QEMU fallback
+            // instead of an Error state.
+            selection == EngineSelection.AVF && !avfUsable ->
+                "qemu" to (if (protectedOnly) FallbackReason.PROTECTED_ONLY else FallbackReason.UNAVAILABLE)
+            selection == EngineSelection.AVF -> "avf" to null
+            avfUsable -> "avf" to null
+            else -> "qemu" to null
+        }
 
         /**
          * Pure add/remove diff for the port-forward reconciliation loop:

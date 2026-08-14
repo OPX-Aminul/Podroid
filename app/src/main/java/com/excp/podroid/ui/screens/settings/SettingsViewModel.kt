@@ -20,8 +20,8 @@ import com.excp.podroid.data.repository.PortForwardRepository
 import com.excp.podroid.data.repository.PortForwardRule
 import com.excp.podroid.data.repository.SettingsRepository
 import com.excp.podroid.di.ApplicationScope
+import com.excp.podroid.engine.EngineHolder
 import com.excp.podroid.engine.EngineSelection
-import com.excp.podroid.engine.VmEngine
 import com.excp.podroid.engine.VmState
 import com.excp.podroid.util.DeviceResourcePolicy
 import com.excp.podroid.util.NetworkUtils
@@ -72,7 +72,7 @@ class SettingsViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val settingsRepository: SettingsRepository,
     private val portForwardRepository: PortForwardRepository,
-    private val engine: VmEngine,
+    private val engine: EngineHolder,
     private val languageManager: LanguageManager,
     @ApplicationScope private val externalScope: CoroutineScope,
 ) : ViewModel() {
@@ -303,11 +303,16 @@ class SettingsViewModel @Inject constructor(
     fun activeBackendId(): String = engine.backendId
 
     /**
-     * USB passthrough rides the QEMU QMP control socket (add-fd + device_add
-     * usb-host); the AVF backend has no QMP channel, so it can never pass a
-     * device through. QEMU-only.
+     * Reactive mirror of [activeBackendId] for the UI: a backend swap (or the
+     * async first pick resolving after this screen is already composed) must
+     * update the AVF diagnostic dialog and the USB row without the user having
+     * to leave and reopen Settings. See #66.
      */
-    fun isUsbPassthroughAvailable(): Boolean = engine.backendId == "qemu"
+    val activeBackendIdFlow: StateFlow<String> = engine.backendIdFlow
+
+    /** Non-null when the current pick forced AVF but fell back to QEMU; a
+     *  short localized reason for the Settings backend caption. See #66. */
+    val backendFallback: StateFlow<String?> = engine.backendFallback
 
     private val _exportError = MutableStateFlow<String?>(null)
     /** One-shot export failure message; clear after showing with [clearExportError]. */

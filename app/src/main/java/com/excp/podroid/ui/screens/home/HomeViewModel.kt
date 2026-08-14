@@ -9,7 +9,7 @@ import com.excp.podroid.data.repository.PortForwardRepository
 import com.excp.podroid.data.repository.SettingsRepository
 import com.excp.podroid.data.repository.UpdateInfo
 import com.excp.podroid.data.repository.UpdateRepository
-import com.excp.podroid.engine.VmEngine
+import com.excp.podroid.engine.EngineHolder
 import com.excp.podroid.engine.VmState
 import com.excp.podroid.service.PodroidService
 import com.excp.podroid.util.NetworkUtils
@@ -54,7 +54,7 @@ data class HomeMeta(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val engine: VmEngine,
+    private val engine: EngineHolder,
     private val settingsRepository: SettingsRepository,
     private val portForwardRepository: PortForwardRepository,
     private val containerStatsRepository: ContainerStatsRepository,
@@ -135,6 +135,16 @@ class HomeViewModel @Inject constructor(
                 !dismissed
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    /** True when AVF is selected but the current pick fell back to QEMU
+     *  because this device can't run it. Passive - no actions, just tells the
+     *  user why the VM isn't running on the backend they picked. See #66. */
+    val backendFallbackBanner: StateFlow<Boolean> = combine(
+        engine.backendFallback,
+        settingsRepository.engineSelection,
+    ) { fallback, sel ->
+        fallback != null && sel == com.excp.podroid.engine.EngineSelection.AVF
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
     /** True when AVF was the active backend and the VM ended in Error
      *  (boot failure / crash). Drives the actionable failure surface. */

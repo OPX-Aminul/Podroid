@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.excp.podroid.data.repository.PortForwardRepository
 import com.excp.podroid.data.repository.SettingsRepository
+import com.excp.podroid.engine.EngineHolder
 import com.excp.podroid.engine.EngineSelection
-import com.excp.podroid.engine.VmEngine
 import com.excp.podroid.engine.VmState
 import com.excp.podroid.util.HostMetrics
 import com.excp.podroid.util.HostMetricsSnapshot
@@ -59,7 +59,7 @@ data class StatusUiState(
 @HiltViewModel
 class StatusViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val engine: VmEngine,
+    private val engine: EngineHolder,
     private val settingsRepository: SettingsRepository,
     private val portForwardRepository: PortForwardRepository,
 ) : ViewModel() {
@@ -97,12 +97,13 @@ class StatusViewModel @Inject constructor(
         ) { pct, history, unavailable ->
             arrayOf(pct, history, unavailable)
         },
-    ) { a, b, c ->
+        engine.backendIdFlow,
+    ) { a, b, c, backendId ->
         val vmState = a[0] as VmState
         val tick = b[4] as Long
         StatusUiState(
             vmState = vmState,
-            backendId = engine.backendId,
+            backendId = backendId,
             engineSelection = b[1] as EngineSelection,
             uptimeLabel = uptimeLabel(vmState, tick),
             phoneIp = NetworkUtils.localIpv4(context),

@@ -195,6 +195,15 @@
     <string name="avf_hint_needs_pc">Needs a PC with adb, or the Shizuku app for on-device grant. Run once:</string>
     <string name="avf_grant_commands">adb shell pm grant com.excp.podroid \\\n  android.permission.MANAGE_VIRTUAL_MACHINE\nadb shell pm grant com.excp.podroid \\\n  android.permission.USE_CUSTOM_VIRTUAL_MACHINE</string>
 
+    <!-- Backend fallback (#66): AVF was forced but this device can't run it -->
+    <string name="backend_fallback_suffix">" - AVF unavailable, running QEMU"</string>
+    <string name="backend_avf_unavailable">AVF is not available on this device: %1$s</string>
+    <string name="backend_fallback_banner">AVF was selected but is unavailable on this device. The VM is running on QEMU (software emulation).</string>
+    <string name="backend_fallback_reason_feature">the virtualization framework feature is not present</string>
+    <string name="backend_fallback_reason_permissions">required permissions have not been granted</string>
+    <string name="backend_fallback_reason_service">the system service is unreachable</string>
+    <string name="backend_fallback_reason_protected_only">this device only supports protected virtual machines</string>
+
     <!-- Setup Steps -->
     <string name="step_1_of_4">Step 1 of 4</string>
     <string name="step_2_of_4">Step 2 of 4</string>

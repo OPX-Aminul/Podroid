@@ -80,6 +80,7 @@ fun HomeScreen(
     val meta by viewModel.meta.collectAsStateWithLifecycle()
     val uptimeTick by viewModel.uptimeTicker.collectAsStateWithLifecycle()
     val showAvfHint by viewModel.showAvfHint.collectAsStateWithLifecycle()
+    val showBackendFallbackBanner by viewModel.backendFallbackBanner.collectAsStateWithLifecycle()
     val avfBootFailure by viewModel.avfBootFailure.collectAsStateWithLifecycle()
     val avfFailureAdvice by viewModel.avfFailureAdvice.collectAsStateWithLifecycle()
     val avfNetWorkaroundFailed by viewModel.avfNetWorkaroundFailed.collectAsStateWithLifecycle()
@@ -181,6 +182,9 @@ fun HomeScreen(
                         if (showAvfHint) {
                             AvfHintBanner(onDismiss = { viewModel.dismissAvfHint() })
                         }
+                        if (showBackendFallbackBanner) {
+                            AvfFallbackBanner()
+                        }
                         HomeStatusBlock(
                             isStarting, isRunning, isStopping, vmState, bootStage, meta, uptimeLabel,
                             containerCount = containerCount,
@@ -226,6 +230,9 @@ fun HomeScreen(
                     Spacer(Modifier.height(PodroidTokens.Spacing.XL))
                     if (showAvfHint) {
                         AvfHintBanner(onDismiss = { viewModel.dismissAvfHint() })
+                    }
+                    if (showBackendFallbackBanner) {
+                        AvfFallbackBanner()
                     }
                     HomeStatusBlock(
                         isStarting = isStarting,
@@ -301,6 +308,27 @@ private fun AvfHintBanner(onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+/** Passive - no dismiss, no actions - just says why AVF (the selected
+ *  backend) is not what's actually running. See #66. */
+@Composable
+private fun AvfFallbackBanner() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = PodroidTokens.Spacing.MD),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Text(
+            text = stringResource(R.string.backend_fallback_banner),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(PodroidTokens.Spacing.MD),
+        )
     }
 }
 

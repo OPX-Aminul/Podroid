@@ -136,10 +136,13 @@ fun SettingsScreen(
     val ctx = LocalContext.current
     val vmNotRunning = vmState !is VmState.Running && vmState !is VmState.Starting
 
-    // Memoize: both values are constant for the process lifetime / until a backend
-    // swap, so there's no point re-running reflection on every recomposition.
-    val isUsbPassthroughAvailable = remember { viewModel.isUsbPassthroughAvailable() }
-    val activeBackendId = remember { viewModel.activeBackendId() }
+    // Reactive: a backend swap (or the async first pick resolving after this
+    // screen is already composed) must update the AVF diagnostic dialog and
+    // the USB row without a re-navigation. A `remember { }` with no key used
+    // to cache these forever, including a pre-first-pick QEMU seed (#66).
+    val activeBackendId by viewModel.activeBackendIdFlow.collectAsStateWithLifecycle()
+    val isUsbPassthroughAvailable = activeBackendId == "qemu"
+    val backendFallback by viewModel.backendFallback.collectAsStateWithLifecycle()
 
     // Re-sync the persisted storageAccessEnabled flag against the real OS grant on
     // every resume (user may have denied all-files-access on the system screen we
@@ -371,6 +374,18 @@ fun SettingsScreen(
                                 colors = PodroidChipColors(),
                             )
                         }
+                    }
+                    // Annotate, don't disable: the user may grant AVF permissions
+                    // later, so the chip stays selectable while explaining why the
+                    // VM is actually running on QEMU right now.
+                    if (ui.engineSelection == EngineSelection.AVF && backendFallback != null) {
+                        Spacer(Modifier.height(PodroidTokens.Spacing.XS))
+                        Text(
+                            text = stringResource(R.string.backend_avf_unavailable, backendFallback ?: ""),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(horizontal = PodroidTokens.Spacing.MD),
+                        )
                     }
                     Spacer(Modifier.height(PodroidTokens.Spacing.MD))
                     AdvancedFieldsBlock(

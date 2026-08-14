@@ -195,6 +195,15 @@
     <string name="avf_hint_needs_pc">需要 PC 上的 adb，或设备上的 Shizuku 应用进行授权。运行一次：</string>
     <string name="avf_grant_commands">adb shell pm grant com.excp.podroid \\\n  android.permission.MANAGE_VIRTUAL_MACHINE\nadb shell pm grant com.excp.podroid \\\n  android.permission.USE_CUSTOM_VIRTUAL_MACHINE</string>
 
+    <!-- Backend fallback (#66): AVF was forced but this device can't run it -->
+    <string name="backend_fallback_suffix">（AVF 不可用，正在使用 QEMU）</string>
+    <string name="backend_avf_unavailable">此设备无法使用 AVF：%1$s</string>
+    <string name="backend_fallback_banner">已选择 AVF，但此设备不可用。虚拟机正在使用 QEMU（软件模拟）运行。</string>
+    <string name="backend_fallback_reason_feature">虚拟化框架功能不受支持</string>
+    <string name="backend_fallback_reason_permissions">所需权限尚未授予</string>
+    <string name="backend_fallback_reason_service">系统服务不可达</string>
+    <string name="backend_fallback_reason_protected_only">此设备仅支持受保护虚拟机</string>
+
     <!-- Setup Steps -->
     <string name="step_1_of_4">第 1 步，共 4 步</string>
     <string name="step_2_of_4">第 2 步，共 4 步</string>
