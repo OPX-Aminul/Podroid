@@ -43,7 +43,7 @@
 
     <!-- Storage -->
     <string name="persistent_storage">持久化存储</string>
-    <string name="storage_description">用于安装的软件包、容器镜像和您的文件。不重置虚拟机则无法调整大小。</string>
+    <string name="storage_description">用于安装的软件包、容器镜像和您的文件。您可以稍后在设置中增大存储空间，但无法缩小。</string>
 
     <!-- VM Config -->
     <string name="configure_vm">配置您的虚拟机</string>
@@ -51,6 +51,7 @@
     <string name="resources">资源</string>
     <string name="cpu_cores">CPU 核心数</string>
     <string name="cpu_cores_hint">核心越多不一定越快：在 QEMU (TCG) 后端，实测 8 核比 4 核更慢。AVF 后端可正常扩展。</string>
+    <string name="storage_grow_hint">存储空间可以稍后增大，但无法缩小。更大的存储空间将在虚拟机下次启动时生效。</string>
     <string name="ram_label">内存</string>
     <string name="network_label">网络</string>
     <string name="ssh_access">SSH 访问</string>

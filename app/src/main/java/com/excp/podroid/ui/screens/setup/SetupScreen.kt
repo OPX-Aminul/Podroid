@@ -19,8 +19,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -32,13 +30,11 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.windowsizeclass.WindowHeightSizeClass
 import androidx.compose.material3.windowsizeclass.WindowSizeClass
 import androidx.compose.runtime.Composable
@@ -55,7 +51,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -66,15 +61,14 @@ import com.excp.podroid.ui.components.PodroidListRow
 import com.excp.podroid.ui.components.PodroidPrimaryButton
 import com.excp.podroid.ui.components.PodroidSectionLabel
 import com.excp.podroid.ui.components.PodroidSwitch
-import com.excp.podroid.ui.components.PodroidChipColors
 import com.excp.podroid.ui.components.VmBandwidthChips
 import com.excp.podroid.ui.components.VmCpuChips
 import com.excp.podroid.ui.components.VmRamChips
+import com.excp.podroid.ui.components.VmStorageChips
 import com.excp.podroid.ui.theme.PodroidTokens
 import com.excp.podroid.util.DeviceResourcePolicy
 import kotlinx.coroutines.launch
 
-private val storageSizes = listOf(2, 4, 8, 16, 32, 64)
 private const val DEFAULT_STORAGE_GB = 8
 
 @Composable
@@ -85,7 +79,7 @@ fun SetupScreen(
 ) {
     val context = LocalContext.current
     // rememberSaveable preserves wizard choices through config changes (rotation, font-scale, etc.)
-    // so a mid-wizard rotation doesn't silently reset storage to 8 GB (not resizable later).
+    // so a mid-wizard rotation doesn't silently reset storage to 8 GB (can be grown, never shrunk).
     var selectedGb by rememberSaveable { mutableIntStateOf(DEFAULT_STORAGE_GB) }
     var selectedRamMb by rememberSaveable { mutableIntStateOf(512) }
     var selectedCpus by rememberSaveable { mutableIntStateOf(2) }
@@ -388,16 +382,11 @@ private fun StoragePage(
         description = stringResource(R.string.storage_description),
         bottomBar  = { SetupNextBar(onNext = onNext) },
     ) {
-        Text(
-            text = "$selectedGb GB",
-            style = MaterialTheme.typography.displayLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Spacer(Modifier.height(PodroidTokens.Spacing.MD))
-        StorageSizeChips(
-            selectedGb = selectedGb,
-            onSelect = onSelect,
+        VmStorageChips(
+            currentGb = selectedGb,
+            onChange = onSelect,
             enabled = !loadBalanceEnabled,
+            showDivider = false,
         )
         if (loadBalanceEnabled) {
             Spacer(Modifier.height(PodroidTokens.Spacing.SM))
@@ -622,33 +611,5 @@ private fun SetupNavBar(
     ) {
         PodroidGhostButton(text = stringResource(R.string.back), onClick = onBack, modifier = Modifier.weight(1f))
         PodroidPrimaryButton(text = nextLabel, onClick = onNext, modifier = Modifier.weight(2f))
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun StorageSizeChips(selectedGb: Int, onSelect: (Int) -> Unit, enabled: Boolean = true) {
-    FlowRow(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        maxItemsInEachRow = 3,
-    ) {
-        storageSizes.forEach { gb ->
-            FilterChip(
-                selected = gb == selectedGb,
-                enabled = enabled,
-                onClick = { onSelect(gb) },
-                label = {
-                    Text(
-                        text = "$gb GB",
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = if (gb == selectedGb) FontWeight.Bold else FontWeight.Normal,
-                    )
-                },
-                shape = RoundedCornerShape(16.dp),
-                colors = PodroidChipColors(),
-            )
-        }
     }
 }

@@ -43,7 +43,7 @@
 
     <!-- Storage -->
     <string name="persistent_storage">Persistent Storage</string>
-    <string name="storage_description">Storage for installed packages, container images, and your files. Cannot be resized later without resetting the VM.</string>
+    <string name="storage_description">Storage for installed packages, container images, and your files. You can increase it later in Settings, but it cannot be shrunk.</string>
 
     <!-- VM Config -->
     <string name="configure_vm">Configure your VM</string>
@@ -51,6 +51,7 @@
     <string name="resources">Resources</string>
     <string name="cpu_cores">CPU cores</string>
     <string name="cpu_cores_hint">More is not always faster: on the QEMU (TCG) backend 8 cores measured slower than 4. AVF scales normally.</string>
+    <string name="storage_grow_hint">Storage can be increased later but never shrunk. A larger size takes effect on the next VM start.</string>
     <string name="ram_label">RAM</string>
     <string name="network_label">Network</string>
     <string name="ssh_access">SSH access</string>

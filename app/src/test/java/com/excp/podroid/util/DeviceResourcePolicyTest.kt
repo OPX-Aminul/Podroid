@@ -25,7 +25,10 @@ class DeviceResourcePolicyTest {
     fun balancedStorageGb_respectsAvailableSpace() {
         assertEquals(2, DeviceResourcePolicy.balancedStorageGb(4))
         assertEquals(8, DeviceResourcePolicy.balancedStorageGb(40))
-        assertEquals(64, DeviceResourcePolicy.balancedStorageGb(512))
+        assertEquals(128, DeviceResourcePolicy.balancedStorageGb(512))
+        // 25% of 1024 GB lands exactly on the 256 GB option, proving the cap
+        // still follows the 25% rule at the top of the longer list.
+        assertEquals(256, DeviceResourcePolicy.balancedStorageGb(1024))
     }
 
     @Test
@@ -49,5 +52,20 @@ class DeviceResourcePolicyTest {
     @Test
     fun ramOptionsFor_neverDropsBelowThreeOptions() {
         assertEquals(listOf(512, 1024, 2048), DeviceResourcePolicy.ramOptionsFor(2_048))
+    }
+
+    @Test
+    fun storageOptionsFor_capsToFreeSpace() {
+        assertEquals(listOf(2, 4, 8, 16, 32, 64, 128), DeviceResourcePolicy.storageOptionsFor(197))
+    }
+
+    @Test
+    fun storageOptionsFor_returnsFullListOnBigDevice() {
+        assertEquals(DeviceResourcePolicy.STORAGE_OPTIONS_GB, DeviceResourcePolicy.storageOptionsFor(2_048))
+    }
+
+    @Test
+    fun storageOptionsFor_neverDropsBelowThreeOptions() {
+        assertEquals(listOf(2, 4, 8), DeviceResourcePolicy.storageOptionsFor(1))
     }
 }

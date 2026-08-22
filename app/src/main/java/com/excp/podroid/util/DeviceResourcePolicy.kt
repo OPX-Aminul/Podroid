@@ -15,7 +15,7 @@ object DeviceResourcePolicy {
     val CPU_OPTIONS = listOf(1, 2, 4, 6, 8)
     /** 0 = unlimited */
     val BANDWIDTH_OPTIONS_MBPS = listOf(0, 10, 50, 100, 500)
-    val STORAGE_OPTIONS_GB = listOf(2, 4, 8, 16, 32, 64)
+    val STORAGE_OPTIONS_GB = listOf(2, 4, 8, 16, 32, 64, 128, 256, 512)
 
     data class BalancedProfile(
         val ramMb: Int,
@@ -44,6 +44,13 @@ object DeviceResourcePolicy {
         val cap = totalRamMb - 3072
         val filtered = RAM_OPTIONS_MB.filter { it <= cap }
         return if (filtered.size >= 3) filtered else RAM_OPTIONS_MB.take(3)
+    }
+
+    /** Storage options that fit the device's free app-private space. Always at
+     * least the first three options, so small devices still get a usable list. */
+    fun storageOptionsFor(availableGb: Int): List<Int> {
+        val filtered = STORAGE_OPTIONS_GB.filter { it <= availableGb }
+        return if (filtered.size >= 3) filtered else STORAGE_OPTIONS_GB.take(3)
     }
 
     fun nearestAtMost(options: List<Int>, target: Int): Int =

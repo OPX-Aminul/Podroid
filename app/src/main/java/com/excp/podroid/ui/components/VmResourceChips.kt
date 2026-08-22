@@ -133,6 +133,66 @@ fun VmCpuChips(
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
+fun VmStorageChips(
+    currentGb: Int,
+    onChange: (Int) -> Unit,
+    minGb: Int = 0,
+    enabled: Boolean = true,
+    showDivider: Boolean = true,
+) {
+    Column(modifier = Modifier.padding(bottom = PodroidTokens.Spacing.SM)) {
+        Text(
+            "${stringResource(R.string.storage)}  ·  $currentGb GB",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(
+                top = PodroidTokens.Spacing.MD,
+                bottom = PodroidTokens.Spacing.SM,
+            ),
+        )
+        val availableGb = DeviceResourcePolicy.deviceAvailableStorageGb(LocalContext.current)
+        val storageOptions = DeviceResourcePolicy.storageOptionsFor(availableGb).let { options ->
+            if (currentGb in options) options else options + currentGb
+        }
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(PodroidTokens.Spacing.SM),
+            verticalArrangement = Arrangement.spacedBy(PodroidTokens.Spacing.SM),
+        ) {
+            storageOptions.forEach { gb ->
+                FilterChip(
+                    selected = gb == currentGb,
+                    enabled = enabled && gb >= minGb,
+                    onClick = { onChange(gb) },
+                    label = {
+                        Text(
+                            "$gb GB",
+                            fontWeight = if (gb == currentGb) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    shape = RoundedCornerShape(PodroidTokens.Radius.Chip),
+                    colors = PodroidChipColors(),
+                )
+            }
+        }
+        Text(
+            text = stringResource(R.string.storage_grow_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = PodroidTokens.Spacing.SM),
+        )
+        if (showDivider) {
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline,
+                thickness = 1.dp,
+                modifier = Modifier.padding(top = PodroidTokens.Spacing.MD),
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
 fun VmBandwidthChips(
     currentMbps: Int,
     onChange: (Int) -> Unit,

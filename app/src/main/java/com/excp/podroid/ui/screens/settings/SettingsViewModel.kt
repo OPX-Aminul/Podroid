@@ -230,6 +230,17 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    fun setStorageSizeGb(value: Int) {
+        viewModelScope.launch {
+            // storage.img is never shrunk; the disabled chips already stop this in
+            // the UI, this is defence in depth against a stale/racing value.
+            val current = settingsRepository.getStorageSizeGbSnapshot()
+            if (value < current) return@launch
+            settingsRepository.setLoadBalanceEnabled(false)
+            settingsRepository.setStorageSizeGb(value)
+        }
+    }
+
     fun setVmCpus(value: Int) {
         viewModelScope.launch {
             settingsRepository.setLoadBalanceEnabled(false)

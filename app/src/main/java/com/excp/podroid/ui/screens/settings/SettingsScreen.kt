@@ -92,6 +92,7 @@ import com.excp.podroid.ui.components.PodroidListRow
 import com.excp.podroid.ui.components.VmBandwidthChips
 import com.excp.podroid.ui.components.VmCpuChips
 import com.excp.podroid.ui.components.VmRamChips
+import com.excp.podroid.ui.components.VmStorageChips
 import com.excp.podroid.ui.components.PodroidChipColors
 import com.excp.podroid.ui.components.PodroidSectionLabel
 import com.excp.podroid.ui.components.PodroidSwitch
@@ -266,9 +267,11 @@ fun SettingsScreen(
                     onChange = viewModel::setBandwidthMbps,
                     enabled = vmNotRunning && !ui.loadBalanceEnabled,
                 )
-                PodroidListRow(
-                    label = stringResource(R.string.storage),
-                    value = "${ui.storageSizeGb} GB",
+                VmStorageChips(
+                    currentGb = ui.storageSizeGb,
+                    onChange = viewModel::setStorageSizeGb,
+                    minGb = ui.storageSizeGb,
+                    enabled = vmNotRunning && !ui.loadBalanceEnabled,
                 )
                 PodroidListRow(
                     label = stringResource(R.string.autostart_on_boot),
