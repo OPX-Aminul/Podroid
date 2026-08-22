@@ -99,8 +99,8 @@
           </tr>
           <tr>
             <td>Storage</td>
-            <td>Size cannot be changed after setup without a full reset</td>
-            <td>The persistent ext4 overlay image (<code>storage.img</code>) is created at first-boot time and cannot be non-destructively resized later. Choose your storage size in the setup wizard. A future release may add live resize; for now a factory reset is required to change the allocation.</td>
+            <td>Size can grow but never shrink</td>
+            <td>The persistent ext4 overlay image (<code>storage.img</code>) can be enlarged from Settings; the guest resizes its filesystem on the next start. Shrinking is not supported, and choosing a size larger than the phone's free space is not offered.</td>
           </tr>
           <tr>
             <td>Background stability</td>
@@ -196,7 +196,7 @@
         <a class="prev" href="settings.html"><span class="dir">Previous</span>&larr; Terminal &amp; settings</a>
         <a class="next" href="use-cases.html"><span class="dir">Next</span>Use cases &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.7. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
     </main>
   </div>
 
