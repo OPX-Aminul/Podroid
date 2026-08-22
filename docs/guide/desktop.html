@@ -56,6 +56,11 @@
       <pre><code><span class="p">#</span> setup-desktop</code></pre>
       <p>Follow the prompts to pick a desktop and create a user account. The script handles the <code>apk add</code> steps for you.</p>
 
+      <div class="callout note">
+        <span class="label">What setup-desktop also does</span>
+        <p><code>setup-desktop</code> installs <code>lightdm</code> with a greeter and enables it (<code>rc-update add lightdm</code>), and the Xfce and MATE choices also pull in Firefox, so the download is a good deal larger than the minimal example below. In Podroid the display manager is harmless but useless: the guest kernel has no graphics device, so <code>lightdm</code> starts at boot and idles without ever launching an X server, while Xvnc keeps display <code>:0</code>. Run <code>rc-update del lightdm</code> afterwards to keep boot clean, or use the "Complete example" section below for the minimal <code>apk add</code> route instead.</p>
+      </div>
+
       <div class="callout warn">
         <span class="label">X11 only - Wayland desktops will not appear</span>
         <p>The built-in viewer speaks RFB (VNC), so it connects to an X11 display. It cannot show a Wayland compositor. Use <strong>Xfce, LXQt, or MATE</strong> - they run on X11 and render correctly. <strong>KDE Plasma 6, GNOME, and Sway are Wayland on Alpine</strong> and will not appear in the viewer, even after launching them.</p>
@@ -74,7 +79,7 @@
 
       <div class="callout warn">
         <span class="label">Do not install or enable a display manager</span>
-        <p>Installing <code>lightdm</code> or any other display manager and enabling it with <code>rc-update add</code> will cause it to fight Xvnc for display <code>:0</code>. Xvnc is already the X server; no display manager is needed.</p>
+        <p>Xvnc is already the X server on <code>:0</code>, so a display manager such as <code>lightdm</code> is not needed and does nothing useful here: the guest kernel has no graphics device, so it never starts an X server of its own. If one got enabled, for example by <code>setup-desktop</code>, disable it with <code>rc-update del lightdm</code>.</p>
       </div>
 
       <h2>Single GUI apps</h2>
@@ -243,7 +248,7 @@ password=na</code></pre>
         <a class="prev" href="packages.html"><span class="dir">Previous</span>← Packages &amp; services</a>
         <a class="next" href="settings.html"><span class="dir">Next</span>Terminal &amp; settings →</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.7. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
     </main>
   </div>
 
