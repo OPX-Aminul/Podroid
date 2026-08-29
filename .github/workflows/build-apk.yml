@@ -8,17 +8,17 @@ name: Build APK & Publish Release
 #
 # The existing build.yml (kernel + QEMU compilation) is preserved unchanged.
 # This workflow consumes its output from the all-core-file release.
+# IMPORTANT: This workflow ONLY triggers AFTER build.yml completes successfully,
+# ensuring fresh binaries are available before APK build starts.
 
 on:
-  # Trigger on push to main (APK build uses precompiled binaries, no path filter needed)
-  push:
-    branches: [main]
-  # Auto-trigger after build.yml (kernel + QEMU) completes successfully
+  # ONLY trigger after build.yml (kernel + QEMU) completes successfully.
+  # This ensures the all-core-file release has FRESH binaries before APK build.
   workflow_run:
     workflows: ["Build Patches & Update Release"]
     types: [completed]
     branches: [main]
-  # Also allow manual trigger
+  # Allow manual trigger
   workflow_dispatch:
     inputs:
       tag:
@@ -37,9 +37,8 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
-    # Only run if triggered by push/workflow_dispatch OR if the triggering build.yml succeeded
+    # Only run if triggered by workflow_dispatch OR if the triggering build.yml succeeded
     if: >-
-      github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
       github.event.workflow_run.conclusion == 'success'
 
