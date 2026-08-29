@@ -172,9 +172,9 @@ RUN cd linux-${KERNEL_VERSION} \
 # This patch inserts a new else-if branch before the error block that
 # accepts maxpacket=64 on a low-speed device and treats it as full-speed,
 # so the "goto fail" is never reached for the Xiaomi case.
-COPY build-tools/kernel-hub-quirk.patch /tmp/kernel-hub-quirk.patch
+COPY build-tools/apply-kernel-patch.py /tmp/apply-kernel-patch.py
 RUN cd linux-${KERNEL_VERSION} \
-    && patch -p1 < /tmp/kernel-hub-quirk.patch \
+    && python3 /tmp/apply-kernel-patch.py \
     && grep -q 'Xiaomi/MIUI' drivers/usb/core/hub.c
 
 RUN cd linux-${KERNEL_VERSION} \
