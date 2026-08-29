@@ -1,0 +1,198 @@
+name: Build & Update Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Dockerfile'
+      - 'podroid_kernel.config'
+      - 'build-rootfs/**'
+      - 'init-podroid'
+      - 'podroid-bridge.c'
+      - 'podroid-launcher.c'
+      - 'build-tools/**'
+      - 'build-all.sh'
+      - 'gradle.properties'
+      - '.github/workflows/build.yml'
+  workflow_dispatch:
+    inputs:
+      components:
+        description: 'Components to build (comma-separated: kernel,rootfs,qemu,all)'
+        required: false
+        default: 'all'
+
+env:
+  DOCKER_BUILDKIT: 1
+  BUILDX_CACHE_FROM: type=gha
+  BUILDX_CACHE_TO: type=gha,mode=max
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write  # needed for gh release upload
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+
+      # ── Docker layer cache (GitHub Actions cache backend) ──
+      # BuildKit caches each layer; unchanged layers are pulled from cache
+      # instead of re-compiling. First build ~30min, subsequent ~5-10min.
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # ── Parse component versions from gradle.properties ──
+      - name: Read component versions
+        id: versions
+        run: |
+          KERNEL_VER=$(grep -E '^podroidKernelVersion=' gradle.properties | cut -d= -f2)
+          QEMU_VER=$(grep -E '^podroidQemuVersion=' gradle.properties | cut -d= -f2)
+          SYS_VER=$(grep -E 'versionCode' app/build.gradle.kts | grep -oE '[0-9]+' | head -1)
+          echo "kernel=$KERNEL_VER" >> "$GITHUB_OUTPUT"
+          echo "qemu=$QEMU_VER" >> "$GITHUB_OUTPUT"
+          echo "system=$SYS_VER" >> "$GITHUB_OUTPUT"
+          echo "Kernel: $KERNEL_VER, QEMU: $QEMU_VER, System: $SYS_VER"
+
+      - name: Determine components to build
+        id: decide
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            COMPONENTS="${{ inputs.components }}"
+          else
+            COMPONENTS="all"
+          fi
+          echo "components=$COMPONENTS" >> "$GITHUB_OUTPUT"
+          echo "Building: $COMPONENTS"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # KERNEL BUILD (kernel-builder target)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Build kernel
+        if: contains(steps.decide.outputs.components, 'all') || contains(steps.decide.outputs.components, 'kernel')
+        run: |
+          docker buildx build \
+            --cache-from type=gha,scope=kernel \
+            --cache-to type=gha,scope=kernel,mode=max \
+            --build-arg KERNEL_VERSION=${{ steps.versions.outputs.kernel }} \
+            --target kernel-builder \
+            --load -t podroid-kernel-builder .
+
+          mkdir -p app/src/main/assets
+          docker create --name kernel-extract podroid-kernel-builder
+          docker cp kernel-extract:/output/vmlinuz-virt app/src/main/assets/vmlinuz-virt
+          docker rm kernel-extract
+          echo "✅ Kernel built: $(ls -lh app/src/main/assets/vmlinuz-virt)"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # INITRAMFS BUILD (packer target: kernel + Alpine initramfs)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Build initramfs
+        if: contains(steps.decide.outputs.components, 'all') || contains(steps.decide.outputs.components, 'kernel')
+        run: |
+          docker buildx build \
+            --cache-from type=gha,scope=initramfs \
+            --cache-to type=gha,scope=initramfs,mode=max \
+            --build-arg KERNEL_VERSION=${{ steps.versions.outputs.kernel }} \
+            --target packer \
+            --load -t podroid-packer .
+
+          mkdir -p app/src/main/assets
+          docker create --name packer-extract podroid-packer /bin/true
+          docker cp packer-extract:/output/vmlinuz-virt app/src/main/assets/vmlinuz-virt
+          docker cp packer-extract:/output/initrd.img app/src/main/assets/initrd.img
+          docker rm packer-extract
+          echo "✅ Initramfs built:"
+          ls -lh app/src/main/assets/vmlinuz-virt app/src/main/assets/initrd.img
+
+      # ══════════════════════════════════════════════════════════════════════
+      # ROOTFS BUILD (Alpine squashfs)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Build rootfs
+        if: contains(steps.decide.outputs.components, 'all') || contains(steps.decide.outputs.components, 'rootfs')
+        run: |
+          docker buildx build \
+            --cache-from type=gha,scope=rootfs \
+            --cache-to type=gha,scope=rootfs,mode=max \
+            --build-arg SYSTEM_VERSION=${{ steps.versions.outputs.system }} \
+            -f build-rootfs/Dockerfile.rootfs \
+            --load -t podroid-rootfs .
+
+          docker create --name rootfs-extract podroid-rootfs /bin/true
+          mkdir -p app/src/main/assets
+          docker cp rootfs-extract:/alpine-rootfs.squashfs app/src/main/assets/alpine-rootfs.squashfs
+          docker rm rootfs-extract
+          echo "✅ Rootfs built: $(ls -lh app/src/main/assets/alpine-rootfs.squashfs)"
+
+      # ══════════════════════════════════════════════════════════════════════
+      # QEMU BUILD (QEMU + bridge + launcher)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Build QEMU
+        if: contains(steps.decide.outputs.components, 'all') || contains(steps.decide.outputs.components, 'qemu')
+        run: |
+          docker buildx build \
+            --cache-from type=gha,scope=qemu \
+            --cache-to type=gha,scope=qemu,mode=max \
+            --build-arg QEMU_VERSION=${{ steps.versions.outputs.qemu }} \
+            --target final \
+            --load -t podroid-qemu-builder .
+
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          mkdir -p app/src/main/assets/qemu/keymaps
+          docker create --name qemu-extract podroid-qemu-builder /bin/true
+          docker cp qemu-extract:/libqemu-system-aarch64.so  app/src/main/jniLibs/arm64-v8a/
+          docker cp qemu-extract:/libslirp.so                app/src/main/jniLibs/arm64-v8a/
+          docker cp qemu-extract:/libpodroid-bridge.so       app/src/main/jniLibs/arm64-v8a/
+          docker cp qemu-extract:/libpodroid-launcher.so     app/src/main/jniLibs/arm64-v8a/
+          docker cp qemu-extract:/qemu/efi-virtio.rom        app/src/main/assets/qemu/
+          docker cp qemu-extract:/qemu/keymaps/.             app/src/main/assets/qemu/keymaps/
+          docker rm qemu-extract
+          echo "✅ QEMU built:"
+          ls -lh app/src/main/jniLibs/arm64-v8a/
+
+      # ══════════════════════════════════════════════════════════════════════
+      # UPLOAD TO ALL-CORE-FILE RELEASE (replace old binaries)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Upload binaries to all-core-file release
+        if: success() && (contains(steps.decide.outputs.components, 'all'))
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📦 Uploading to all-core-file release (--clobber replaces existing files)..."
+
+          # Native libraries
+          gh release upload all-core-file \
+            app/src/main/jniLibs/arm64-v8a/libqemu-system-aarch64.so \
+            app/src/main/jniLibs/arm64-v8a/libslirp.so \
+            app/src/main/jniLibs/arm64-v8a/libpodroid-bridge.so \
+            app/src/main/jniLibs/arm64-v8a/libpodroid-launcher.so \
+            --clobber 2>&1
+
+          # VM assets
+          gh release upload all-core-file \
+            app/src/main/assets/alpine-rootfs.squashfs \
+            app/src/main/assets/initrd.img \
+            app/src/main/assets/vmlinuz-virt \
+            --clobber 2>&1
+
+          echo "✅ All binaries uploaded to all-core-file release"
+          gh release view all-core-file --json assets --jq '.assets[] | "\(.name) \(.size)"'
+
+      # ── Cleanup Docker images to free runner disk ──
+      - name: Cleanup Docker images
+        if: always()
+        run: |
+          docker rmi podroid-kernel-builder podroid-packer podroid-rootfs podroid-qemu-builder 2>/dev/null || true
+          docker system prune -f 2>/dev/null || true
