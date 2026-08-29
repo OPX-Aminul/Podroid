@@ -163,7 +163,21 @@ RUN cd linux-${KERNEL_VERSION} \
                || { echo "FATAL: CONFIG_${opt} is not =y after merge" >&2; \
                     grep "CONFIG_${opt}" .config >&2; exit 1; }; \
        done \
-    && echo "=== all critical options are built-in ===" \
+    && echo "=== all critical options are built-in ==="
+
+# Xiaomi/MIUI USB speed correction — guest kernel patch (issue #85 backup).
+# When the QEMU host-libusb quirk is unavailable or the host reports a
+# low-speed device with ep0 maxpacket=64 (a Xiaomi/MIUI host stack bug),
+# the guest kernel normally rejects the device with "Invalid ep0 maxpacket".
+# This patch relaxes the validation: if the maxpacket is 64, accept it and
+# treat the device as full-speed instead of rejecting it outright.
+RUN cd linux-${KERNEL_VERSION} \
+    && grep -n 'Invalid ep0 maxpacket' drivers/usb/core/hub.c | head -1
+
+RUN cd linux-${KERNEL_VERSION} \
+    && sed -i '/Invalid ep0 maxpacket/i\            /* Xiaomi/MIUI host stack bug: full-speed devices misreported as low-speed. */\n            /* Accept maxpacket=64 and treat as full-speed (issue #85). */\n            if (udev->speed == USB_SPEED_LOW &&\n                usb_endpoint_maxp(&udev->ep0.desc) == 64) {\n                dev_dbg(&udev->dev,\n                    "low-speed device with maxpacket=64, "\n                    "accepting as full-speed (host stack bug)\\n");\n                udev->speed = USB_SPEED_FULL;\n            } else' drivers/usb/core/hub.c
+
+RUN cd linux-${KERNEL_VERSION} \
     && make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- -j$(nproc) Image.gz modules
 
 RUN cd linux-${KERNEL_VERSION} \
