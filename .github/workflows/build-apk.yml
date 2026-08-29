@@ -10,6 +10,12 @@ name: Build APK & Publish Release
 # This workflow consumes its output from the all-core-file release.
 
 on:
+  # Auto-trigger after build.yml (kernel + QEMU) completes successfully
+  workflow_run:
+    workflows: ["Build Patches & Update Release"]
+    types: [completed]
+    branches: [main]
+  # Also allow manual trigger
   workflow_dispatch:
     inputs:
       tag:
@@ -28,6 +34,10 @@ jobs:
     timeout-minutes: 30
     permissions:
       contents: write
+    # Only run if triggered by workflow_dispatch OR if the triggering build.yml succeeded
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
 
     steps:
       # ══════════════════════════════════════════════════════════════════════
