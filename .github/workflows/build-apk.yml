@@ -1,0 +1,182 @@
+name: Build APK & Publish Release
+
+# Builds the Podroid Android APK using precompiled binaries from the
+# all-core-file release. Mirrors exactly how a developer builds locally:
+#   1. Place precompiled binaries (QEMU, kernel, rootfs, etc.)
+#   2. Run ./gradlew assembleDebug
+#   3. Publish the APK as a new GitHub release
+#
+# The existing build.yml (kernel + QEMU compilation) is preserved unchanged.
+# This workflow consumes its output from the all-core-file release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+# Prevent duplicate runs on the same branch
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      # ══════════════════════════════════════════════════════════════════════
+      # STEP 1: Checkout source code (developer's exact code)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ══════════════════════════════════════════════════════════════════════
+      # STEP 2: Set up JDK 17 (required by AGP 9.x / Kotlin 2.2)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # ══════════════════════════════════════════════════════════════════════
+      # STEP 3: Set up Android SDK + NDK
+      # terminal-emulator module needs NDK for libtermux.so (Android.mk)
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android NDK
+        run: sdkmanager --install "ndk;27.2.12479018" 2>/dev/null || true
+
+      # ══════════════════════════════════════════════════════════════════════
+      # STEP 4: Download precompiled binaries from all-core-file release
+      # This is what the developer does: place binaries before building APK.
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Download precompiled binaries from all-core-file release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RELEASE="all-core-file"
+          JNILIBS="app/src/main/jniLibs/arm64-v8a"
+          ASSETS="app/src/main/assets"
+
+          echo "=== Downloading precompiled binaries from $RELEASE ==="
+
+          # Create target directories
+          mkdir -p "$JNILIBS" "$ASSETS"
+
+          # Native executables → jniLibs/
+          for bin in libqemu-system-aarch64.so libslirp.so libpodroid-bridge.so libpodroid-launcher.so; do
+            echo "  ↓ $bin"
+            gh release download "$RELEASE" --pattern "$bin" --dir "$JNILIBS" --clobber
+          done
+
+          # VM assets → assets/
+          for asset in vmlinuz-virt initrd.img alpine-rootfs.squashfs; do
+            echo "  ↓ $asset"
+            gh release download "$RELEASE" --pattern "$asset" --dir "$ASSETS" --clobber
+          done
+
+          echo ""
+          echo "=== Downloaded binaries ==="
+          echo "jniLibs:"
+          ls -lh "$JNILIBS/"*.so 2>/dev/null
+          echo ""
+          echo "assets:"
+          ls -lh "$ASSETS/vmlinuz-virt" "$ASSETS/initrd.img" "$ASSETS/alpine-rootfs.squashfs" 2>/dev/null
+
+      # ══════════════════════════════════════════════════════════════════════
+      # STEP 5: Build APK via Gradle (exactly as developer does locally)
+      # This also builds libtermux.so via NDK (terminal-emulator module)
+      # and bundles AndroidX native libs from dependencies automatically.
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle.kts', '**/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Verify APK output
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK" ]; then
+            echo "❌ APK not found at $APK"
+            exit 1
+          fi
+          echo "✅ APK built successfully:"
+          ls -lh "$APK"
+          # Show APK info
+          if command -v aapt2 &>/dev/null; then
+            aapt2 dump badging "$APK" 2>/dev/null | head -5
+          fi
+
+      # ══════════════════════════════════════════════════════════════════════
+      # STEP 6: Publish APK as a new GitHub release
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Create GitHub Release with APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ inputs.tag || 'v1.0.0' }}"
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          APK_NAME="Podroid-${TAG}-debug.apk"
+
+          # Copy APK with a clean name
+          cp "$APK" "./$APK_NAME"
+
+          # Create release (delete first if it already exists)
+          gh release delete "$TAG" --yes 2>/dev/null || true
+
+          gh release create "$TAG" \
+            "./$APK_NAME" \
+            --title "Podroid $TAG" \
+            --notes "## Podroid $TAG
+
+          🤖 **Rootless Podman / Docker / LXC on Android** — no root, no custom recovery.
+
+          ### What's Included
+          - Full Android APK with all precompiled binaries
+          - Alpine 3.24 Linux VM with OpenRC
+          - Podman, Docker, and LXC container support
+          - Built-in terminal and X11/VNC desktop viewer
+          - QEMU (TCG) and AVF (pKVM) engine support
+
+          ### Binaries (from \`all-core-file\` release)
+          - \`libqemu-system-aarch64.so\` — QEMU with Xiaomi USB speed quirk fix
+          - \`vmlinuz-virt\` — Custom kernel with USB maxpacket fix
+          - \`alpine-rootfs.squashfs\` — Alpine root filesystem
+          - \`initrd.img\` — Initramfs
+          - \`libslirp.so\` — SLIRP networking
+          - \`libpodroid-bridge.so\` — Terminal bridge
+          - \`libpodroid-launcher.so\` — QEMU launcher
+
+          ### Installation
+          1. Download \`Podroid-${TAG}-debug.apk\`
+          2. Enable \`Install from unknown sources\` in Android settings
+          3. Install and open the app
+          4. Follow the setup wizard
+
+          ### Requirements
+          - Android 8+ (API 26) arm64 device
+          - ~500MB free storage for VM
+
+          ---
+          *Built automatically from commit \`${{ github.sha }}\`*" \
+            --prerelease=false
