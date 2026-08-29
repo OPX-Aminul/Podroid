@@ -34,6 +34,21 @@ You will need:
 ./build-all.sh test         # deploys APK, polls console.log for "Ready!"
 ```
 
+### Xiaomi/MIUI USB passthrough fix (issue #85)
+
+The build pipeline includes two patches that fix USB passthrough on Xiaomi/MIUI devices:
+
+1. **QEMU patch** (`host-libusb.c`) -- corrects misreported USB device speed (low-speed to full-speed)
+2. **Guest kernel patch** (`drivers/usb/core/hub.c`) -- relaxes ep0 maxpacket validation as backup
+
+Both patches are applied automatically during `./build-all.sh qemu` and `./build-all.sh kernel`. Standalone patch files are in `patches/` for reference.
+
+To rebuild with the fix:
+
+```sh
+./build-all.sh all    # rebuilds QEMU + kernel with Xiaomi/MIUI patches
+```
+
 Component versions are pinned in one place each, so read the pin rather than trusting a number written in prose:
 
 | Component | Pinned in |

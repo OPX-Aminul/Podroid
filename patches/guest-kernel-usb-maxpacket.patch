@@ -1,0 +1,33 @@
+From: Podroid <dev@podroid.local>
+Subject: [PATCH] USB: hub: accept low-speed device with maxpacket=64 (issue #85)
+
+When the host USB stack (e.g. Xiaomi/MIUI) misreports a full-speed
+device as low-speed, the guest kernel rejects it because low-speed
+devices must have ep0 maxpacket=8, not 64.
+
+This patch adds a fallback: if a low-speed device reports maxpacket=64,
+accept it and treat the device as full-speed instead of rejecting it.
+
+This is a safety net for when the QEMU host-libusb quirk is unavailable.
+
+--- a/drivers/usb/core/hub.c
++++ b/drivers/usb/core/hub.c
+@@ in hub_port_init(), before the "Invalid ep0 maxpacket" check:
+-            dev_err(&udev->dev, "Invalid ep0 maxpacket: %d\n",
+-                    usb_endpoint_maxp(&udev->ep0.desc));
+-            goto err;
++            /* Xiaomi/MIUI host stack bug: full-speed devices misreported
++             * as low-speed. Accept maxpacket=64 and treat as full-speed.
++             * (issue #85 backup — primary fix is in QEMU host-libusb.c)
++             */
++            if (udev->speed == USB_SPEED_LOW &&
++                usb_endpoint_maxp(&udev->ep0.desc) == 64) {
++                dev_dbg(&udev->dev,
++                    "low-speed device with maxpacket=64, "
++                    "accepting as full-speed (host stack bug)\n");
++                udev->speed = USB_SPEED_FULL;
++            } else {
++                dev_err(&udev->dev, "Invalid ep0 maxpacket: %d\n",
++                        usb_endpoint_maxp(&udev->ep0.desc));
++                goto err;
++            }

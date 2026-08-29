@@ -1,0 +1,31 @@
+From: Podroid <dev@podroid.local>
+Subject: [PATCH] QEMU: USB speed correction quirk for Xiaomi/MIUI (issue #85)
+
+Xiaomi/MIUI host stacks misreport full-speed USB devices as low-speed.
+When a low-speed device reports ep0 maxpacket=64, it is actually
+full-speed (low-speed maxpacket must be 8 per USB spec). This causes
+the guest kernel to reject the device with "Invalid ep0 maxpacket: 64".
+
+This quirk detects the impossible low-speed + maxpacket=64 combination
+and forces the device to full-speed so enumeration succeeds.
+
+--- a/hw/usb/host-libusb.c
++++ b/hw/usb/host-libusb.c
+@@ in usb_host_req_complete_ctrl(), after the existing USB-3 ep0 quirk:
+     /* Fix up USB-3 ep0 maxpacket size */
+     if (r->usb3ep0quirk && xfer->actual_length >= 18 &&
+         r->cbuf[7] == 9) {
+         r->cbuf[7] = 64;
+     }
++
++    /* Xiaomi/MIUI USB speed correction quirk (issue #85) */
++    /* Xiaomi/MIUI host stacks misreport full-speed devices as low-speed. */
++    /* When a low-speed device reports ep0 maxpacket=64, it is actually    */
++    /* full-speed (low-speed maxpacket must be 8 per USB spec). Correct    */
++    /* the speed so the guest kernel accepts the device.                   */
++    if (r->usb3ep0quirk && xfer->actual_length >= 18) {
++        uint8_t mpkt = r->cbuf[7];
++        if (udev->speed == USB_SPEED_LOW && mpkt == 64) {
++            udev->speed = USB_SPEED_FULL;
++        }
++    }
