@@ -56,9 +56,12 @@ jobs:
       - name: Extract QEMU binary
         run: |
           docker create --name qemu-out podroid-qemu-patch /bin/true
-          docker cp qemu-out:/libqemu-system-aarch64.so ./libqemu-system-aarch64.so
+          docker cp qemu-out:/opt/qemu-out/libqemu-system-aarch64.so ./libqemu-system-aarch64.so
+          docker cp qemu-out:/opt/qemu-out/libslirp.so ./libslirp.so
+          docker cp qemu-out:/opt/qemu-out/libpodroid-bridge.so ./libpodroid-bridge.so
+          docker cp qemu-out:/opt/qemu-out/libpodroid-launcher.so ./libpodroid-launcher.so
           docker rm qemu-out
-          ls -lh ./libqemu-system-aarch64.so
+          ls -lh ./libqemu-system-aarch64.so ./libslirp.so ./libpodroid-bridge.so ./libpodroid-launcher.so
 
       # ══════════════════════════════════════════════════════════════════════
       # FILE 2: Patched guest kernel
@@ -95,6 +98,9 @@ jobs:
 
           gh release upload all-core-file \
             ./libqemu-system-aarch64.so \
+            ./libslirp.so \
+            ./libpodroid-bridge.so \
+            ./libpodroid-launcher.so \
             ./vmlinuz-virt \
             --clobber
 
