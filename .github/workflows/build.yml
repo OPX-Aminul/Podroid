@@ -12,6 +12,7 @@ on:
       - 'Dockerfile'
       - 'podroid_kernel.config'
       - 'gradle.properties'
+      - 'build-tools/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
