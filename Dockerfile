@@ -333,13 +333,9 @@ RUN sed -i 's@^    rc = libusb_init(&ctx);@#if defined(__ANDROID__)\n    libusb_
 # kernel sees a low-speed device with ep0 maxpacket=64, it rejects the device
 # ("Invalid ep0 maxpacket: 64"). This patch detects the mismatch and forces
 # the device to full-speed so enumeration succeeds.
-# The quirk targets the usb_host_req_complete_ctrl() callback in host-libusb.c
-# where the USB-3 ep0 maxpacket quirk already exists, extending it with a
-# low-speed speed-correction path.
+COPY build-tools/xiaomi-usb-quirk.c /tmp/xiaomi-usb-quirk.c
 RUN cd ${QEMU_DIR}/hw/usb \
-    && printf '/* Xiaomi/MIUI USB speed correction quirk (issue #85) */\n/* Xiaomi/MIUI host stacks misreport full-speed devices as low-speed. */\n/* When a low-speed device reports ep0 maxpacket=64, it is actually    */\n/* full-speed (low-speed maxpacket must be 8 per USB spec). Correct    */\n/* the speed so the guest kernel accepts the device.                   */\nif (r->usb3ep0quirk && xfer->actual_length >= 18) {\n    uint8_t mpkt = r->cbuf[7];\n    if (udev->speed == USB_SPEED_LOW && mpkt == 64) {\n        udev->speed = USB_SPEED_FULL;\n    }\n}\n' > /tmp/xiaomi_quirk.c \
-    && LINE=$(grep -n 'r->cbuf\[7\] = 64;' host-libusb.c | head -1 | cut -d: -f1) \
-    && sed -i "${LINE}r /tmp/xiaomi_quirk.c" host-libusb.c \
+    && sed -i '/cbuf\[7\] = 64;/r /tmp/xiaomi-usb-quirk.c' host-libusb.c \
     && grep -q 'USB_SPEED_LOW.*USB_SPEED_FULL' host-libusb.c
 
 RUN cd ${QEMU_DIR} && ./configure --cc="${CC}" --cross-prefix="${LLVM}/bin/llvm-" --extra-cflags="-fPIC -DANDROID -include /opt/shm_shim.h -I${PREFIX}/include -I${PREFIX}/include/glib-2.0 -I${PREFIX}/lib/glib-2.0/include" --extra-ldflags="-L${PREFIX}/lib -Wl,-z,max-page-size=16384 ${PREFIX}/lib/libucontext.a ${PREFIX}/lib/libshm.a ${PREFIX}/lib/libqemujmp.a" --prefix=/opt/qemu-out --target-list=aarch64-softmmu --enable-tcg --enable-slirp --enable-virtfs --enable-libusb --enable-pie --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-vhost-user --disable-plugins --with-coroutine=ucontext && make -j$(nproc) install
