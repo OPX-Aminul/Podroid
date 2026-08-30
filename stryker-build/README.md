@@ -213,7 +213,36 @@ Our build uses vanilla + patches, which may be why USB fails after rebuild.
 
 ---
 
-## ৯. Credits
+## ৯. Stock Binary Analysis (Updated)
+
+See `STOCK-BINARY-ANALYSIS.md` for DEFINITIVE analysis.
+
+### Key Findings
+
+1. **USB Attach Flow:**
+   ```
+   Android fd → QMP add-fd (SCM_RIGHTS) → device_add usb-host → libusb_wrap_sys_device
+   ```
+
+2. **Critical Features in Stock Binary:**
+   - `usb-host` ✅
+   - `libusb_wrap_sys_device` ✅
+   - `LIBUSB_OPTION_NO_DEVICE_DISCOVERY` ✅
+   - `usbfs backend (/dev/bus/usb)` ✅
+
+3. **Why Rebuild Fails:**
+   - Stock likely uses AOSP's QEMU fork (not vanilla)
+   - Stock uses AOSP's libusb (not vanilla)
+   - Our vanilla build missing Android-specific patches
+
+4. **Fix:**
+   - Use AOSP QEMU source (not vanilla)
+   - Use AOSP libusb (not vanilla)
+   - Match exact build flags
+
+---
+
+## ১০. Credits
 
 - **StrykerApp**: zalexdev (original rootless QEMU implementation)
 - **Xiaomi USB fix**: YourXDemon/OPX (custom QEMU patch)
