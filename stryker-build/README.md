@@ -165,7 +165,40 @@ cp qemu-system-aarch64.so /data/data/com.zalexdev.stryker/files/rootless/qemu-sy
 
 ---
 
-## ৭. Credits
+## ৭. Known Issues (CRITICAL — Read This First)
+
+### arm32 vs arm64 USB Difference
+
+| | arm64 (64-bit) | arm32 (32-bit) |
+|---|---|---|
+| **QEMU version** | AOSP patched QEMU | QEMU 8.2.7 |
+| **USB backend** | usbfs (direct) | libusb (wrap_sys_device) |
+| **USB attach** | ✅ Works | ❌ Fails |
+| **Why** | usbfs = no libusb needed | libusb wrap fails on Android |
+
+### The Real Problem
+- **64-bit**: AOSP's QEMU uses usbfs backend directly — no libusb, no wrap issues. USB works perfectly.
+- **32-bit**: QEMU 8.2.7 uses libusb + `LIBUSB_OPTION_NO_DEVICE_DISCOVERY`. But `libusb_wrap_sys_device()` still fails on some devices.
+
+### What Was Tried (OPXDemom v1.0.0 → v1.0.7)
+1. ✅ armv7 rootfs provisioning (systemd-udevd, networkd, agentd)
+2. ✅ Boot timeout fixes for slow devices
+3. ✅ Permission flow fixes (Android 8-17)
+4. ✅ Xiaomi USB speed quirk (ep0 maxpacket=64 fix)
+5. ❌ AOSP libusb + NO_DEVICE_DISCOVERY on arm32 → still fails
+6. ❌ QEMU rebuild with AOSP libusb → still fails on itel A663L
+
+### Root Cause (Still Unknown)
+The app shows "can't attach to VM" but doesn't log which step fails:
+1. `usbManager.openDevice()` — Java permission/fd?
+2. `qmp.addFd(fd)` — SCM_RIGHTS transfer?
+3. `qmp.deviceAdd(usb-host)` — QEMU opening fd?
+
+**The fix needs better logging first** — see OPXDemom docs/arm32-usb-next-steps.md
+
+---
+
+## ৮. Credits
 
 - **StrykerApp**: zalexdev (original rootless QEMU implementation)
 - **Xiaomi USB fix**: YourXDemon/OPX (custom QEMU patch)
