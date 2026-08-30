@@ -38,6 +38,7 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     gcompat \
     gzip \
     xz \
+    socat \
     linux-firmware-rtlwifi \
     linux-firmware-realtek \
     linux-firmware-rtl_bt \

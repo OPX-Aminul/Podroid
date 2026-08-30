@@ -295,9 +295,9 @@ User → GuestExec.kt → TCP 127.0.0.1:9050 → SLIRP → yourxdemon-agentd
 | `FIX-XIAOMI-MIUI-USB.md` | Documentation of the USB fix |
 | `patches/guest-kernel-usb-maxpacket.patch` | Kernel patch reference |
 | `patches/xiaomi-usb-speed-quirk.patch` | QEMU patch reference |
-| `build-rootfs/host-bridge/yourxdemon-agentd.c` | TCP daemon (fork-per-connection, `__EXIT__` sentinel) |
-| `build-rootfs/files/etc/init.d/yourxdemon-agentd` | OpenRC service for auto-start after boot |
-| `app/.../engine/GuestExec.kt` | Kotlin TCP client (coroutine + blocking API) |
+| `build-rootfs/files/etc/init.d/yourxdemon-agentd` | socat-based OpenRC service (port 9050+9051, StrykerApp-style) |
+| `app/.../engine/GuestExec.kt` | TCP client for non-interactive commands (port 9050) |
+| `app/.../engine/GuestTerminal.kt` | TCP client for interactive PTY shell (port 9051) |
 
 ### Modified Files
 
@@ -305,7 +305,8 @@ User → GuestExec.kt → TCP 127.0.0.1:9050 → SLIRP → yourxdemon-agentd
 |---|---|
 | `Dockerfile` | Added Xiaomi USB quirk injection, Python kernel patch script |
 | `build-rootfs/build-rootfs.sh` | Added 12 WiFi firmware packages, Alpine test/edge repos, removed Podman/Docker/LXC/VNC/GUI packages |
-| `QemuEngine.kt` | Added SLIRP `hostfwd=tcp:127.0.0.1:9050-:9050` for Guest Agent |
+| `QemuEngine.kt` | Added SLIRP hostfwd for port 9050 (exec) + port 9051 (interactive PTY) |
+| `build-rootfs/build-rootfs.sh` | Added `socat` package, removed C daemon references |
 | `.github/workflows/build.yml` | Single workflow for kernel+QEMU+rootfs, Docker BuildKit GHA cache, QEMU setup for arm64, rootfs from `Dockerfile.rootfs` |
 | `.github/workflows/build-apk.yml` | Release APK build (R8), auto-trigger from `build.yml`, keystore generation |
 
