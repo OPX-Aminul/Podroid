@@ -113,7 +113,7 @@ jobs:
 
       - name: Extract rootfs squashfs
         run: |
-          docker create --name rootfs-out podroid-rootfs
+          docker create --name rootfs-out podroid-rootfs /bin/sh -c 'exit 0'
           docker cp rootfs-out:/alpine-rootfs.squashfs ./alpine-rootfs.squashfs
           docker rm rootfs-out
           echo "✅ rootfs squashfs:"
