@@ -197,7 +197,23 @@ Possible causes (need investigation):
 
 ---
 
-## ৮. Credits
+## ৮. Stock Binary Analysis
+
+See `STOCK-BINARY-ANALYSIS.md` for detailed analysis of StrykerApp's stock QEMU binary.
+
+Key findings:
+- QEMU 11.0.2 (same version as our build)
+- USB passthrough fully enabled (usb-host, usb-xhci, usb-ehci)
+- AOSP libusb with LIBUSB_OPTION_NO_DEVICE_DISCOVERY
+- libusb_wrap_sys_device present
+- usbfs backend (/dev/bus/usb) present
+
+**Critical insight:** Stock binary likely uses AOSP's QEMU fork, not vanilla QEMU.
+Our build uses vanilla + patches, which may be why USB fails after rebuild.
+
+---
+
+## ৯. Credits
 
 - **StrykerApp**: zalexdev (original rootless QEMU implementation)
 - **Xiaomi USB fix**: YourXDemon/OPX (custom QEMU patch)
