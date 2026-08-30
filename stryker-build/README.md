@@ -167,35 +167,33 @@ cp qemu-system-aarch64.so /data/data/com.zalexdev.stryker/files/rootless/qemu-sy
 
 ## ৭. Known Issues (CRITICAL — Read This First)
 
-### The Core Problem
+### The Core Problem (64-bit Only)
 
 **Stock StrykerApp QEMU binary → USB works ✅**
-**Rebuilt QEMU binary (even same source) → USB fails ❌**
+**Rebuilt QEMU binary → USB fails ❌**
 
-This happens on BOTH 64-bit AND 32-bit. The issue is NOT arm32 vs arm64.
+This is a 64-bit problem. Xiaomi max is 64-bit.
+32-bit was just an experiment — forget it.
 
 ### What Was Tried (OPXDemom v1.0.0 → v1.0.7)
-1. ✅ armv7 rootfs provisioning (systemd-udevd, networkd, agentd)
-2. ✅ Boot timeout fixes for slow devices
+1. ✅ Rootfs provisioning fixes
+2. ✅ Boot timeout fixes
 3. ✅ Permission flow fixes (Android 8-17)
 4. ✅ Xiaomi USB speed quirk (ep0 maxpacket=64 fix)
-5. ❌ Rebuilt QEMU → USB still fails on BOTH architectures
+5. ❌ Rebuilt QEMU → USB still fails
 
 ### Why Rebuild Breaks USB
 Possible causes (need investigation):
 - Build flags different from StrykerApp's build
 - AOSP patches not properly applied
-- libusb configured differently
 - Missing QEMU features (usb-host, usbfs backend)
-- QEMU version mismatch (8.2.7 vs 11.0.2)
+- QEMU version mismatch
 
 ### What Needs Investigation
-1. Compare StrykerApp's stock QEMU binary build flags with our rebuild
-2. Check if AOSP usbfs backend is enabled in our build
-3. Verify QEMU configure output matches StrykerApp's expected config
+1. Compare stock QEMU binary with rebuilt binary
+2. Check QEMU configure output
+3. Verify usbfs backend is enabled
 4. Add QMP error logging to see EXACT failure point
-
-**See OPXDemom docs/arm32-usb-next-steps.md for detailed debugging steps**
 
 ---
 
