@@ -481,6 +481,8 @@ Build script created at `stryker-build/` for StrykerApp QEMU with Xiaomi USB fix
 - `stryker-build/xiaomi-usb-quirk.c` — USB speed correction patch
 - `stryker-build/cross-android-aarch64.ini` — NDK cross-compilation config
 
+**Why this exists:** StrykerApp's #1 USB problem — "can't attach to VM" error when plugging USB devices. Stock QEMU lacks USB passthrough build logic (QMP fd passing, Xiaomi speed fix, LIBUSB wrap). Our Dockerfile has all of this. The build script ports these fixes to StrykerApp.
+
 **Usage:** In a StrykerApp-only session, point to `stryker-build/README.md` for full context.
 
 ---
