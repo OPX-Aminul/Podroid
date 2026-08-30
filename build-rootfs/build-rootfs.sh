@@ -28,34 +28,16 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     openrc \
     busybox-openrc \
     bash \
-    podman \
-    docker docker-openrc docker-cli-compose \
-    lxc lxc-templates lxc-download lxc-openrc lxc-bridge \
-    crun \
-    fuse-overlayfs \
-    iptables \
-    ip6tables \
-    nftables \
-    bridge-utils \
     iproute2 \
     dropbear dropbear-openrc \
     openssh-sftp-server \
     curl \
     ca-certificates \
-    shadow shadow-uidmap \
-    slirp4netns \
-    aardvark-dns netavark \
     libcap-utils \
     doas sudo \
     gcompat \
     gzip \
     xz \
-    tigervnc \
-    pulseaudio \
-    pulseaudio-utils \
-    font-misc-misc \
-    font-cursor-misc \
-    ttf-dejavu \
     linux-firmware-rtlwifi \
     linux-firmware-realtek \
     linux-firmware-rtl_bt \
@@ -72,14 +54,6 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
 # NOTE: '|| true' tolerates cross-architecture post-install script errors
 # (Exec format error) — packages ARE installed, only post-install scripts fail
 # when running aarch64 binaries under QEMU on x86_64 GitHub Actions runners.
-
-# Apply file capabilities to newuidmap/newgidmap. apk's package install often
-# does this, but we set them explicitly so the squashfs ships with the
-# correct security.capability xattr (preserved by mksquashfs without -no-xattrs).
-if command -v setcap >/dev/null 2>&1; then
-    setcap cap_setuid+ep "$ROOTFS/usr/bin/newuidmap" 2>/dev/null || true
-    setcap cap_setgid+ep "$ROOTFS/usr/bin/newgidmap" 2>/dev/null || true
-fi
 
 # Ensure doas and sudo are setuid-root. apk usually does this, but on
 # overlay-mounted build hosts it can silently fail.
@@ -109,24 +83,14 @@ sed -i "s|^root:[^:]*:|root:${ROOT_HASH}:|" "$ROOTFS/etc/shadow"
 rm -rf "$ROOTFS/usr/share/man" "$ROOTFS/usr/share/doc" \
        "$ROOTFS/usr/share/locale" "$ROOTFS/usr/share/info"
 
-# Remove the stock pulseaudio OpenRC service. Podroid starts pulseaudio
-# directly from podroid-x11 (start-stop-daemon), never as a service; left in
-# place its depend() pulls in a non-existent "udev" service, so OpenRC logs
-# "Service 'pulseaudio' needs non existent service 'udev'" on every boot.
-rm -f "$ROOTFS/etc/init.d/pulseaudio"
-
-# Pre-create podman storage dirs (saves first-boot mkdir)
-mkdir -p "$ROOTFS/var/lib/containers/storage" \
-         "$ROOTFS/run/containers/storage" \
-         "$ROOTFS/run/libpod" \
-         "$ROOTFS/run/crun"
+# Pre-create minimal runtime dirs
+mkdir -p "$ROOTFS/run"
 
 # Copy custom service files into the rootfs
 cp /work/files/etc/init.d/podroid-bootstrap "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-network   "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-resize    "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-ready     "$ROOTFS/etc/init.d/"
-cp /work/files/etc/init.d/podroid-x11       "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-vsock     "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-hostd     "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-downloads "$ROOTFS/etc/init.d/"
@@ -179,15 +143,9 @@ cp /work/files/etc/rc.conf "$ROOTFS/etc/rc.conf"
 # shipping a squashfs without these exports.
 mkdir -p "$ROOTFS/etc/profile.d"
 cp /work/files/etc/profile.d/podroid-color.sh "$ROOTFS/etc/profile.d/"
-cp /work/files/etc/profile.d/podroid-x11.sh   "$ROOTFS/etc/profile.d/"
-chmod 0644 "$ROOTFS/etc/profile.d/podroid-color.sh" "$ROOTFS/etc/profile.d/podroid-x11.sh"
+chmod 0644 "$ROOTFS/etc/profile.d/podroid-color.sh"
 
-# /etc/containers/storage.conf — pin Podman to the in-kernel overlay driver.
-# Without this file, Podman auto-detects fuse-overlayfs (still apk-installed
-# as a fallback) and uses it, which is slower than native overlay.
-mkdir -p "$ROOTFS/etc/containers"
-cp /work/files/etc/containers/storage.conf "$ROOTFS/etc/containers/storage.conf"
-chmod 0644 "$ROOTFS/etc/containers/storage.conf"
+
 
 # Hostname (read by podroid-bootstrap via `hostname -F /etc/hostname`)
 echo "podroid" > "$ROOTFS/etc/hostname"
@@ -213,7 +171,7 @@ mkdir -p "$ROOTFS/etc/runlevels/default" "$ROOTFS/etc/runlevels/boot"
 # Guard each link: a dangling symlink (e.g. dnsmasq.lxcbr0, which lxc-bridge
 # may ship only as dnsmasq config and not an init script) makes OpenRC log
 # an error every boot and stalls podroid-ready's `after *` on a phantom.
-for svc in podroid-migrate podroid-bootstrap podroid-network podroid-resize dropbear docker lxc dnsmasq.lxcbr0 podroid-x11 podroid-vsock podroid-downloads podroid-hostd podroid-ready; do
+for svc in podroid-migrate podroid-bootstrap podroid-network podroid-resize dropbear podroid-vsock podroid-downloads podroid-hostd podroid-ready; do
     if [ -e "$ROOTFS/etc/init.d/$svc" ]; then
         ln -sf "/etc/init.d/$svc" "$ROOTFS/etc/runlevels/default/$svc"
     else
