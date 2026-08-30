@@ -302,8 +302,8 @@
 
     <!-- Extraction -->
     <string name="extracting_title">正在准备 Podroid</string>
-    <string name="extracting_description">正在将虚拟机组件提取到您的设备上。此操作仅在首次运行时执行。</string>
-    <string name="extracting_hint">正在提取系统文件和二进制文件…</string>
+    <string name="extracting_description">正在解压并提取虚拟机组件到您的设备上。此操作仅在首次运行时执行。</string>
+    <string name="extracting_hint">正在解压二进制文件并安装系统文件…</string>
 
     <!-- USB Passthrough -->
     <string name="usb_passthrough">USB 设备直通</string>

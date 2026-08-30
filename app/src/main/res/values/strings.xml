@@ -301,8 +301,8 @@
 
     <!-- Extraction -->
     <string name="extracting_title">Preparing Podroid</string>
-    <string name="extracting_description">Extracting VM components to your device. This only happens once.</string>
-    <string name="extracting_hint">Extracting binaries and system files…</string>
+    <string name="extracting_description">Extracting and decompressing VM components to your device. This only happens once.</string>
+    <string name="extracting_hint">Decompressing binaries and installing system files…</string>
 
     <!-- USB Passthrough -->
     <string name="usb_passthrough">USB Passthrough</string>
