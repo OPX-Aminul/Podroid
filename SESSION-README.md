@@ -442,7 +442,13 @@ StrykerApp (`github.com/zalexdev/strykerapp`) is a rooted Android pentest suite 
 | **Kernel fast-boot** | nokaslr,rcu_expedited ✅ | nokaslr,rcu_expedited ✅ |
 | **KVM fallback** | Yes (`/dev/kvm` check) | No (TCG only) |
 
-**Key gap:** StrykerApp has a separate `ptyd` (TCP→PTY daemon on port 1052) for interactive shells, bypassing bridge+virtio-console entirely. Our interactive shell still uses the 8-hop PTY path. Implementing a similar `ptyd` would require rewriting the Termux terminal UI — a massive change.
+**Binary decompile finding:** StrykerApp's `stryker-agentd` is a 572-byte shell script using `socat` (not a custom C daemon):
+- Port 1050: `socat TCP-LISTEN:1050 EXEC:/bin/sh` (non-interactive)
+- Port 1051: `socat TCP-LISTEN:1051 EXEC:'bash -il',pty,setsid,ctty` (interactive PTY)
+
+**Key gap:** StrykerApp's interactive shell (port 1051) uses socat TCP→PTY, bypassing bridge+virtio-console. Our interactive shell still uses the 8-hop PTY path. Implementing a socat-based interactive port would match their approach.
+
+**Important truth:** StrykerApp is NOT 100% zero-latency in QEMU rootless mode. Their speed advantage comes from **rooted chroot mode**, not QEMU. In QEMU mode, their port 1051 (socat→PTY) has similar latency to our PTY path.
 
 ---
 
