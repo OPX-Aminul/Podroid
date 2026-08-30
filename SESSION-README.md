@@ -448,7 +448,7 @@ StrykerApp (`github.com/zalexdev/strykerapp`) is a rooted Android pentest suite 
 
 **Key gap:** StrykerApp's interactive shell (port 1051) uses socat TCP→PTY, bypassing bridge+virtio-console. Our interactive shell still uses the 8-hop PTY path. Implementing a socat-based interactive port would match their approach.
 
-**Important truth:** StrykerApp is NOT 100% zero-latency in QEMU rootless mode. Their speed advantage comes from **rooted chroot mode**, not QEMU. In QEMU mode, their port 1051 (socat→PTY) has similar latency to our PTY path.
+**Important truth:** StrykerApp is NOT 100% zero-latency in QEMU rootless mode. In rootless mode they have only 2 TCP ports (1050=exec, 1051=pty) via socat. No bridge.c, no virtio-console, no getty. Their speed advantage in rootless comes from: (1) socat is lighter than our C daemon, (2) direct TCP→PTY bypasses bridge+virtio-console. Our gap: missing interactive PTY TCP port (like their port 1051).
 
 ---
 
