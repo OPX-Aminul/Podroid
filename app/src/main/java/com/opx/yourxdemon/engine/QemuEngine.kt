@@ -550,15 +550,15 @@ class QemuEngine @Inject constructor(
         val userKernelExtras = config.kernelExtraCmdline.trim()
 
         args += "-M"; args += "virt,gic-version=3"
-        // pauth-impdef swaps QEMU's slow QARMA5 PAuth for a fast non-crypto impl. The 50%
-        // figure quoted upstream does not show up here: measured against a QARMA5 control
-        // it is worth a few percent on xz and bc and nothing on boot or sha256, because
-        // the Alpine musl userspace is not built with PAC branch protection. Still free.
-        args += "-cpu"; args += "max,pauth-impdef=on"
-        val tbSizeMb = if (config.ramMb >= 2048) 512 else 256
-        // thread=multi: one host thread per vCPU; larger tb-size reduces re-translation for JIT-heavy guests.
-        args += "-accel"; args += "tcg,thread=multi,tb-size=$tbSizeMb"
-        args += "-smp"; args += "${config.cpus}"
+        // sve=off: skip Scalable Vector Extension emulation (unused in Alpine, saves decode cycles).
+        // pmu=off: skip Performance Monitoring Unit emulation (no profiling overhead).
+        // pauth=off: skip Pointer Authentication entirely (fastest option; impdef was slightly
+        // slower than off on measured devices because the fake impl still has entry/exit cost).
+        args += "-cpu"; args += "max,sve=off,pmu=off,pauth=off"
+        // 512 MB TB: larger translation buffer = fewer re-translations for JIT-heavy guests.
+        // Always 512 regardless of RAM — measured faster than 256 even on 1GB devices.
+        args += "-accel"; args += "tcg,thread=multi,tb-size=512"
+        args += "-smp"; args += "${config.cpus},sockets=1,cores=${config.cpus},threads=1"
         args += "-m";   args += "${config.ramMb}"
 
         val kernelPath = File(context.filesDir, "vmlinuz-virt")
@@ -567,8 +567,15 @@ class QemuEngine @Inject constructor(
         if (kernelPath.exists()) {
             args += "-kernel"; args += kernelPath.absolutePath
             val cmdline = buildString {
+                append("root=/dev/vda rw rootwait rootflags=noatime")
+                append(" console=ttyAMA0 loglevel=4 net.ifnames=0")
                 // mitigations=off: speculative-exec attacks don't cross the TCG ISA boundary; 5–15% gain.
-                append("console=ttyAMA0 mitigations=off")
+                append(" mitigations=off")
+                // Fast-boot params (inspired by StrykerApp): skip memory zeroing, audit, KASLR,
+                // RCU grace periods, and crypto self-tests at boot. Safe inside a TCG VM.
+                append(" init_on_alloc=0 init_on_free=0 audit=0 nokaslr")
+                append(" rcupdate.rcu_expedited=1 rcupdate.rcu_normal_after_boot=1")
+                append(" cryptomgr.notests random.trust_bootloader=on")
                 if (userKernelExtras.isNotEmpty()) append(" ").append(userKernelExtras)
                 append(" androidip=").append(config.androidIp)
                 if (config.sshEnabled) append(" ssh=1")
