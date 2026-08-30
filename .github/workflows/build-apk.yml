@@ -12,10 +12,11 @@ name: Build APK & Publish Release
 # ensuring fresh binaries are available before APK build starts.
 
 on:
-  # ONLY trigger after build.yml (kernel + QEMU) completes successfully.
-  # This ensures the all-core-file release has FRESH binaries before APK build.
+  # Trigger after ANY build workflow completes successfully.
+  # Both build.yml (patched QEMU/kernel) and build-full.yml (all binaries)
+  # update the all-core-file release. APK build consumes its output.
   workflow_run:
-    workflows: ["Build Patches & Update Release"]
+    workflows: ["Build Patches & Update Release", "Build Full (All Binaries)"]
     types: [completed]
     branches: [main]
   # Allow manual trigger

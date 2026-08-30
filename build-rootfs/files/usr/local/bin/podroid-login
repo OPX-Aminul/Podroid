@@ -20,4 +20,15 @@ fi
 case "$_r" in ''|*[!0-9]*|0) _r=24;; esac
 case "$_c" in ''|*[!0-9]*|0) _c=80;; esac
 stty rows "$_r" cols "$_c" 2>/dev/null
+# Auto-login: if username is "root", skip password prompt.
+# The terminal bridge always opens as root, so this eliminates
+# the login barrier for the primary use case.
+if [ "${1:-}" = "root" ] || [ -z "${1:-}" ]; then
+    export USER=root
+    export LOGNAME=root
+    export HOME=/root
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+    cd /root 2>/dev/null || cd /
+    exec /bin/sh --login
+fi
 exec /bin/login "$@"

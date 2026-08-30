@@ -11,10 +11,18 @@ mkdir -p "$ROOTFS/etc/apk"
 cat > "$ROOTFS/etc/apk/repositories" <<EOF
 https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main
 https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/community
+https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/testing
+https://dl-cdn.alpinelinux.org/alpine/edge/main
+https://dl-cdn.alpinelinux.org/alpine/edge/community
+https://dl-cdn.alpinelinux.org/alpine/edge/testing
 EOF
 
 apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/community" \
+    -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/testing" \
+    -X "https://dl-cdn.alpinelinux.org/alpine/edge/main" \
+    -X "https://dl-cdn.alpinelinux.org/alpine/edge/community" \
+    -X "https://dl-cdn.alpinelinux.org/alpine/edge/testing" \
     -U --allow-untrusted --root "$ROOTFS" --initdb add \
     alpine-base \
     openrc \
@@ -47,7 +55,15 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     pulseaudio-utils \
     font-misc-misc \
     font-cursor-misc \
-    ttf-dejavu
+    ttf-dejavu \
+    linux-firmware-rtlwifi \
+    linux-firmware-atheros \
+    linux-firmware-mediatek \
+    linux-firmware-brcm \
+    linux-firmware-ralink \
+    linux-firmware-intel \
+    linux-firmware-zd1211 \
+    linux-firmware-cw1200
 
 # Apply file capabilities to newuidmap/newgidmap. apk's package install often
 # does this, but we set them explicitly so the squashfs ships with the
