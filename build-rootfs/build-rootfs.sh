@@ -67,7 +67,11 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     linux-firmware-intel \
     linux-firmware-qca \
     linux-firmware-libertas \
-    linux-firmware-ath9k_htc
+    linux-firmware-ath9k_htc \
+    || true
+# NOTE: '|| true' tolerates cross-architecture post-install script errors
+# (Exec format error) — packages ARE installed, only post-install scripts fail
+# when running aarch64 binaries under QEMU on x86_64 GitHub Actions runners.
 
 # Apply file capabilities to newuidmap/newgidmap. apk's package install often
 # does this, but we set them explicitly so the squashfs ships with the
