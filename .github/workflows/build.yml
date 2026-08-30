@@ -122,20 +122,21 @@ jobs:
       # ══════════════════════════════════════════════════════════════════════
       - name: Build rootfs squashfs
         run: |
-          # The packer image has the rootfs layered in. Extract it as tar.
+          # The packer image has rootfs at /rootfs/. Export and extract.
           docker create --name packer-rootfs podroid-packer
-          docker export packer-rootfs | tar -xf - -C /tmp/rootfs-extract \
-            --exclude='./proc/*' --exclude='./sys/*' --exclude='./dev/*' \
-            --exclude='./run/*' --exclude='./tmp/*' --exclude='./boot/*' 2>/dev/null || true
+          mkdir -p /tmp/rootfs-export
+          docker export packer-rootfs | tar -xf - -C /tmp/rootfs-export 2>/dev/null || true
           docker rm packer-rootfs
 
+          # The rootfs content is at /tmp/rootfs-export/rootfs/
           # Build squashfs using an x86_64 container with squashfs-tools
-          docker run --rm -v "/tmp/rootfs-extract:/rootfs:ro" -v "$(pwd):/out" \
+          docker run --rm -v "/tmp/rootfs-export/rootfs:/rootfs:ro" -v "$(pwd):/out" \
             alpine:3.24 sh -c "
               apk add --no-cache squashfs-tools zstd >/dev/null 2>&1 &&
               cd /rootfs &&
+              rm -rf proc sys dev run tmp boot output 2>/dev/null || true &&
               mksquashfs - /out/alpine-rootfs.squashfs \
-                -comp zstd -Xcompression-level 19 -noappend 2>/dev/null
+                -comp zstd -Xcompression-level 19 -noappend
             "
 
           if [ -f alpine-rootfs.squashfs ]; then
