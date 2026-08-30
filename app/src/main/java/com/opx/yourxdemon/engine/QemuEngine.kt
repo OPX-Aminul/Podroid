@@ -646,6 +646,10 @@ class QemuEngine @Inject constructor(
 
         val netdevArg = buildString {
             append("user,id=net0,ipv6=off")
+            // TCP command-execution agent (yourxdemon-agentd on guest port 9050).
+            // Loopback-only: host connects to 127.0.0.1:9050 for fast non-interactive
+            // command execution, bypassing PTY/virtio-console for lower latency.
+            append(",hostfwd=tcp:127.0.0.1:9050-:9050")
             // Only the implicit forwards go here; user rules arrive over QMP once
             // the VM is up. See inlineLaunchRules for why that distinction is
             // load-bearing rather than cosmetic.

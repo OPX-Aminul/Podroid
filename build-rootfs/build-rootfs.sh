@@ -95,7 +95,9 @@ cp /work/files/etc/init.d/podroid-vsock     "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-hostd     "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-downloads "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/podroid-migrate   "$ROOTFS/etc/init.d/"
+cp /work/files/etc/init.d/yourxdemon-agentd "$ROOTFS/etc/init.d/"
 chmod +x "$ROOTFS/etc/init.d/podroid-"*
+chmod +x "$ROOTFS/etc/init.d/yourxdemon-agentd"
 
 # Copy /usr/local/bin scripts (resize daemon + login wrapper + getty selector)
 mkdir -p "$ROOTFS/usr/local/bin"
@@ -111,6 +113,8 @@ chmod +x "$ROOTFS/usr/local/bin/podroid-vsock-agent" 2>/dev/null || true
 # podroid-hostd is also COPY'd from the vsock-builder stage; same mode-bit guard.
 # The CLIs are argv[0]-dispatch symlinks onto the one multi-call binary.
 chmod +x "$ROOTFS/usr/local/bin/podroid-hostd" 2>/dev/null || true
+# yourxdemon-agentd is COPY'd from the vsock-builder stage; same mode-bit guard.
+chmod +x "$ROOTFS/usr/local/bin/yourxdemon-agentd" 2>/dev/null || true
 # podroid-overlay-normalize is COPY'd from the vsock-builder stage; mode-bit guard.
 chmod +x "$ROOTFS/usr/local/bin/podroid-overlay-normalize" 2>/dev/null || true
 ln -sf podroid-hostd "$ROOTFS/usr/local/bin/podroid-notify"
@@ -173,7 +177,7 @@ mkdir -p "$ROOTFS/etc/runlevels/default" "$ROOTFS/etc/runlevels/boot"
 # Guard each link: a dangling symlink (e.g. dnsmasq.lxcbr0, which lxc-bridge
 # may ship only as dnsmasq config and not an init script) makes OpenRC log
 # an error every boot and stalls podroid-ready's `after *` on a phantom.
-for svc in podroid-migrate podroid-bootstrap podroid-network podroid-resize dropbear podroid-vsock podroid-downloads podroid-hostd podroid-ready; do
+for svc in podroid-migrate podroid-bootstrap podroid-network podroid-resize dropbear podroid-vsock podroid-downloads podroid-hostd yourxdemon-agentd podroid-ready; do
     if [ -e "$ROOTFS/etc/init.d/$svc" ]; then
         ln -sf "/etc/init.d/$svc" "$ROOTFS/etc/runlevels/default/$svc"
     else

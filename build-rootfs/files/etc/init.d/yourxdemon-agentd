@@ -1,0 +1,25 @@
+#!/sbin/openrc-run
+# Start the TCP command-execution daemon for fast non-interactive command execution.
+# Similar to StrykerApp's stryker-agentd — bypasses PTY/virtio-console for lower latency.
+
+description="YourXDemon TCP agent daemon"
+
+command="/usr/local/bin/yourxdemon-agentd"
+command_args="9050"
+command_background=true
+pidfile="/run/yourxdemon-agentd.pid"
+output_log="/run/log/yourxdemon-agentd.log"
+error_log="${output_log}"
+
+depend() {
+    after podroid-bootstrap
+    before podroid-ready
+}
+
+start_pre() {
+    # Ensure the agent binary exists and is executable
+    if [ ! -x /usr/local/bin/yourxdemon-agentd ]; then
+        eerror "yourxdemon-agentd binary not found or not executable"
+        return 1
+    fi
+}

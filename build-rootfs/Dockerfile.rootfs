@@ -30,6 +30,7 @@ RUN curl -L -o minirootfs.tar.gz \
 # Pull in the vsock-agent binary built in stage 1.
 COPY --from=vsock-builder /work/vsock-agent/podroid-vsock-agent /work/rootfs/usr/local/bin/podroid-vsock-agent
 COPY --from=vsock-builder /work/host-bridge/podroid-hostd /work/rootfs/usr/local/bin/podroid-hostd
+COPY --from=vsock-builder /work/host-bridge/yourxdemon-agentd /work/rootfs/usr/local/bin/yourxdemon-agentd
 COPY --from=vsock-builder /work/overlay-normalize/podroid-overlay-normalize /work/rootfs/usr/local/bin/podroid-overlay-normalize
 
 ARG SYSTEM_VERSION=0
