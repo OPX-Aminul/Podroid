@@ -5,6 +5,7 @@ name: Build & Update Release
 #   - rootfs squashfs (build-rootfs/Dockerfile.rootfs → build-rootfs.sh)
 #   - initramfs (main Dockerfile packer stage)
 # All outputs go to the all-core-file release via gh release upload --clobber.
+# APK assets are built as release (R8 minified) by build-apk.yml.
 
 on:
   push:
