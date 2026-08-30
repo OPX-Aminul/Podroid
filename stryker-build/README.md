@@ -1,255 +1,184 @@
 # StrykerApp QEMU Build Guide
 
-## এই ফাইলটা কেন গুরুত্বপূর্ণ
-
-এই README পড়লে তুমি বুঝতে পারবে:
-1. StrykerApp-এর rootless mode কিভাবে কাজ করে
-2. আমাদের Xiaomi USB fix কী
-3. QEMU binary কিভাবে build করতে হয়
-4. StrykerApp-এর সাথে কীভাবে integrate করতে হয়
+> **Purpose:** Build a patched QEMU binary for StrykerApp that fixes Xiaomi USB passthrough.
+> **Status:** Analysis complete — build script needs refinement based on binary diff.
 
 ---
 
-## ১. StrykerApp Rootless Mode Architecture
-
-StrykerApp rootless mode-তে QEMU ব্যবহার করে Android-এ Linux VM চালাতে। এখানে:
-
-### Binary Files (GitHub Release: `rootless-main`)
-| File | Size | Description |
-|---|---|---|
-| `qemu-system-aarch64` | 41.77 MB | QEMU emulator (STOCK - no custom patches) |
-| `libslirp.so` | 1.09 MB | User-mode networking |
-| `Image` | 35.86 MB | Linux kernel |
-| `initrd.img` | 36.53 MB | Initramfs |
-| `rootfs.imgz` | 408.15 MB | Debian trixie rootfs (compressed ext4) |
-
-### Terminal Path (Rootless Mode)
-```
-Non-interactive (port 1050):
-  GuestExec.java → TCP 127.0.0.1:1050 → SLIRP → socat EXEC:/bin/sh
-
-Interactive PTY (port 1051):
-  GuestExec.java → TCP 127.0.0.1:1051 → SLIRP → socat EXEC:'bash -il',pty
-```
-
-### Guest Agent (`stryker-agentd`)
-সবকিছু `socat` দিয়ে হয় (572 bytes shell script):
-```sh
-#!/bin/sh
-SOCAT="$(command -v socat 2>/dev/null)"
-"$SOCAT" TCP-LISTEN:1050,reuseaddr,fork EXEC:/bin/sh,stderr &
-"$SOCAT" TCP-LISTEN:1051,reuseaddr,fork EXEC:'bash -il',pty,setsid,ctty,stderr &
-wait
-```
-
----
-
-## ২. আমাদের Xiaomi USB Fix
-
-### সমস্যা
-Xiaomi/MIUI devices ভুল করে full-speed USB devices (12 Mbps) কে low-speed (1.5 Mbps) হিসেবে report করে। Guest Linux kernel `maxpacket = 64` দেখে low-speed device-কে reject করে:
-```
-usb 1-1: Invalid ep0 maxpacket: 64
-```
-
-### সমাধান
-`xiaomi-usb-quirk.c` — QEMU-র `host-libusb.c`-তে inject করা হয়:
-```c
-if (udev->speed == USB_SPEED_LOW && xfer->actual_length >= 8 && r->cbuf[7] == 64) {
-    udev->speed = USB_SPEED_FULL;
-}
-```
-
-### কেন StrykerApp-এ এটা নেই
-StrykerApp stock QEMU binary ব্যবহার করে। তাদের QEMU-তে কোনো custom patch নেই:
-- ❌ Xiaomi USB speed quirk
-- ❌ PAC coroutine fix (Pixel 10)
-- ❌ LIBUSB NO_DEVICE_DISCOVERY
-
----
-
-## ৩. QEMU Build Steps
-
-### প্রয়োজনীয় Tools
-- Docker (buildx সহ)
-- ~10GB disk space
-- Internet connection
-
-### Build Command
-```bash
-# Clone StrykerApp
-git clone https://github.com/zalexdev/strykerapp.git
-cd strykerapp
-
-# Copy build files (from this directory)
-cp -r /path/to/stryker-build/* .
-
-# Build QEMU with Xiaomi fix
-docker build -t stryker-qemu-patched .
-
-# Extract binary
-docker create --name qemu-out stryker-qemu-patched /bin/true
-docker cp qemu-out:/qemu-system-aarch64.so ./qemu-system-aarch64.so
-docker cp qemu-out:/libslirp.so ./libslirp.so
-docker rm qemu-out
-
-# Binary ready!
-ls -lh qemu-system-aarch64.so libslirp.so
-```
-
-### যা Build হয়
-```
-Input:  QEMU 11.0.2 source + patches
-Output: qemu-system-aarch64.so (patched) + libslirp.so
-
-Patches applied:
-1. Xiaomi USB speed quirk (host-libusb.c)
-2. PAC coroutine fix (coroutine-ucontext.c)
-3. LIBUSB NO_DEVICE_DISCOVERY (host-libusb.c)
-4. shm_open shim (Bionic API-26)
-5. ivshmem disabled (Bionic)
-6. 9p-marshal.h fix (Bionic)
-```
-
----
-
-## ৪. StrykerApp-এ Integrate করার পদ্ধতি
-
-### Step 1: Patched Binary বিল্ড করো
-```bash
-docker build -t stryker-qemu-patched .
-docker cp $(docker create stryker-qemu-patched):/qemu-system-aarch64.so ./qemu-system-aarch64.so
-```
-
-### Step 2: StrykerApp-এ Replace করো
-```bash
-# StrykerApp-এর rootless directory-তে replace করো
-cp qemu-system-aarch64.so /data/data/com.zalexdev.stryker/files/rootless/qemu-system-aarch64
-```
-
-### Step 3: Test করো
-```bash
-# USB WiFi adapter plug করো
-# Xiaomi device-তে "Invalid ep0 maxpacket: 64" error আসতে নেই
-# WiFi adapter successfully enumerate করবে
-```
-
----
-
-## ৫. পার্থক্য: StrykerApp vs YourXDemon
-
-| বিষয় | StrykerApp | YourXDemon |
-|---|---|---|
-| **Rootfs** | Debian trixie | Alpine 3.24 |
-| **QEMU patches** | None (stock) | Custom (Xiaomi, PAC, LIBUSB) |
-| **Build system** | No Dockerfile | Full Dockerfile |
-| **Agent daemon** | socat (572B script) | socat (same now) |
-| **Interactive PTY** | Port 1051 (socat) | Port 9051 (socat) |
-| **Root required** | Yes (chroot + QEMU) | No (QEMU only) |
-
----
-
-## ৬. Troubleshooting
-
-### Build Fails
-- Docker BuildKit সক্রিয় করো: `export DOCKER_BUILDKIT=1`
-- Network সমস্যা: `docker build --network=host`
-
-### USB Device Not Enumerating
-- Xiaomi device: patched QEMU binary use করো
-- Check QEMU logs: `adb logcat | grep -i usb`
-
-### Agent Not Starting
-- Check socat: `which socat` in guest
-- Check ports: `ss -ltn | grep -E '1050|1051'`
-
----
-
-## ৭. Known Issues (CRITICAL — Read This First)
-
-### The Core Problem (64-bit Only)
+## 1. The Problem
 
 **Stock StrykerApp QEMU binary → USB works ✅**
-**Rebuilt QEMU binary → USB fails ❌**
+**Rebuilt QEMU binary → USB fails ❌ ("can't attach to VM")**
 
-This is a 64-bit problem. Xiaomi max is 64-bit.
-32-bit was just an experiment — forget it.
-
-### What Was Tried (OPXDemom v1.0.0 → v1.0.7)
-1. ✅ Rootfs provisioning fixes
-2. ✅ Boot timeout fixes
-3. ✅ Permission flow fixes (Android 8-17)
-4. ✅ Xiaomi USB speed quirk (ep0 maxpacket=64 fix)
-5. ❌ Rebuilt QEMU → USB still fails
-
-### Why Rebuild Breaks USB
-Possible causes (need investigation):
-- Build flags different from StrykerApp's build
-- AOSP patches not properly applied
-- Missing QEMU features (usb-host, usbfs backend)
-- QEMU version mismatch
-
-### What Needs Investigation
-1. Compare stock QEMU binary with rebuilt binary
-2. Check QEMU configure output
-3. Verify usbfs backend is enabled
-4. Add QMP error logging to see EXACT failure point
+This is a 64-bit problem. The Xiaomi max packet error (ep0 maxpacket: 64) is a separate issue that we've already fixed in our patch.
 
 ---
 
-## ৮. Stock Binary Analysis
+## 2. StrykerApp Architecture (Rootless Mode)
 
-See `STOCK-BINARY-ANALYSIS.md` for detailed analysis of StrykerApp's stock QEMU binary.
+### Binaries
+| File | Source | Purpose |
+|---|---|---|
+| `qemu-system-aarch64` | Vanilla QEMU 11.0.2 | VM emulator |
+| `libslirp.so` | libslirp | User-mode networking |
+| `Image` | Custom kernel | Linux kernel |
+| `initrd.img` | Custom initrd | Bootstrap |
+| `rootfs.imgz` | Debian trixie | Root filesystem |
+
+### QEMU Command
+```
+qemu-system-aarch64
+  -nodefaults
+  -M virt,gic-version=3
+  -cpu max,sve=off,pmu=off,pauth=off
+  -accel tcg,thread=multi,tb-size=512
+  -smp 4,sockets=1,cores=4,threads=1
+  -m 4096
+  -kernel Image -initrd initrd.img
+  -append "root=/dev/vda ... init_on_alloc=0 nokaslr ..."
+  -drive rootfs.img,cache=writeback,aio=threads
+  -device qemu-xhci,id=usbhc0,p2=8,p3=8
+  -device virtio-net-pci
+  -device virtio-rng-pci
+  -qmp unix:qmp.sock,server,nowait
+```
+
+### USB Attach Flow
+```
+Android UsbManager → openDevice() → fd
+    ↓
+QMP add-fd (SCM_RIGHTS) → QEMU receives fd
+    ↓
+QMP device_add usb-host → libusb_wrap_sys_device(fd)
+    ↓
+USB device accessible to guest
+```
+
+### Guest Agent (572 bytes socat script)
+```
+Port 1050: socat TCP-LISTEN:1050 EXEC:/bin/sh          → non-interactive
+Port 1051: socat TCP-LISTEN:1051 EXEC:'bash -il',pty   → interactive PTY
+```
+
+---
+
+## 3. Stock Binary Analysis
+
+**See `STOCK-BINARY-ANALYSIS.md` for complete details.**
 
 Key findings:
-- QEMU 11.0.2 (same version as our build)
-- USB passthrough fully enabled (usb-host, usb-xhci, usb-ehci)
-- AOSP libusb with LIBUSB_OPTION_NO_DEVICE_DISCOVERY
-- libusb_wrap_sys_device present
-- usbfs backend (/dev/bus/usb) present
-
-**Critical insight:** Stock binary likely uses AOSP's QEMU fork, not vanilla QEMU.
-Our build uses vanilla + patches, which may be why USB fails after rebuild.
+- QEMU 11.0.2 (vanilla source paths in binary)
+- All USB features present (usb-host, usb-xhci, wrap_sys_device, etc.)
+- Binary is 42MB (our build is ~52MB — different compilation)
+- Source code confirms: `qemu-11.0.2/` paths = vanilla QEMU
 
 ---
 
-## ৯. Stock Binary Analysis (Updated)
+## 4. Why Our Rebuild Breaks USB
 
-See `STOCK-BINARY-ANALYSIS.md` for DEFINITIVE analysis.
+### The 5 Patches We Add (That Stock Doesn't Have)
 
-### Key Findings
+| Patch | Purpose | Risk |
+|---|---|---|
+| shm_open shim | Bionic compatibility | Low |
+| PAC coroutine fix | Pixel 10 SIGILL | **HIGH — replaces sigsetjmp** |
+| LIBUSB_NO_DEVICE_DISCOVERY | Skip enumeration | Medium |
+| Xiaomi USB speed quirk | Fix maxpacket error | Low |
+| ivshmem disabled | Bionic compatibility | Low |
 
-1. **USB Attach Flow:**
-   ```
-   Android fd → QMP add-fd (SCM_RIGHTS) → device_add usb-host → libusb_wrap_sys_device
-   ```
+**The PAC coroutine fix is the highest-risk patch.** It replaces `sigsetjmp`/`siglongjmp` with custom assembly. If libusb uses setjmp internally for error handling, this could break USB operations.
 
-2. **Critical Features in Stock Binary:**
-   - `usb-host` ✅
-   - `libusb_wrap_sys_device` ✅
-   - `LIBUSB_OPTION_NO_DEVICE_DISCOVERY` ✅
-   - `usbfs backend (/dev/bus/usb)` ✅
+### What We DON'T Know
 
-3. **Why Rebuild Fails:**
-   - Stock likely uses AOSP's QEMU fork (not vanilla)
-   - Stock uses AOSP's libusb (not vanilla)
-   - Our vanilla build missing Android-specific patches
-
-4. **Fix:**
-   - Use AOSP QEMU source (not vanilla)
-   - Use AOSP libusb (not vanilla)
-   - Match exact build flags
+- Exact NDK version used by StrykerApp developer
+- Exact libusb version in stock binary
+- Exact configure flags (beyond what's inferred)
+- Whether stock binary was built with AOSP build system
 
 ---
 
-## ১০. Credits
+## 5. Build Strategy
 
-- **StrykerApp**: zalexdev (original rootless QEMU implementation)
-- **Xiaomi USB fix**: YourXDemon/OPX (custom QEMU patch)
-- **PAC fix**: YourXDemon/OPX (coroutine shim for Pixel 10)
-- **LIBUSB fix**: YourXDemon/OPX (NO_DEVICE_DISCOVERY for unprivileged Android)
+### Phase 1: Minimal Build (Match Stock)
+
+Build QEMU with **ZERO extra patches** (no PAC fix, no shm shim):
+
+```bash
+# Use NDK r27c
+export NDK=/path/to/ndk
+export CC=$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android26-clang
+
+# Clone QEMU 11.0.2
+git clone --depth=1 --branch v11.0.2 https://github.com/qemu/qemu.git
+cd qemu
+
+# Apply ONLY Xiaomi USB fix and NO_DEVICE_DISCOVERY
+# (skip PAC fix and shm shim for now)
+
+./configure \
+  --target-list=aarch64-softmmu \
+  --enable-tcg --enable-slirp --enable-virtfs \
+  --enable-libusb --enable-pie \
+  --disable-docs --disable-gtk --disable-sdl --disable-vnc \
+  --disable-vhost-user --disable-plugins \
+  --with-coroutine=ucontext
+
+make -j$(nproc)
+```
+
+### Phase 2: Add Patches One by One
+
+1. Build without any patches → test USB
+2. Add Xiaomi quirk → test USB
+3. Add NO_DEVICE_DISCOVERY → test USB
+4. Add shm shim → test USB
+5. Add PAC fix → test USB ← **This is likely where it breaks**
+
+### Phase 3: Binary Diff
+
+Compare stock binary with our build:
+```bash
+# Extract symbols
+nm -D stock-qemu > stock-symbols.txt
+nm -D our-qemu > our-symbols.txt
+diff stock-symbols.txt our-symbols.txt
+```
 
 ---
 
-*Generated by Buffy (Codebuff) — August 2026*
-*For use in StrykerApp development sessions*
+## 6. Required Tools
+
+- Docker (with buildx)
+- NDK r27c (or matching version)
+- ~10GB disk space
+- StrykerApp source: https://github.com/zalexdev/strykerapp.git
+- Stock binaries: https://github.com/zalexdev/strykerapp/releases/tag/rootless-main
+
+---
+
+## 7. Testing
+
+### On Device
+```bash
+# Install patched binary
+adb push qemu-system-aarch64 /data/data/com.zalexdev.stryker/files/rootless/
+
+# Test USB
+# 1. Plug WiFi adapter
+# 2. Check QMP logs: adb logcat | grep -i usb
+# 3. Check guest: dmesg | grep usb
+```
+
+### Success Criteria
+- USB WiFi adapter enumerates in guest
+- No "Invalid ep0 maxpacket" errors
+- No "can't attach to VM" errors
+- Network interface appears in guest (`ip link`)
+
+---
+
+## 8. Credits
+
+- **StrykerApp:** zalexdev (rootless QEMU implementation)
+- **Xiaomi USB fix:** OPX (custom QEMU patch)
+- **Analysis:** Buffy (Codebuff) — August 2026
