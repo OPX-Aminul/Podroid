@@ -1,8 +1,11 @@
 /*
- * Podroid — Rootless Podman for Android
+ * YourXDemon — Terminal Emulator for Android
  *
- * A headless AArch64 QEMU micro-VM running Alpine Linux with Podman,
- * accessed via built-in serial terminal.
+ * A real Alpine Linux VM running on stock Android (arm64), providing
+ * rootless containers and an in-app X11 desktop. No root required.
+ *
+ * Originally developed as Podroid by ExTV.
+ * Rebranded by OP Aminul FF (OPX).
  */
 plugins {
     alias(libs.plugins.android.application)
@@ -25,8 +28,8 @@ android {
         applicationId = "com.excp.podroid"
         minSdk = 26
         targetSdk = 36
-        versionCode = 32
-        versionName = "1.2.8"
+        versionCode = 1
+        versionName = "1.0.0"
         buildConfigField("String", "QEMU_VERSION", "\"$podroidQemuVersion\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

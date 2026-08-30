@@ -1,6 +1,6 @@
 name: Build APK & Publish Release
 
-# Builds the Podroid Android APK using precompiled binaries from the
+# Builds the YourXDemon Android APK using precompiled binaries from the
 # all-core-file release. Mirrors exactly how a developer builds locally:
 #   1. Place precompiled binaries (QEMU, kernel, rootfs, etc.)
 #   2. Run ./gradlew assembleDebug
@@ -133,7 +133,7 @@ jobs:
             -alias debug \
             -keyalg RSA -keysize 2048 -validity 10000 \
             -storepass android -keypass android \
-            -dname "CN=Podroid CI, OU=Debug, O=Podroid, L=Unknown, ST=Unknown, C=US"
+            -dname "CN=YourXDemon CI, OU=Debug, O=YourXDemon, L=Unknown, ST=Unknown, C=US"
           echo "✅ Debug keystore generated"
 
       - name: Build release APK (R8 minified)
@@ -170,7 +170,7 @@ jobs:
         run: |
           TAG="${{ inputs.tag || 'v1.0.0' }}"
           APK="app/build/outputs/apk/release/app-release.apk"
-          APK_NAME="Podroid-${TAG}-release.apk"
+          APK_NAME="YourXDemon-${TAG}-release.apk"
 
           # Copy APK with a clean name
           cp "$APK" "./$APK_NAME"
@@ -180,10 +180,13 @@ jobs:
 
           gh release create "$TAG" \
             "./$APK_NAME" \
-            --title "Podroid $TAG" \
-            --notes "## Podroid $TAG
+            --title "YourXDemon $TAG" \
+            --notes "## YourXDemon $TAG
 
-          🤖 **Lightweight Linux VM on Android** — no root, no custom recovery.
+          🤖 **Real Linux VM on Android** — no root, no custom recovery.
+
+          **Original developer:** ExTV (Podroid)
+          **Rebranded by:** OP Aminul FF (OPX)
 
           ### What's Included
           - Release APK with R8 minification (smaller size)
@@ -201,7 +204,7 @@ jobs:
           - \`libpodroid-launcher.so\` — QEMU launcher
 
           ### Installation
-          1. Download \`Podroid-${TAG}-release.apk\`
+          1. Download \`YourXDemon-${TAG}-release.apk\`
           2. Enable \`Install from unknown sources\` in Android settings
           3. Install and open the app
           4. Follow the setup wizard

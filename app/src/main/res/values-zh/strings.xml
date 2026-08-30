@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Podroid - Rootless Podman for Android
-  Copyright (C) 2024-2026 Podroid contributors
+  YourXDemon - Terminal Emulator for Android
+  Copyright (C) 2024-2026 YourXDemon contributors
+  Original developer: ExTV (Podroid)
+  Rebranded by: OP Aminul FF (OPX)
 -->
 <resources>
-    <string name="app_name">Podroid</string>
+    <string name="app_name">YourXDemon</string>
 
     <!-- VM Status -->
     <string name="vm_status">虚拟机状态</string>
@@ -55,7 +57,7 @@
     <string name="ram_label">内存</string>
     <string name="network_label">网络</string>
     <string name="ssh_access">SSH 访问</string>
-    <string name="ssh_password_hint">ssh root@&lt;手机-ip&gt; -p 9922   (密码: podroid)</string>
+    <string name="ssh_password_hint">ssh root@&lt;手机-ip&gt; -p 9922   (密码: yourxdemon)</string>
     <string name="load_balance">负载均衡</string>
     <string name="load_balance_description">根据本机自动调整 CPU、内存、存储和带宽。</string>
     <string name="load_balance_storage_hint">存储大小已自动设置。在下一步关闭负载均衡后可手动选择。</string>
@@ -103,7 +105,7 @@
     <string name="avf_diagnostic">AVF (pKVM) 诊断</string>
     <string name="running_avf_diagnostic">运行 AVF 诊断…</string>
     <string name="probing_avf">正在探测…</string>
-    <string name="export_diagnostic_subject">Podroid 诊断日志</string>
+    <string name="export_diagnostic_subject">YourXDemon 诊断日志</string>
     <string name="export_diagnostic_chooser">分享诊断日志</string>
     <string name="export_diagnostic_failed">导出失败：%1$s</string>
     <string name="unknown_error">未知错误</string>
@@ -130,7 +132,7 @@
     <string name="port_forwards_count">端口转发 (%1$d)</string>
     <string name="port_forwards_clean">全部清除</string>
     <string name="port_forwards_clean_confirm_title">移除所有端口转发？</string>
-    <string name="port_forwards_clean_confirm_body">这将移除全部 %1$d 条转发规则。Podroid 自身的转发（SSH、显示、音频）不受影响。</string>
+    <string name="port_forwards_clean_confirm_body">这将移除全部 %1$d 条转发规则。YourXDemon 自身的转发（SSH、显示、音频）不受影响。</string>
     <string name="port_forwards_clean_confirm_btn">全部移除</string>
     <string name="none">无</string>
     <string name="active">活动</string>
@@ -163,7 +165,7 @@
     <string name="container_backup_location">备份位置</string>
     <string name="container_backup_guest_path">虚拟机路径</string>
     <string name="container_backup_phone_path">手机（下载目录）</string>
-    <string name="container_backup_phone_path_value">Download/Podroid/backups</string>
+    <string name="container_backup_phone_path_value">Download/YourXDemon/backups</string>
     <string name="container_backup_downloads_hint">在设置中启用下载目录共享，备份文件会出现在手机上。</string>
     <string name="container_backup_export">导出容器</string>
     <string name="container_backup_vm_stopped">运行备份命令前请先启动虚拟机。</string>
@@ -176,10 +178,10 @@
     <string name="container_backup_tools">工具</string>
     <string name="container_backup_copy_list">复制列表命令</string>
     <string name="container_backup_copy_all">复制全部备份命令</string>
-    <string name="container_backup_terminal_hint">粘贴到 Podroid 终端。较新的客户机镜像包含 podroid-backup；旧镜像会自动回退到 podman export。</string>
+    <string name="container_backup_terminal_hint">粘贴到 YourXDemon 终端。较新的客户机镜像包含 podroid-backup；旧镜像会自动回退到 podman export。</string>
     <string name="container_backup_on_phone">手机上的备份</string>
     <string name="container_backup_refresh">刷新列表</string>
-    <string name="container_backup_none">Downloads/Podroid/backups 中尚未找到备份归档。</string>
+    <string name="container_backup_none">Downloads/YourXDemon/backups 中尚未找到备份归档。</string>
     <string name="container_backup_copied">命令已复制</string>
 
     <!-- Home -->

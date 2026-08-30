@@ -1,13 +1,16 @@
-# Contributing to Podroid
+# Contributing to YourXDemon
 
 Thanks for considering a contribution. Bug reports, feature requests, and pull requests are all welcome.
+
+**Original developer:** [ExTV](https://github.com/ExTV) (Podroid)
+**Rebranded by:** OP Aminul FF (OPX)
 
 Before you start, please skim [`CLAUDE.md`](CLAUDE.md). It documents the VM-engine abstraction and both backends, the boot pipeline, every native binary, and the design quirks you need to know to make changes that don't regress.
 
 ## Getting started
 
 ```sh
-git clone https://github.com/ExTV/Podroid.git
+git clone https://github.com/OPX-Aminul/Podroid.git
 cd Podroid
 ```
 

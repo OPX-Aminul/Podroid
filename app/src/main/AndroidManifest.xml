@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Podroid - Rootless Podman for Android
-  Copyright (C) 2024-2026 Podroid contributors
+  YourXDemon - Terminal Emulator for Android
+  Copyright (C) 2024-2026 YourXDemon contributors
+  Original developer: ExTV (Podroid)
+  Rebranded by: OP Aminul FF (OPX)
 
-  A headless AArch64 QEMU micro-VM running Alpine Linux with Podman,
-  exposed via ttyd web terminal.
+  A real Alpine Linux VM running on stock Android (arm64), providing
+  rootless containers and an in-app X11 desktop. No root required.
 
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -122,7 +124,7 @@
             android:foregroundServiceType="specialUse">
             <property
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="Podman emulation via QEMU" />
+                android:value="Linux VM emulation via QEMU" />
         </service>
 
         <!--

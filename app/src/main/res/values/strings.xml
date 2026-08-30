@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Podroid - Rootless Podman for Android
-  Copyright (C) 2024-2026 Podroid contributors
+  YourXDemon - Terminal Emulator for Android
+  Copyright (C) 2024-2026 YourXDemon contributors
+  Original developer: ExTV (Podroid)
+  Rebranded by: OP Aminul FF (OPX)
 -->
 <resources>
-    <string name="app_name">Podroid</string>
+    <string name="app_name">YourXDemon</string>
 
     <!-- VM Status -->
     <string name="vm_status">VM Status</string>
@@ -55,7 +57,7 @@
     <string name="ram_label">RAM</string>
     <string name="network_label">Network</string>
     <string name="ssh_access">SSH access</string>
-    <string name="ssh_password_hint">ssh root@&lt;phone-ip&gt; -p 9922   (password: podroid)</string>
+    <string name="ssh_password_hint">ssh root@&lt;phone-ip&gt; -p 9922   (password: yourxdemon)</string>
     <string name="load_balance">Load balance</string>
     <string name="load_balance_description">Automatically tune CPU, RAM, storage, and bandwidth for this device.</string>
     <string name="load_balance_storage_hint">Storage size is set automatically. Turn off load balance on the next step to pick manually.</string>
@@ -103,7 +105,7 @@
     <string name="avf_diagnostic">AVF (pKVM) diagnostic</string>
     <string name="running_avf_diagnostic">Running AVF diagnostic…</string>
     <string name="probing_avf">Probing…</string>
-    <string name="export_diagnostic_subject">Podroid Diagnostic Log</string>
+    <string name="export_diagnostic_subject">YourXDemon Diagnostic Log</string>
     <string name="export_diagnostic_chooser">Share diagnostic log</string>
     <string name="export_diagnostic_failed">Export failed: %1$s</string>
     <string name="unknown_error">unknown error</string>
@@ -130,7 +132,7 @@
     <string name="port_forwards_count">Port forwards (%1$d)</string>
     <string name="port_forwards_clean">Clean all</string>
     <string name="port_forwards_clean_confirm_title">Remove all port forwards?</string>
-    <string name="port_forwards_clean_confirm_body">This removes all %1$d forwarding rules. Podroid\'s own forwards (SSH, display, audio) are not affected.</string>
+    <string name="port_forwards_clean_confirm_body">This removes all %1$d forwarding rules. YourXDemon\'s own forwards (SSH, display, audio) are not affected.</string>
     <string name="port_forwards_clean_confirm_btn">Remove all</string>
     <string name="none">None</string>
     <string name="active">active</string>
@@ -163,7 +165,7 @@
     <string name="container_backup_location">Backup location</string>
     <string name="container_backup_guest_path">Guest path</string>
     <string name="container_backup_phone_path">On phone (Downloads)</string>
-    <string name="container_backup_phone_path_value">Download/Podroid/backups</string>
+    <string name="container_backup_phone_path_value">Download/YourXDemon/backups</string>
     <string name="container_backup_downloads_hint">Enable Downloads sharing in Settings so backups appear on your phone.</string>
     <string name="container_backup_export">Export container</string>
     <string name="container_backup_vm_stopped">Start the VM before running backup commands.</string>
@@ -176,10 +178,10 @@
     <string name="container_backup_tools">Tools</string>
     <string name="container_backup_copy_list">Copy list command</string>
     <string name="container_backup_copy_all">Copy backup-all command</string>
-    <string name="container_backup_terminal_hint">Paste into the Podroid terminal. podroid-backup is included in newer guest images; older images fall back to podman export automatically.</string>
+    <string name="container_backup_terminal_hint">Paste into the YourXDemon terminal. podroid-backup is included in newer guest images; older images fall back to podman export automatically.</string>
     <string name="container_backup_on_phone">Backups on phone</string>
     <string name="container_backup_refresh">Refresh list</string>
-    <string name="container_backup_none">No backup archives found in Downloads/Podroid/backups yet.</string>
+    <string name="container_backup_none">No backup archives found in Downloads/YourXDemon/backups yet.</string>
     <string name="container_backup_copied">Command copied</string>
 
     <!-- Home -->

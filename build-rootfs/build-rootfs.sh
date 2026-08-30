@@ -71,12 +71,12 @@ mkdir -p "$ROOTFS/etc/sudoers.d"
 echo "%wheel ALL=(ALL) ALL" > "$ROOTFS/etc/sudoers.d/wheel"
 chmod 0440 "$ROOTFS/etc/sudoers.d/wheel"
 
-# Set root password to "podroid" (pre-hashed with openssl).
+# Set root password to "yourxdemon" (pre-hashed with openssl).
 # We can't run chpasswd inside the aarch64 rootfs from an x86_64 host,
 # so write the SHA-512 hash directly into /etc/shadow.
 # No fixed -salt: openssl generates a random salt so the stored hash differs
-# per build (the password stays the documented default "podroid").
-ROOT_HASH=$(openssl passwd -6 podroid)
+# per build (the password stays the documented default "yourxdemon").
+ROOT_HASH=$(openssl passwd -6 yourxdemon)
 sed -i "s|^root:[^:]*:|root:${ROOT_HASH}:|" "$ROOTFS/etc/shadow"
 
 # Strip docs/man/locale to shrink squashfs
@@ -148,20 +148,22 @@ chmod 0644 "$ROOTFS/etc/profile.d/podroid-color.sh"
 
 
 # Hostname (read by podroid-bootstrap via `hostname -F /etc/hostname`)
-echo "podroid" > "$ROOTFS/etc/hostname"
-echo "127.0.0.1 localhost podroid" > "$ROOTFS/etc/hosts"
+echo "yourxdemon" > "$ROOTFS/etc/hostname"
+echo "127.0.0.1 localhost yourxdemon" > "$ROOTFS/etc/hosts"
 echo "::1 localhost ip6-localhost" >> "$ROOTFS/etc/hosts"
 
 # Login banner shown by getty before the login prompt.
 # \S=Alpine release, \r=kernel, \m=arch, \l=tty
 cat > "$ROOTFS/etc/issue" <<'EOF'
-Welcome to Podroid (Alpine \S)
+Welcome to YourXDemon (Alpine \S)
 Kernel \r on \m (\l)
 
-  Default login:  root  /  podroid
+  Default login:  root  /  yourxdemon
   Change root password:    passwd
   Create a regular user:   adduser -G wheel <name>
                            (wheel group → can run doas/sudo)
+
+  Developed by ExTV (Podroid) | Rebranded by OP Aminul FF (OPX)
 
 EOF
 

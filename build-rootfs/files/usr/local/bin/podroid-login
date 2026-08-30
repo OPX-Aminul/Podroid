@@ -29,6 +29,10 @@ if [ "${1:-}" = "root" ] || [ -z "${1:-}" ]; then
     export HOME=/root
     export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
     cd /root 2>/dev/null || cd /
+    echo ""
+    echo "  Welcome to YourXDemon v1.0.0"
+    echo "  Developed by ExTV (Podroid) | Rebranded by OP Aminul FF (OPX)"
+    echo ""
     exec /bin/sh --login
 fi
 exec /bin/login "$@"
