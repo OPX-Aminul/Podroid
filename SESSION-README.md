@@ -427,6 +427,25 @@ build-apk.yml:
 
 ---
 
+## StrykerApp Comparison (Reference)
+
+StrykerApp (`github.com/zalexdev/strykerapp`) is a rooted Android pentest suite with a similar QEMU-based VM. Key architectural differences:
+
+| Aspect | StrykerApp | YourXDemon |
+|---|---|---|
+| **Root** | Rooted (chroot + QEMU) | Rootless (QEMU only) |
+| **TCP agent** | port 1050 (agentd) ✅ | port 9050 (agentd) ✅ |
+| **Interactive shell** | port 1052 (ptyd: TCP→PTY) ✅ | PTY path (bridge→virtio-console) ⚠️ |
+| **Serial bootstrap** | ttyAMA0 (repair agent) | ttyAMA0 (boot log only) |
+| **CPU flags** | sve=off,pmu=off,pauth=off ✅ | sve=off,pmu=off,pauth=off ✅ |
+| **TB size** | 512MB ✅ | 512MB ✅ |
+| **Kernel fast-boot** | nokaslr,rcu_expedited ✅ | nokaslr,rcu_expedited ✅ |
+| **KVM fallback** | Yes (`/dev/kvm` check) | No (TCG only) |
+
+**Key gap:** StrykerApp has a separate `ptyd` (TCP→PTY daemon on port 1052) for interactive shells, bypassing bridge+virtio-console entirely. Our interactive shell still uses the 8-hop PTY path. Implementing a similar `ptyd` would require rewriting the Termux terminal UI — a massive change.
+
+---
+
 ## Verification Checklist
 
 - [x] Xiaomi/MIUI USB passthrough fixed (QEMU quirk + kernel patch)
