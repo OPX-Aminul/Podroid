@@ -17,9 +17,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import org.lsposed.hiddenapibypass.HiddenApiBypass
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
@@ -36,11 +33,6 @@ class PodroidApplication : Application() {
     // hang even if extraction throws; intactness is enforced by the size-check
     // in QemuEngine/AvfEngine's own asset reads, not by this signal.
     private val assetsReady = CompletableDeferred<Unit>()
-
-    // Observable extraction state for the setup wizard's extraction screen.
-    // true once extractAssets() has finished (success or partial failure).
-    private val _assetsExtracted = MutableStateFlow(false)
-    val assetsExtracted: StateFlow<Boolean> = _assetsExtracted.asStateFlow()
 
     override fun onCreate() {
         super.onCreate()
@@ -153,7 +145,6 @@ class PodroidApplication : Application() {
         } finally {
             // Always release waiters — a failed/partial extract is detected by
             // the per-file size-check on the next read, not by hanging here.
-            _assetsExtracted.value = true
             assetsReady.complete(Unit)
         }
     }

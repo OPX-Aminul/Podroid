@@ -5,17 +5,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.activity.compose.LocalActivity
-import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.excp.podroid.PodroidApplication
 import com.excp.podroid.ui.screens.home.HomeScreen
 import com.excp.podroid.ui.screens.settings.SettingsScreen
-import com.excp.podroid.ui.screens.setup.ExtractionScreen
 import com.excp.podroid.ui.screens.setup.SetupScreen
 import com.excp.podroid.ui.screens.terminal.TerminalScreen
 import com.excp.podroid.ui.screens.terminal.TerminalViewModel
@@ -25,7 +22,6 @@ import com.excp.podroid.ui.screens.x11.X11Screen
 
 object Routes {
     const val SETUP         = "setup"
-    const val EXTRACTION    = "extraction"
     const val HOME          = "home"
     const val TERMINAL      = "terminal"
     const val TERMINAL_X11  = "terminal/x11"
@@ -62,22 +58,8 @@ fun PodroidNavGraph(
             SetupScreen(
                 windowSizeClass = windowSizeClass,
                 onSetupComplete = {
-                    navController.navigate(Routes.EXTRACTION) {
-                        popUpTo(Routes.SETUP) { inclusive = true }
-                    }
-                },
-            )
-        }
-
-        composable(Routes.EXTRACTION) {
-            val app = LocalContext.current.applicationContext as PodroidApplication
-            val assetsExtracted by app.assetsExtracted.collectAsStateWithLifecycle()
-            ExtractionScreen(
-                windowSizeClass = windowSizeClass,
-                extractionComplete = assetsExtracted,
-                onExtractionComplete = {
                     navController.navigate(Routes.HOME) {
-                        popUpTo(Routes.EXTRACTION) { inclusive = true }
+                        popUpTo(Routes.SETUP) { inclusive = true }
                     }
                 },
             )

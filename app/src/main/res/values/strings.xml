@@ -299,11 +299,6 @@
     <string name="qemu_label">QEMU</string>
     <string name="stop_vm_before_edit">Stop the VM before editing — changes apply on next boot.</string>
 
-    <!-- Extraction -->
-    <string name="extracting_title">Preparing Podroid</string>
-    <string name="extracting_description">Extracting VM components to your device. This only happens once.</string>
-    <string name="extracting_hint">Extracting binaries and system files…</string>
-
     <!-- USB Passthrough -->
     <string name="usb_passthrough">USB Passthrough</string>
     <string name="usb_passthrough_description">Optional. Hot-plug external USB devices (Wi-Fi, storage, serial, etc.) into the VM at runtime.</string>

@@ -300,11 +300,6 @@
     <string name="qemu_label">QEMU</string>
     <string name="stop_vm_before_edit">停止虚拟机后才能编辑 — 更改将在下次启动时生效。</string>
 
-    <!-- Extraction -->
-    <string name="extracting_title">正在准备 Podroid</string>
-    <string name="extracting_description">正在将虚拟机组件提取到您的设备上。此操作仅在首次运行时执行。</string>
-    <string name="extracting_hint">正在提取系统文件和二进制文件…</string>
-
     <!-- USB Passthrough -->
     <string name="usb_passthrough">USB 设备直通</string>
     <string name="usb_passthrough_description">可选。在虚拟机运行时热插拔外部 USB 设备（Wi-Fi、存储、串口等）。</string>
