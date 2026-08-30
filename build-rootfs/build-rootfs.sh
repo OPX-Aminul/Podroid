@@ -57,13 +57,12 @@ apk -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_BRANCH}/main" \
     font-cursor-misc \
     ttf-dejavu \
     linux-firmware-rtlwifi \
-    linux-firmware-atheros \
+    linux-firmware-realtek \
+    linux-firmware-rtl_bt \
+    linux-firmware-rtl_nic \
     linux-firmware-mediatek \
     linux-firmware-brcm \
-    linux-firmware-ralink \
-    linux-firmware-intel \
-    linux-firmware-zd1211 \
-    linux-firmware-cw1200
+    linux-firmware-intel
 
 # Apply file capabilities to newuidmap/newgidmap. apk's package install often
 # does this, but we set them explicitly so the squashfs ships with the
