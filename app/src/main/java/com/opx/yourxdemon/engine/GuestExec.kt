@@ -28,8 +28,8 @@ object GuestExec {
 
     private const val TAG = "GuestExec"
     private const val AGENT_PORT = 9050
-    private const val CONNECT_TIMEOUT_MS = 4_000
-    private const val READ_TIMEOUT_MS = 90_000
+    private const val CONNECT_TIMEOUT_MS = 4_000L
+    private const val READ_TIMEOUT_MS = 90_000L
     private const val EXIT_SENTINEL = "__EXIT__"
     private const val PING_SENTINEL = "__YOURXDEMON_PONG__"
 
@@ -48,7 +48,7 @@ object GuestExec {
         try {
             socket.connect(
                 InetSocketAddress("127.0.0.1", AGENT_PORT),
-                CONNECT_TIMEOUT_MS
+                CONNECT_TIMEOUT_MS.toInt()
             )
             socket.soTimeout = timeoutMs.toInt()
             socket.keepAlive = true
@@ -56,11 +56,12 @@ object GuestExec {
             val os: OutputStream = socket.getOutputStream()
 
             // Wrap command with PATH/HOME setup (same as StrykerApp)
+            val dollar = "$"
             val payload = buildString {
-                append("export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\$\{PATH:+:\$PATH\}; ")
+                append("export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\${PATH:+:$dollar{PATH}}; ")
                 append("export HOME=/root LANG=C.UTF-8; ")
                 append(command)
-                append("\nprintf '\\n${EXIT_SENTINEL}%s\\n' \"\$?\"\n")
+                append("\nprintf '\\n${EXIT_SENTINEL}%s\\\\n' \"$dollar?\"\n")
             }
 
             os.write(payload.toByteArray(StandardCharsets.UTF_8))
@@ -146,16 +147,17 @@ object GuestExec {
         return try {
             socket.connect(
                 InetSocketAddress("127.0.0.1", AGENT_PORT),
-                CONNECT_TIMEOUT_MS
+                CONNECT_TIMEOUT_MS.toInt()
             )
             socket.soTimeout = timeoutMs.toInt()
 
             val os = socket.getOutputStream()
+            val dollar = "$"
             val payload = buildString {
-                append("export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\$\{PATH:+:\$PATH\}; ")
+                append("export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\${PATH:+:$dollar{PATH}}; ")
                 append("export HOME=/root LANG=C.UTF-8; ")
                 append(command)
-                append("\nprintf '\\n${EXIT_SENTINEL}%s\\n' \"\$?\"\n")
+                append("\nprintf '\\n${EXIT_SENTINEL}%s\\\\n' \"$dollar?\"\n")
             }
             os.write(payload.toByteArray(StandardCharsets.UTF_8))
             os.flush()
