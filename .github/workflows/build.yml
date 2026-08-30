@@ -1,8 +1,9 @@
 name: Build & Update Release
 
-# Builds everything the developer's Dockerfile produces:
-#   - kernel + QEMU + rootfs + initramfs (when rootfs/initramfs files change)
-#   - kernel + QEMU only (when only Dockerfile/kernel/build-tools change)
+# Builds everything the developer's build scripts produce:
+#   - kernel + QEMU (main Dockerfile stages)
+#   - rootfs squashfs (build-rootfs/Dockerfile.rootfs → build-rootfs.sh)
+#   - initramfs (main Dockerfile packer stage)
 # All outputs go to the all-core-file release via gh release upload --clobber.
 
 on:
@@ -39,6 +40,7 @@ jobs:
         run: |
           echo "kernel=$(grep '^podroidKernelVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
           echo "qemu=$(grep '^podroidQemuVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "sysver=$(grep -E 'versionCode' app/build.gradle.kts | grep -oE '[0-9]+' | head -1)" >> "$GITHUB_OUTPUT"
 
       # ══════════════════════════════════════════════════════════════════════
       # QEMU: Cross-compiled patched QEMU binary
@@ -88,11 +90,37 @@ jobs:
           ls -lh ./vmlinuz-virt
 
       # ══════════════════════════════════════════════════════════════════════
-      # PACKER: Developer's packer stage — kernel + rootfs → initrd.img
-      # Runs on x86_64 (no emulation needed). This stage has the rootfs
-      # contents available from rootfs-builder (arm64, built via QEMU emulation).
+      # ROOTFS: Developer's exact build — Dockerfile.rootfs → build-rootfs.sh
+      # Context is build-rootfs/ directory (NOT project root).
+      # This installs ALL packages (podman, docker, lxc, dropbear, tigervnc,
+      # fonts, firmware, etc.) — same as ./build-all.sh rootfs.
       # ══════════════════════════════════════════════════════════════════════
-      - name: Build packer (initramfs)
+      - name: Build rootfs squashfs (developer's exact script)
+        uses: docker/build-push-action@v6
+        with:
+          file: build-rootfs/Dockerfile.rootfs
+          context: build-rootfs/
+          load: true
+          tags: podroid-rootfs
+          build-args: SYSTEM_VERSION=${{ steps.ver.outputs.sysver }}
+          cache-from: type=gha,scope=rootfs-full
+          cache-to: type=gha,scope=rootfs-full,mode=max
+
+      - name: Extract rootfs squashfs
+        run: |
+          docker create --name rootfs-out podroid-rootfs
+          docker cp rootfs-out:/alpine-rootfs.squashfs ./alpine-rootfs.squashfs
+          docker rm rootfs-out
+          echo "✅ rootfs squashfs:"
+          ls -lh ./alpine-rootfs.squashfs
+
+      # ══════════════════════════════════════════════════════════════════════
+      # INITRAMFS: Developer's packer stage — kernel + rootfs → initrd.img
+      # The packer stage uses the main Dockerfile's rootfs-builder (minimal
+      # packages for initramfs), NOT the full rootfs. This is correct —
+      # the initramfs only needs boot-essential packages.
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Build initramfs (packer stage)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -113,39 +141,6 @@ jobs:
           docker rm packer-out
           echo "✅ initramfs:"
           ls -lh ./initrd.img
-
-      # ══════════════════════════════════════════════════════════════════════
-      # ROOTFS SQUASHFS: Extract rootfs from packer image, build squashfs
-      # The packer image contains the rootfs (from rootfs-builder).
-      # We export it as tar, then use an x86_64 container with squashfs-tools.
-      # No arm64 emulation needed — squashfs-tools is arch-independent.
-      # ══════════════════════════════════════════════════════════════════════
-      - name: Build rootfs squashfs
-        run: |
-          # The packer image has rootfs at /rootfs/. Export and extract.
-          docker create --name packer-rootfs podroid-packer
-          mkdir -p /tmp/rootfs-export
-          docker export packer-rootfs | tar -xf - -C /tmp/rootfs-export 2>/dev/null || true
-          docker rm packer-rootfs
-
-          # The rootfs content is at /tmp/rootfs-export/rootfs/
-          # Build squashfs using an x86_64 container with squashfs-tools
-          docker run --rm -v "/tmp/rootfs-export/rootfs:/rootfs:ro" -v "$(pwd):/out" \
-            alpine:3.24 sh -c "
-              apk add --no-cache squashfs-tools zstd >/dev/null 2>&1 &&
-              cd /rootfs &&
-              rm -rf proc sys dev run tmp boot output 2>/dev/null || true &&
-              mksquashfs . /out/alpine-rootfs.squashfs \
-                -comp zstd -Xcompression-level 19 -noappend
-            "
-
-          if [ -f alpine-rootfs.squashfs ]; then
-            echo "✅ rootfs squashfs:"
-            ls -lh alpine-rootfs.squashfs
-          else
-            echo "❌ Failed to build squashfs"
-            exit 1
-          fi
 
       # ══════════════════════════════════════════════════════════════════════
       # UPLOAD: Replace ALL files in the all-core-file release
@@ -174,4 +169,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker rmi podroid-qemu-patch podroid-kernel-patch podroid-packer 2>/dev/null || true
+        run: docker rmi podroid-qemu-patch podroid-kernel-patch podroid-rootfs podroid-packer 2>/dev/null || true
