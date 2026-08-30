@@ -23,7 +23,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.zip.GZIPInputStream
 
 @HiltAndroidApp
 class PodroidApplication : Application() {
@@ -110,9 +109,9 @@ class PodroidApplication : Application() {
             // (not the main thread); the VM launch path awaits awaitAssetsReady.
             val tasks: List<() -> Unit> = listOf(
                 { copyAssetDir("qemu", filesDir, forceCopy) },
-                { copyAssetDecompressIfNeeded("vmlinuz-virt", filesDir, forceCopy) },
-                { copyAssetDecompressIfNeeded("initrd.img", filesDir, forceCopy) },
-                { copyAssetDecompressIfNeeded("alpine-rootfs.squashfs", filesDir, forceCopy) },
+                { copyAssetIfNeeded("vmlinuz-virt", filesDir, forceCopy) },
+                { copyAssetIfNeeded("initrd.img", filesDir, forceCopy) },
+                { copyAssetIfNeeded("alpine-rootfs.squashfs", filesDir, forceCopy) },
             )
             val pool = Executors.newFixedThreadPool(tasks.size.coerceAtMost(4))
             var allSucceeded = true
@@ -188,64 +187,6 @@ class PodroidApplication : Application() {
             copyAssetAtomically(assetName, destFile)
         } catch (e: Exception) {
             Log.w(TAG, "Failed to extract $assetName", e)
-        }
-    }
-
-    /**
-     * Like [copyAssetIfNeeded] but transparently handles gzip-compressed assets.
-     * CI builds gzip large assets (vmlinuz-virt, initrd.img, squashfs) before
-     * packaging to reduce APK size. If `assetName.gz` exists in the APK, it is
-     * decompressed on-the-fly; otherwise the raw asset is copied as before.
-     *
-     * The skip-when-size-matches heuristic cannot be used for .gz assets because
-     * the compressed size doesn't predict the decompressed size. We always
-     * re-extract .gz assets when [forceCopy] is set or the dest is missing.
-     */
-    private fun copyAssetDecompressIfNeeded(assetName: String, destDir: File, forceCopy: Boolean) {
-        val destFile = File(destDir, assetName)
-        try {
-            // Check for gzip-compressed version first (CI builds compress large assets)
-            val gzName = "$assetName.gz"
-            val hasGz = try { assets.openFd(gzName).close(); true } catch (_: Exception) { false }
-
-            if (hasGz) {
-                // For .gz assets we can't use size-based skip — always re-extract
-                // if forced or dest missing (compressed size ≠ decompressed size)
-                if (!forceCopy && destFile.exists()) return
-
-                destFile.parentFile?.mkdirs()
-                decompressAsset(gzName, destFile)
-            } else {
-                // Fallback: copy raw asset (pre-CI or local builds)
-                copyAssetIfNeeded(assetName, destDir, forceCopy)
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to extract $assetName", e)
-        }
-    }
-
-    /**
-     * Streams a gzip-compressed asset to `<destFile>.tmp`, decompresses on the
-     * fly, fsyncs, then atomically renames onto [destFile].
-     */
-    private fun decompressAsset(gzAssetPath: String, destFile: File) {
-        val tmpFile = File(destFile.parentFile, destFile.name + TMP_SUFFIX)
-        try {
-            assets.open(gzAssetPath).use { input ->
-                GZIPInputStream(input).use { gzIn ->
-                    java.io.FileOutputStream(tmpFile).use { output ->
-                        gzIn.copyTo(output)
-                        output.flush()
-                        output.fd.sync()
-                    }
-                }
-            }
-            if (!tmpFile.renameTo(destFile)) {
-                throw java.io.IOException("atomic rename ${tmpFile.name} -> ${destFile.name} failed")
-            }
-        } catch (e: Exception) {
-            runCatching { tmpFile.delete() }
-            throw e
         }
     }
 

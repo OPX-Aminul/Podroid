@@ -106,26 +106,6 @@ jobs:
           echo "assets:"
           ls -lh "$ASSETS/vmlinuz-virt" "$ASSETS/initrd.img" "$ASSETS/alpine-rootfs.squashfs" 2>/dev/null
 
-          # ══════════════════════════════════════════════════════════════════
-          # STEP 4b: Compress large assets to reduce APK size
-          # gzip the three biggest files before packaging into the APK.
-          # PodroidApplication detects .gz and decompresses on first run.
-          # ══════════════════════════════════════════════════════════════════
-          echo ""
-          echo "=== Compressing large assets for APK ==="
-          for asset in vmlinuz-virt initrd.img alpine-rootfs.squashfs; do
-            if [ -f "$ASSETS/$asset" ]; then
-              BEFORE=$(stat -c%s "$ASSETS/$asset")
-              gzip -9 "$ASSETS/$asset"
-              AFTER=$(stat -c%s "$ASSETS/$asset.gz")
-              RATIO=$(( 100 - AFTER * 100 / BEFORE ))
-              echo "  📦 $asset: $(numfmt --to=iec $BEFORE) → $(numfmt --to=iec $AFTER) (${RATIO}% smaller)"
-            fi
-          done
-          echo ""
-          echo "=== Compressed assets ==="
-          ls -lh "$ASSETS/"*.gz 2>/dev/null
-
       # ══════════════════════════════════════════════════════════════════════
       # STEP 5: Build APK via Gradle (exactly as developer does locally)
       # This also builds libtermux.so via NDK (terminal-emulator module)
