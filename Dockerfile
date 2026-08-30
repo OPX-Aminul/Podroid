@@ -184,9 +184,9 @@ RUN cd linux-${KERNEL_VERSION} \
     && make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- \
        INSTALL_MOD_PATH=/modules INSTALL_MOD_STRIP=1 modules_install \
     && rm -f /modules/lib/modules/*/build /modules/lib/modules/*/source
-# Keep only modules init-podroid actually uses; everything else (DSA, pinctrl,
+# Keep only modules init-yourxdemon actually uses; everything else (DSA, pinctrl,
 # mediatek, renesas, hardware-specific drivers) is dead weight in a VM.
-# init-podroid runs `depmod -a` at boot so we don't need to regenerate modules.dep here.
+# init-yourxdemon runs `depmod -a` at boot so we don't need to regenerate modules.dep here.
 RUN cd /modules/lib/modules/*/kernel \
     && find . -name '*.ko' | grep -vE '(^\./net/(bridge|netfilter|9p|ipv4/netfilter|ipv6/netfilter)/|^\./fs/(9p|fuse|overlayfs)/|^\./drivers/net/(tun|veth|virtio_net)\.ko|^\./drivers/block/virtio_blk\.ko|^\./drivers/char/hw_random/virtio-rng\.ko|^\./drivers/virtio/)' \
     | xargs rm -f \
@@ -215,7 +215,7 @@ RUN apk update && apk add --no-cache \
     netavark aardvark-dns fuse-overlayfs slirp4netns iptables ip6tables \
     shadow-uidmap ca-certificates crun curl e2fsprogs e2fsprogs-extra util-linux openrc \
     dropbear ncurses-terminfo-base musl-locales kmod fastfetch
-COPY init-podroid /init
+COPY init-yourxdemon /init
 RUN chmod +x /init
 RUN rm -rf /var/cache/apk/* /tmp/* /var/tmp/* /usr/share/man /usr/share/doc
 
