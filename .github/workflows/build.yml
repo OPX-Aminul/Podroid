@@ -135,7 +135,7 @@ jobs:
               apk add --no-cache squashfs-tools zstd >/dev/null 2>&1 &&
               cd /rootfs &&
               rm -rf proc sys dev run tmp boot output 2>/dev/null || true &&
-              mksquashfs - /out/alpine-rootfs.squashfs \
+              mksquashfs . /out/alpine-rootfs.squashfs \
                 -comp zstd -Xcompression-level 19 -noappend
             "
 
