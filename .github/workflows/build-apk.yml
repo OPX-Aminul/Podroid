@@ -16,7 +16,7 @@ on:
   # Both build.yml (patched QEMU/kernel) and build-full.yml (all binaries)
   # update the all-core-file release. APK build consumes its output.
   workflow_run:
-    workflows: ["Build Patches & Update Release", "Build Full (All Binaries)"]
+    workflows: ["Build & Update Release"]
     types: [completed]
     branches: [main]
   # Allow manual trigger

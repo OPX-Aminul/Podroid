@@ -1,9 +1,9 @@
-name: Build Patches & Update Release
+name: Build & Update Release
 
-# Only builds the 2 patched files:
-#   1. libqemu-system-aarch64.so  (QEMU with USB speed quirk)
-#   2. vmlinuz-virt               (kernel with maxpacket fix)
-# Everything else (rootfs, initramfs, bridge, etc.) stays untouched.
+# Builds everything the developer's Dockerfile produces:
+#   - kernel + QEMU + rootfs + initramfs (when rootfs/initramfs files change)
+#   - kernel + QEMU only (when only Dockerfile/kernel/build-tools change)
+# All outputs go to the all-core-file release via gh release upload --clobber.
 
 on:
   push:
@@ -13,13 +13,17 @@ on:
       - 'podroid_kernel.config'
       - 'gradle.properties'
       - 'build-tools/**'
+      - 'build-rootfs/**'
+      - 'init-podroid'
+      - 'podroid-bridge.c'
+      - 'podroid-launcher.c'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 180
     permissions:
       contents: write
 
@@ -37,10 +41,8 @@ jobs:
           echo "qemu=$(grep '^podroidQemuVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
 
       # ══════════════════════════════════════════════════════════════════════
-      # FILE 1: Patched QEMU binary
-      # Builds the qemu-builder stage with Docker layer cache.
-      # Only the host-libusb.c patch differs from upstream — everything else
-      # (glib, pixman, libusb, etc.) is cached after first run.
+      # QEMU: Cross-compiled patched QEMU binary
+      # Developer's qemu-builder stage — cached after first run.
       # ══════════════════════════════════════════════════════════════════════
       - name: Build patched QEMU
         uses: docker/build-push-action@v6
@@ -53,7 +55,7 @@ jobs:
           cache-from: type=gha,scope=qemu
           cache-to: type=gha,scope=qemu,mode=max
 
-      - name: Extract QEMU binary
+      - name: Extract QEMU binaries
         run: |
           docker create --name qemu-out podroid-qemu-patch /bin/true
           docker cp qemu-out:/opt/qemu-out/libqemu-system-aarch64.so ./libqemu-system-aarch64.so
@@ -64,9 +66,8 @@ jobs:
           ls -lh ./libqemu-system-aarch64.so ./libslirp.so ./libpodroid-bridge.so ./libpodroid-launcher.so
 
       # ══════════════════════════════════════════════════════════════════════
-      # FILE 2: Patched guest kernel
-      # Builds only the kernel-builder stage (kernel + USB maxpacket patch).
-      # This is just the compressed kernel image, NOT the full initramfs.
+      # KERNEL: Custom kernel with USB maxpacket fix + all WiFi drivers =y
+      # Developer's kernel-builder stage — cached after first run.
       # ══════════════════════════════════════════════════════════════════════
       - name: Build patched kernel
         uses: docker/build-push-action@v6
@@ -87,21 +88,85 @@ jobs:
           ls -lh ./vmlinuz-virt
 
       # ══════════════════════════════════════════════════════════════════════
-      # UPLOAD: Replace only these 2 files in the existing release
-      # --clobber overwrites the old files, keeps everything else intact
+      # ROOTFS: Alpine rootfs with WiFi firmware + testing repos
+      # Developer's rootfs-builder stage — uses QEMU emulation (arm64 on x86).
+      # This is slow on first run but cached after.
       # ══════════════════════════════════════════════════════════════════════
-      - name: Upload patched binaries to all-core-file release
+      - name: Build rootfs
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: rootfs-builder
+          load: true
+          tags: podroid-rootfs
+          cache-from: type=gha,scope=rootfs
+          cache-to: type=gha,scope=rootfs,mode=max
+
+      - name: Extract rootfs squashfs
+        run: |
+          # Build squashfs from the rootfs-builder output using QEMU emulation.
+          # The rootfs-builder runs arm64 on x86 via Docker's QEMU binfmt_misc.
+          docker run --rm --platform linux/arm64/v8 -v "$(pwd)/squashfs-out:/out" podroid-rootfs sh -c "
+            cd / && tar cf - \
+              --exclude=proc --exclude=sys --exclude=dev \
+              --exclude=run --exclude=tmp --exclude=boot \
+              . 2>/dev/null \
+            | mksquashfs - /out/alpine-rootfs.squashfs \
+              -comp zstd -Xcompression-level 19 -noappend 2>/dev/null
+          "
+          if [ -f squashfs-out/alpine-rootfs.squashfs ]; then
+            cp squashfs-out/alpine-rootfs.squashfs ./alpine-rootfs.squashfs
+            echo "✅ rootfs squashfs built:"
+            ls -lh ./alpine-rootfs.squashfs
+          else
+            echo "❌ Failed to build squashfs"
+            exit 1
+          fi
+
+      # ══════════════════════════════════════════════════════════════════════
+      # INITRAMFS: Pack kernel + rootfs into initrd.img
+      # Developer's packer stage — runs on x86 (cpio + gzip, no arch needed).
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Build initramfs
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: packer
+          load: true
+          tags: podroid-packer
+          build-args: KERNEL_VERSION=${{ steps.ver.outputs.kernel }}
+          cache-from: |
+            type=gha,scope=kernel
+            type=gha,scope=rootfs
+            type=gha,scope=packer
+          cache-to: type=gha,scope=packer,mode=max
+
+      - name: Extract initramfs
+        run: |
+          docker create --name packer-out podroid-packer
+          docker cp packer-out:/output/initrd.img ./initrd.img
+          docker rm packer-out
+          echo "✅ initramfs:"
+          ls -lh ./initrd.img
+
+      # ══════════════════════════════════════════════════════════════════════
+      # UPLOAD: Replace ALL files in the all-core-file release
+      # --clobber overwrites old files, keeps everything else intact
+      # ══════════════════════════════════════════════════════════════════════
+      - name: Upload all binaries to all-core-file release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Replacing 2 patched files in all-core-file release..."
+          echo "Replacing all files in all-core-file release..."
 
           gh release upload all-core-file \
+            ./vmlinuz-virt \
+            ./initrd.img \
+            ./alpine-rootfs.squashfs \
             ./libqemu-system-aarch64.so \
             ./libslirp.so \
             ./libpodroid-bridge.so \
             ./libpodroid-launcher.so \
-            ./vmlinuz-virt \
             --clobber
 
           echo ""
@@ -111,4 +176,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker rmi podroid-qemu-patch podroid-kernel-patch 2>/dev/null || true
+        run: docker rmi podroid-qemu-patch podroid-kernel-patch podroid-rootfs podroid-packer 2>/dev/null || true
