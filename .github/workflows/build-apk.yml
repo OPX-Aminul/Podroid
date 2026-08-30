@@ -124,21 +124,41 @@ jobs:
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon
+      - name: Generate debug keystore for CI signing
+        run: |
+          # Generate a debug keystore so assembleRelease can sign the APK.
+          # The release keystore (podroid-release.jks) is not available in CI.
+          keytool -genkeypair -v \
+            -keystore /tmp/debug.keystore \
+            -alias debug \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=Podroid CI, OU=Debug, O=Podroid, L=Unknown, ST=Unknown, C=US"
+          echo "✅ Debug keystore generated"
+
+      - name: Build release APK (R8 minified)
+        run: |
+          ./gradlew assembleRelease --no-daemon \
+            -PPODROID_RELEASE_STORE_FILE=/tmp/debug.keystore \
+            -PPODROID_RELEASE_STORE_PASSWORD=android \
+            -PPODROID_RELEASE_KEY_ALIAS=debug \
+            -PPODROID_RELEASE_KEY_PASSWORD=android
 
       - name: Verify APK output
         run: |
-          APK="app/build/outputs/apk/debug/app-debug.apk"
+          APK="app/build/outputs/apk/release/app-release.apk"
           if [ ! -f "$APK" ]; then
             echo "❌ APK not found at $APK"
             exit 1
           fi
-          echo "✅ APK built successfully:"
+          echo "✅ Release APK built successfully:"
           ls -lh "$APK"
-          # Show APK info
-          if command -v aapt2 &>/dev/null; then
-            aapt2 dump badging "$APK" 2>/dev/null | head -5
+          # Show size comparison
+          DEBUG_APK="app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$DEBUG_APK" ]; then
+            echo ""
+            echo "Debug vs Release:"
+            ls -lh "$DEBUG_APK" "$APK"
           fi
 
       # ══════════════════════════════════════════════════════════════════════
@@ -149,8 +169,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           TAG="${{ inputs.tag || 'v1.0.0' }}"
-          APK="app/build/outputs/apk/debug/app-debug.apk"
-          APK_NAME="Podroid-${TAG}-debug.apk"
+          APK="app/build/outputs/apk/release/app-release.apk"
+          APK_NAME="Podroid-${TAG}-release.apk"
 
           # Copy APK with a clean name
           cp "$APK" "./$APK_NAME"
@@ -163,13 +183,12 @@ jobs:
             --title "Podroid $TAG" \
             --notes "## Podroid $TAG
 
-          🤖 **Rootless Podman / Docker / LXC on Android** — no root, no custom recovery.
+          🤖 **Lightweight Linux VM on Android** — no root, no custom recovery.
 
           ### What's Included
-          - Full Android APK with all precompiled binaries
-          - Alpine 3.24 Linux VM with OpenRC
-          - Podman, Docker, and LXC container support
-          - Built-in terminal and X11/VNC desktop viewer
+          - Release APK with R8 minification (smaller size)
+          - Alpine 3.24 Linux VM with OpenRC (CLI-only)
+          - Built-in terminal
           - QEMU (TCG) and AVF (pKVM) engine support
 
           ### Binaries (from \`all-core-file\` release)
@@ -182,14 +201,14 @@ jobs:
           - \`libpodroid-launcher.so\` — QEMU launcher
 
           ### Installation
-          1. Download \`Podroid-${TAG}-debug.apk\`
+          1. Download \`Podroid-${TAG}-release.apk\`
           2. Enable \`Install from unknown sources\` in Android settings
           3. Install and open the app
           4. Follow the setup wizard
 
           ### Requirements
           - Android 8+ (API 26) arm64 device
-          - ~500MB free storage for VM
+          - ~250MB free storage for VM
 
           ---
           *Built automatically from commit \`${{ github.sha }}\`*" \
