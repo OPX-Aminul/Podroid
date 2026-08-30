@@ -1,6 +1,6 @@
 #!/bin/bash
 # ─────────────────────────────────────────────────────────────────────────────
-# Podroid Unified Build & Deploy Script
+# YourXDemon Unified Build & Deploy Script
 # Coordinates kernel, initramfs, rootfs, QEMU, and APK builds.
 # (libtermux.so is no longer built here — the vendored terminal-emulator
 #  module compiles it via AGP's NDK build using src/main/jni/Android.mk.)
@@ -26,7 +26,7 @@ success() { printf "${GREEN}SUCCESS:${NC} %s\n" "$*"; }
 # ── Help ──────────────────────────────────────────────────────────────────────
 show_help() {
     cat <<EOF
-Podroid Unified Build Tool
+YourXDemon Unified Build Tool
 
 Usage: $0 [command] [options]
 
@@ -88,7 +88,7 @@ EOF
 
 build_kernel() {
     local kernel_ver
-    kernel_ver=$(grep -E '^podroidKernelVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
+    kernel_ver=$(grep -E '^yourxdemonKernelVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
     log "Building custom kernel ${kernel_ver} for aarch64 (Docker)..."
     docker build --network=host \
         --build-arg "KERNEL_VERSION=${kernel_ver}" \
@@ -104,7 +104,7 @@ build_kernel() {
 
 build_initramfs() {
     local kernel_ver
-    kernel_ver=$(grep -E '^podroidKernelVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
+    kernel_ver=$(grep -E '^yourxdemonKernelVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
     log "Building custom kernel + Alpine Initramfs (Docker)..."
     docker build --network=host \
         --build-arg "KERNEL_VERSION=${kernel_ver}" \
@@ -134,7 +134,7 @@ build_rootfs() {
 
 build_qemu() {
     local qemu_ver
-    qemu_ver=$(grep -E '^podroidQemuVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
+    qemu_ver=$(grep -E '^yourxdemonQemuVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
     log "Building QEMU ${qemu_ver} for Android ARM64 (Docker)..."
     
     docker build --build-arg "QEMU_VERSION=${qemu_ver}" \
@@ -165,14 +165,14 @@ build_apk() {
 
 deploy_apk() {
     log "Deploying to device..."
-    adb uninstall com.excp.podroid.debug || warn "Uninstall failed (likely not installed)."
+    adb uninstall com.opx.yourxdemon.debug || warn "Uninstall failed (likely not installed)."
     adb install -r app/build/outputs/apk/debug/app-debug.apk
     success "Deployed and ready."
 }
 
 run_boot_test() {
-    local pkg="com.excp.podroid.debug"
-    local activity="com.excp.podroid.MainActivity"
+    local pkg="com.opx.yourxdemon.debug"
+    local activity="com.opx.yourxdemon.MainActivity"
     local timeout=60
     
     log "Starting Automated Boot Test..."
@@ -221,7 +221,7 @@ run_boot_test() {
     console=$(adb shell run-as "$pkg" cat files/console.log 2>/dev/null || echo "")
     
     local errors=0
-    local checks=("Podroid - Alpine Linux" "IP:" "Ready!" "Loading kernel modules")
+    local checks=("YourXDemon - Alpine Linux" "IP:" "Ready!" "Loading kernel modules")
     for check in "${checks[@]}"; do
         if echo "$console" | grep -q "$check"; then
             success "Check passed: $check"

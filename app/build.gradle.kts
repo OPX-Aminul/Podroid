@@ -14,10 +14,10 @@ plugins {
     alias(libs.plugins.hilt.android)
 }
 
-val podroidQemuVersion = providers.gradleProperty("podroidQemuVersion").get()
+val yourxdemonQemuVersion = providers.gradleProperty("yourxdemonQemuVersion").get()
 
 android {
-    namespace = "com.excp.podroid"
+    namespace = "com.opx.yourxdemon"
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
@@ -25,12 +25,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.excp.podroid"
+        applicationId = "com.opx.yourxdemon"
         minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
-        buildConfigField("String", "QEMU_VERSION", "\"$podroidQemuVersion\"")
+        buildConfigField("String", "QEMU_VERSION", "\"$yourxdemonQemuVersion\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

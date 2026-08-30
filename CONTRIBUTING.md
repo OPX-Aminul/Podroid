@@ -56,8 +56,8 @@ Component versions are pinned in one place each, so read the pin rather than tru
 
 | Component | Pinned in |
 |---|---|
-| Linux kernel | `podroidKernelVersion` in `gradle.properties` |
-| QEMU | `podroidQemuVersion` in `gradle.properties` |
+| Linux kernel | `yourxdemonKernelVersion` in `gradle.properties` |
+| QEMU | `yourxdemonQemuVersion` in `gradle.properties` |
 | Alpine | `ARG ALPINE_RELEASE` in `build-rootfs/Dockerfile.rootfs` |
 
 Or, for the common case where you only changed Kotlin / UI code:
@@ -75,7 +75,7 @@ Please open an issue using the **Bug Report** template. The most useful single t
 It bundles app version, device model + Android version, settings, and full logcat in one file. If the bug is VM-side, also include the VM console:
 
 ```sh
-adb shell run-as com.excp.podroid.debug cat files/console.log
+adb shell run-as com.opx.yourxdemon.debug cat files/console.log
 ```
 
 Note that `run-as` works on debug builds only. Release builds are not `run-as`-able, so use the in-app export there.
@@ -136,10 +136,10 @@ Avoid `fixes #N` or `closes #N` unless you intend the issue to close when the co
 ## Project layout
 
 ```
-Podroid/
+YourXDemon/
 ├── app/                                  Android application (Jetpack Compose, Hilt)
 │   └── src/main/
-│       ├── java/com/excp/podroid/
+│       ├── java/com/opx/yourxdemon/
 │       │   ├── engine/                   VmEngine interface + both backends
 │       │   │   ├── VmEngine.kt           the backend contract
 │       │   │   ├── EngineHolder.kt       Hilt binding; picks and routes to a backend
@@ -158,7 +158,7 @@ Podroid/
 │       ├── jniLibs/arm64-v8a/            QEMU, podroid-bridge, podroid-launcher, libslirp
 │       └── assets/                       kernel, initramfs, squashfs, fonts, themes
 ├── terminal-view/, terminal-emulator/    vendored Termux fork (local Gradle modules)
-├── init-podroid                          Minimal initramfs script (~45 lines)
+├── init-yourxdemon                          Minimal initramfs script (~45 lines)
 ├── podroid-bridge.c                      Native PTY <-> virtio-console relay
 ├── podroid-launcher.c                    exec wrapper tying QEMU's lifetime to the app
 ├── Dockerfile                            Kernel + initramfs + QEMU build pipeline

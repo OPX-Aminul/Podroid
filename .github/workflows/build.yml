@@ -16,7 +16,7 @@ on:
       - 'gradle.properties'
       - 'build-tools/**'
       - 'build-rootfs/**'
-      - 'init-podroid'
+      - 'init-yourxdemon'
       - 'podroid-bridge.c'
       - 'podroid-launcher.c'
       - '.github/workflows/build.yml'
@@ -44,8 +44,8 @@ jobs:
       - name: Read versions
         id: ver
         run: |
-          echo "kernel=$(grep '^podroidKernelVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
-          echo "qemu=$(grep '^podroidQemuVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "kernel=$(grep '^yourxdemonKernelVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "qemu=$(grep '^yourxdemonQemuVersion=' gradle.properties | cut -d= -f2)" >> "$GITHUB_OUTPUT"
           echo "sysver=$(grep -E 'versionCode' app/build.gradle.kts | grep -oE '[0-9]+' | head -1)" >> "$GITHUB_OUTPUT"
 
       # ══════════════════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-# Podroid ProGuard rules
+# YourXDemon ProGuard rules
 
 # TerminalView fields set directly from TerminalScreen to wire the session.
 -keepclassmembers class com.termux.view.TerminalView {

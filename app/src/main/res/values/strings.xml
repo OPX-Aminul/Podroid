@@ -80,7 +80,7 @@
     <string name="stop_vm_to_change">Stop the VM to change these settings.</string>
     <string name="storage">Storage</string>
     <string name="autostart_on_boot">Start VM on boot</string>
-    <string name="autostart_on_boot_desc">Boot the VM automatically after the phone starts. Automation apps can also trigger it with the intent actions com.excp.podroid.action.START_VM and STOP_VM.</string>
+    <string name="autostart_on_boot_desc">Boot the VM automatically after the phone starts. Automation apps can also trigger it with the intent actions com.opx.yourxdemon.action.START_VM and STOP_VM.</string>
     <string name="reset_vm">Reset VM (deletes all data)</string>
     <string name="reset_vm_description">Full App Reset?</string>
     <string name="reset_vm_text">This will clear ALL application data, including your VM storage, settings, and port rules. The app will close and return to a freshly-installed state.</string>
@@ -196,7 +196,7 @@
     <!-- AVF Hint -->
     <string name="avf_available">AVF (KVM) available on this device</string>
     <string name="avf_hint_needs_pc">Needs a PC with adb, or the Shizuku app for on-device grant. Run once:</string>
-    <string name="avf_grant_commands">adb shell pm grant com.excp.podroid \\\n  android.permission.MANAGE_VIRTUAL_MACHINE\nadb shell pm grant com.excp.podroid \\\n  android.permission.USE_CUSTOM_VIRTUAL_MACHINE</string>
+    <string name="avf_grant_commands">adb shell pm grant com.opx.yourxdemon \\\n  android.permission.MANAGE_VIRTUAL_MACHINE\nadb shell pm grant com.opx.yourxdemon \\\n  android.permission.USE_CUSTOM_VIRTUAL_MACHINE</string>
 
     <!-- Backend fallback (#66): AVF was forced but this device can't run it -->
     <string name="backend_fallback_suffix">" - AVF unavailable, running QEMU"</string>

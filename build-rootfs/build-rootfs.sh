@@ -121,18 +121,18 @@ ln -sf podroid-hostd "$ROOTFS/usr/local/bin/podroid-headless"
 ln -sf podroid-hostd "$ROOTFS/usr/local/bin/podroid-server"
 chmod +x "$ROOTFS/usr/local/bin/podroid-"*
 mkdir -p "$ROOTFS/etc/conf.d"
-cp /work/files/etc/conf.d/podroid "$ROOTFS/etc/conf.d/"
+cp /work/files/etc/conf.d/yourxdemon "$ROOTFS/etc/conf.d/"
 # vsock agent's initial forward table (read at podroid-vsock startup).
-mkdir -p "$ROOTFS/etc/podroid"
-cp /work/files/etc/podroid/forwards.conf "$ROOTFS/etc/podroid/forwards.conf"
-chmod 0644 "$ROOTFS/etc/podroid/forwards.conf"
+mkdir -p "$ROOTFS/etc/yourxdemon"
+cp /work/files/etc/yourxdemon/forwards.conf "$ROOTFS/etc/yourxdemon/forwards.conf"
+chmod 0644 "$ROOTFS/etc/yourxdemon/forwards.conf"
 # Migration scripts dir (seeded with its README; per-version <v>.sh added over time).
-mkdir -p "$ROOTFS/etc/podroid/migrations"
-cp /work/files/etc/podroid/migrations/README "$ROOTFS/etc/podroid/migrations/README"
+mkdir -p "$ROOTFS/etc/yourxdemon/migrations"
+cp /work/files/etc/yourxdemon/migrations/README "$ROOTFS/etc/yourxdemon/migrations/README"
 # System-version stamp: the migration anchor. Baked from the app versionCode at
-# build time; compared against /mnt/persist/.podroid/applied-version at boot.
-printf '%s\n' "${SYSTEM_VERSION:-0}" > "$ROOTFS/etc/podroid/system-version"
-chmod 0644 "$ROOTFS/etc/podroid/system-version"
+# build time; compared against /mnt/persist/.yourxdemon/applied-version at boot.
+printf '%s\n' "${SYSTEM_VERSION:-0}" > "$ROOTFS/etc/yourxdemon/system-version"
+chmod 0644 "$ROOTFS/etc/yourxdemon/system-version"
 cp /work/files/etc/inittab "$ROOTFS/etc/inittab"
 cp /work/files/etc/rc.conf "$ROOTFS/etc/rc.conf"
 

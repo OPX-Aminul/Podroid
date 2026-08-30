@@ -1,4 +1,4 @@
-# Podroid X11 environment — sourced by /etc/profile for login shells.
+# YourXDemon X11 environment — sourced by /etc/profile for login shells.
 # Apps launched from the user's shell inherit a working DISPLAY and
 # PULSE_SERVER without any setup, so `xeyes` / `firefox` etc. just work.
 #

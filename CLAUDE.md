@@ -4,7 +4,7 @@ Guidance for Claude Code (and any AI assistant or new contributor) working in th
 
 ## What Is This
 
-Podroid is an Android app that runs a real **Alpine 3.24** Linux VM on stock Android 8+ (arm64) to provide rootless **Podman / Docker / LXC** containers and an in-app **X11 desktop** - no root, no custom recovery.
+YourXDemon is an Android app that runs a real **Alpine 3.24** Linux VM on stock Android 8+ (arm64) to provide rootless **Podman / Docker / LXC** containers and an in-app **X11 desktop** - no root, no custom recovery.
 
 - **Two interchangeable VM backends** behind one interface (`VmEngine`):
   - **QEMU (TCG)** - software emulation, the default, needs no special permission.
@@ -16,13 +16,13 @@ Podroid is an Android app that runs a real **Alpine 3.24** Linux VM on stock And
 
 | | |
 |---|---|
-| Package | `com.excp.podroid` (debug: `com.excp.podroid.debug`) |
+| Package | `com.opx.yourxdemon` (debug: `com.opx.yourxdemon.debug`) |
 | Version | `versionName` / `versionCode` in `app/build.gradle.kts` |
 | Min / target SDK | 26 (Android 8) / 36 |
 | Architecture | arm64 (`aarch64`) only |
 | Guest | Alpine 3.24 squashfs + persistent ext4 overlay, OpenRC PID 1 |
-| Kernel | custom Linux, version pinned by `podroidKernelVersion` in `gradle.properties` |
-| QEMU | version pinned by `podroidQemuVersion` in `gradle.properties` |
+| Kernel | custom Linux, version pinned by `yourxdemonKernelVersion` in `gradle.properties` |
+| QEMU | version pinned by `yourxdemonQemuVersion` in `gradle.properties` |
 | UI | Jetpack Compose + Material 3, single Activity |
 | DI | Hilt (constructor injection) |
 | Async | Coroutines + StateFlow |
@@ -52,11 +52,11 @@ All native/VM components are coordinated by `build-all.sh` (Docker-cached):
 
 **Monitor VM boot:**
 ```bash
-adb logcat -s PodroidQemu
-adb shell run-as com.excp.podroid.debug cat files/console.log   # debug build
+adb logcat -s YourXDemonQemu
+adb shell run-as com.opx.yourxdemon.debug cat files/console.log   # debug build
 ```
 
-**Release builds** are signed via `signingConfigs.release` (keystore `podroid-release.jks`), fed by the `PODROID_RELEASE_STORE_FILE` / `_PASSWORD` / `_KEY_ALIAS` / `_KEY_PASSWORD` Gradle properties. Release `applicationId = com.excp.podroid`; debug gets `applicationIdSuffix = ".debug"` + `versionNameSuffix = "-debug"`. Any code comparing the local version against an upstream release tag must strip an optional `-debug` suffix (see `UpdateRepository.checkForUpdate`).
+**Release builds** are signed via `signingConfigs.release` (keystore `podroid-release.jks`), fed by the `PODROID_RELEASE_STORE_FILE` / `_PASSWORD` / `_KEY_ALIAS` / `_KEY_PASSWORD` Gradle properties. Release `applicationId = com.opx.yourxdemon`; debug gets `applicationIdSuffix = ".debug"` + `versionNameSuffix = "-debug"`. Any code comparing the local version against an upstream release tag must strip an optional `-debug` suffix (see `UpdateRepository.checkForUpdate`).
 
 Native binaries require **16KB page alignment** (`-Wl,-z,max-page-size=16384`) - mandatory on Android 13+; verified by an ELF parser in `build-all.sh`.
 
@@ -96,7 +96,7 @@ On **AVF** there is no QMP and no PL011: the console is captured via `ConsoleFan
 ### Boot pipeline
 
 1. The engine launches the VM and starts the boot monitor (`QemuBootMonitor.kt` for QEMU; the console stream for AVF). `BootStageDetector.kt` scans the rolling console buffer (last ~1KB, not per-`read()` chunk - fast devices split markers like `Ready!` across reads).
-2. **`init-podroid`** (initramfs, ~45 lines): mounts the persistent ext4 (`/dev/vda` → upper) and the read-only squashfs (`/dev/vdb` → lower), stacks an overlayfs, moves the mounts into the new root, and `switch_root`s into `/sbin/init` (busybox).
+2. **`init-yourxdemon`** (initramfs, ~45 lines): mounts the persistent ext4 (`/dev/vda` → upper) and the read-only squashfs (`/dev/vdb` → lower), stacks an overlayfs, moves the mounts into the new root, and `switch_root`s into `/sbin/init` (busybox).
 3. Busybox `/sbin/init` reads `/etc/inittab` and starts **OpenRC** (runlevels are pre-symlinked at build time - chroot-into-aarch64 doesn't work on an x86_64 builder).
 4. OpenRC services on the squashfs do all system bringup:
    - `podroid-bootstrap` - kernel modules, cgroup v2, devpts/shm/mqueue, sysctl, ZRAM swap, `mount --make-rshared /`, container dirs.
@@ -111,7 +111,7 @@ On **AVF** there is no QMP and no PL011: the console is captured via `ConsoleFan
 
 ### Guest → Android host bridge
 
-Lets guest processes call back to Android. Guest side: `podroid-hostd` (multi-call C binary, `build-rootfs/host-bridge/podroid-hostd.c`) owns a guest-local `AF_UNIX` socket `/run/podroid-host.sock`; `argv[0]` dispatch also exposes it as `podroid-notify` and `podroid-forward` (symlinks). The daemon relays one request line / one response line to Android over a backend transport: `/dev/hvc2` on QEMU, `AF_VSOCK:9101` on AVF (chosen by the `podroid.backend=avf` cmdline marker). Android side: `engine/hostbridge/` - `HostRequestServer` reads requests over a `HostTransport` (`QemuHostTransport` via `LocalSocket` to `host.sock`, or `AvfHostTransport` via `connectVsock`), `HostRequestDispatcher` parses them, and routes to `NotificationPoster` (posts via `NotificationManagerCompat`) or `PortForwardRepository` (rules persist and `EngineHolder` applies them live). `PodroidService` starts/stops the server over the VM lifecycle. Free-text fields are base64 (`HostProtocol.kt`) so UTF-8 survives.
+Lets guest processes call back to Android. Guest side: `podroid-hostd` (multi-call C binary, `build-rootfs/host-bridge/podroid-hostd.c`) owns a guest-local `AF_UNIX` socket `/run/podroid-host.sock`; `argv[0]` dispatch also exposes it as `podroid-notify` and `podroid-forward` (symlinks). The daemon relays one request line / one response line to Android over a backend transport: `/dev/hvc2` on QEMU, `AF_VSOCK:9101` on AVF (chosen by the `podroid.backend=avf` cmdline marker). Android side: `engine/hostbridge/` - `HostRequestServer` reads requests over a `HostTransport` (`QemuHostTransport` via `LocalSocket` to `host.sock`, or `AvfHostTransport` via `connectVsock`), `HostRequestDispatcher` parses them, and routes to `NotificationPoster` (posts via `NotificationManagerCompat`) or `PortForwardRepository` (rules persist and `EngineHolder` applies them live). `YourXDemonService` starts/stops the server over the VM lifecycle. Free-text fields are base64 (`HostProtocol.kt`) so UTF-8 survives.
 
 > **Gotcha:** `/dev/hvc2` is a virtio-console **TTY** that defaults to echo on. The daemon must `cfmakeraw()` it, or the TTY echoes Android's responses back and the protocol desyncs after the first request. AVF (a raw vsock socket) is unaffected.
 
@@ -143,9 +143,9 @@ Single-activity Compose app: `ui/navigation/NavGraph.kt` routes `setup → home 
 /
 ├── app/                              # Android module
 │   └── src/main/
-│       ├── java/com/excp/podroid/
+│       ├── java/com/opx/yourxdemon/
 │       │   ├── MainActivity.kt           # single Activity, locale wrap, WindowSizeClass
-│       │   ├── PodroidApplication.kt     # Hilt app, asset extraction on first run
+│       │   ├── YourXDemonApplication.kt     # Hilt app, asset extraction on first run
 │       │   ├── engine/
 │       │   │   ├── VmEngine.kt           # backend interface
 │       │   │   ├── EngineHolder.kt       # Hilt binding; routes to current engine; port-forward diff
@@ -161,7 +161,7 @@ Single-activity Compose app: `ui/navigation/NavGraph.kt` routes `setup → home 
 │       │   │   ├── hostbridge/           # guest->Android bridge (transport, server, dispatcher, notify)
 │       │   │   │   └── HeadlessModeManager.kt # single source of truth for server (headless) mode
 │       │   │   └── usb/                  # UsbPassthroughManager
-│       │   ├── service/PodroidService.kt # foreground service; owns VM lifecycle, wakelock, notification; also VmControlReceiver (boot autostart + START_VM/STOP_VM automation intents)
+│       │   ├── service/YourXDemonService.kt # foreground service; owns VM lifecycle, wakelock, notification; also VmControlReceiver (boot autostart + START_VM/STOP_VM automation intents)
 │       │   ├── data/repository/          # Settings, PortForward, Update, Language, ContainerBackup, ContainerStats (all DataStore)
 │       │   ├── di/                       # Hilt module
 │       │   ├── util/                     # NetworkUtils, ShellQuote, HostMetrics + VmLoadSampler (Status screen), DeviceResourcePolicy (load-balance sizing)
@@ -172,7 +172,7 @@ Single-activity Compose app: `ui/navigation/NavGraph.kt` routes `setup → home 
 │       │                                 # qemu/, colors/ (122), fonts/ (13), ui-fonts/
 │       └── jniLibs/arm64-v8a/            # native executables (see below)
 ├── terminal-view/, terminal-emulator/   # vendored Termux fork (local Gradle modules)
-├── init-podroid                         # initramfs bootstrap: overlay + switch_root
+├── init-yourxdemon                         # initramfs bootstrap: overlay + switch_root
 ├── podroid-bridge.c                     # PTY <-> virtio-console relay -> libpodroid-bridge.so
 ├── podroid-launcher.c                   # exec wrapper that ties QEMU's lifetime to the app -> libpodroid-launcher.so
 ├── Dockerfile                           # kernel + initramfs + QEMU build
@@ -215,11 +215,11 @@ The terminal emulator JNI is built from the vendored `terminal-emulator` module 
 
 ## Performance tuning (TCG path; KVM is impossible without root)
 
-In `QemuEngine.buildCommand()`: `tcg,thread=multi`, larger `tb-size` for ≥2GB RAM, dedicated `iothread` on `virtio-blk-pci`, `-cpu max,pauth-impdef=on`. More vCPUs are not better here: on an 8-core phone, 8 measured slower than 4 on every metric. Guest cmdline: `mitigations=off` (safe inside TCG), per-device `mq-deadline`. `init-podroid`/bootstrap: ZRAM lz4 swap at half RAM. `CONFIG_EXT4_FS_SECURITY=y` + `CONFIG_SQUASHFS_XATTR=y` keep `security.capability` xattrs across the overlay (rootless podman's `newuidmap` needs them). What won't work without root: `io_uring` (seccomp), CPU affinity, KSM, TAP networking, host hugepages.
+In `QemuEngine.buildCommand()`: `tcg,thread=multi`, larger `tb-size` for ≥2GB RAM, dedicated `iothread` on `virtio-blk-pci`, `-cpu max,pauth-impdef=on`. More vCPUs are not better here: on an 8-core phone, 8 measured slower than 4 on every metric. Guest cmdline: `mitigations=off` (safe inside TCG), per-device `mq-deadline`. `init-yourxdemon`/bootstrap: ZRAM lz4 swap at half RAM. `CONFIG_EXT4_FS_SECURITY=y` + `CONFIG_SQUASHFS_XATTR=y` keep `security.capability` xattrs across the overlay (rootless podman's `newuidmap` needs them). What won't work without root: `io_uring` (seccomp), CPU affinity, KSM, TAP networking, host hugepages.
 
 ## Quirks & gotchas
 
-- **`CONFIG_DEVTMPFS_MOUNT=y` pre-mounts `/dev` before `/init` runs.** `init-podroid` must use `mount ... || true` for the devtmpfs line — the kernel's pre-populated `/dev` is sufficient and a second `mount(2)` returns EBUSY. Also: `size=` is not valid for devtmpfs in kernels where it is ramfs-backed (causes EINVAL). Either failure exits util-linux with `MNT_EX_FAIL=32`; `set -e` propagates `exit(32)`, encoded as `exitcode=0x00002000` ("Attempted to kill init!"). Always keep the `|| true`.
+- **`CONFIG_DEVTMPFS_MOUNT=y` pre-mounts `/dev` before `/init` runs.** `init-yourxdemon` must use `mount ... || true` for the devtmpfs line — the kernel's pre-populated `/dev` is sufficient and a second `mount(2)` returns EBUSY. Also: `size=` is not valid for devtmpfs in kernels where it is ramfs-backed (causes EINVAL). Either failure exits util-linux with `MNT_EX_FAIL=32`; `set -e` propagates `exit(32)`, encoded as `exitcode=0x00002000` ("Attempted to kill init!"). Always keep the `|| true`.
 - **util-linux `mount` stops option parsing at the first non-option argument** when `POSIXLY_CORRECT` is set. Put `-o` flags *before* device and mountpoint (`mount -t proc -o noexec,nosuid,nodev proc /proc`), not after. Options placed after the mountpoint are silently dropped, causing `mount(2)` to be called with `flags=0` and returning EPERM — which util-linux prints as "must be superuser to use mount" even for root.
 - **`Dockerfile` heredoc gotcha.** Docker BuildKit's parser treats `[section]` lines inside `RUN ... << 'EOF'` heredocs as unknown Dockerfile instructions and aborts the parse. Instead of using shell heredocs in `RUN` for multi-line config files, use `COPY build-tools/<file>` from the build context. The Meson cross-compilation config lives in `build-tools/cross-android-aarch64.ini` for this reason.
 - **Backend asymmetry is the #1 source of bugs.** QEMU = SLIRP + QMP + virtio-console (TTY); AVF = DHCP + vsock (raw sockets). Test both. The host bridge's `cfmakeraw` on hvc2 (above) is a concrete example.
@@ -235,17 +235,17 @@ In `QemuEngine.buildCommand()`: `tcg,thread=multi`, larger `tb-size` for ≥2GB 
 
 The guest system layer updates across app versions with **no VM reset and no data loss**, on both backends. The machinery:
 
-- **Plain overlay (never re-add metacopy/index/redirect).** `init-podroid` mounts the rootfs overlay as `lowerdir=/mnt/lower,upperdir=/mnt/persist/upper,workdir=/mnt/persist/work` only. Plain overlayfs tolerates a swapped lower, so a new squashfs (re-extracted by `PodroidApplication` on every update) goes live on the next boot while the persistent upper is preserved. **Do not re-add `metacopy=on`/`index=on`/`redirect_dir=on`** - they bind the upper to a specific lower and reintroduce the corruption-on-update bug (the whole reason resets used to be needed).
-- **Version anchor.** The squashfs ships `/etc/podroid/system-version` (baked from `versionCode` by `build-all.sh` -> `Dockerfile.rootfs` ARG -> `build-rootfs.sh`). The last-applied version persists at `/mnt/persist/.podroid/applied-version`.
-- **One-time legacy normalization.** `init-podroid` runs `podroid-overlay-normalize` (shipped in the squashfs, invoked via `/mnt/lower`, before the overlay is stacked) once per device (guarded by `/mnt/persist/.podroid/normalized`) to strip pre-existing `metacopy`/`redirect`/`index` state from uppers created by the old metacopy overlay. No-op on fresh/normalized uppers.
-- **Imperative hooks.** `podroid-migrate` (OpenRC, runs `before podroid-bootstrap`) executes `/etc/podroid/migrations/<v>.sh` for `applied < v <= system-version` in order, then advances `applied-version` atomically. **To ship a fixup in a new release** (e.g. enable a newly-added service): add `build-rootfs/files/etc/podroid/migrations/<versionCode>.sh`, idempotent, install it in `build-rootfs.sh`. Pure file additions/changes need NO script - the overlay union surfaces them.
-- **Reliability:** the marker advances only after migration completes (crash -> idempotent re-run); nothing auto-wipes `/mnt/persist`; `init-podroid` keeps its `FATAL -> exec sh` recovery shell.
+- **Plain overlay (never re-add metacopy/index/redirect).** `init-yourxdemon` mounts the rootfs overlay as `lowerdir=/mnt/lower,upperdir=/mnt/persist/upper,workdir=/mnt/persist/work` only. Plain overlayfs tolerates a swapped lower, so a new squashfs (re-extracted by `YourXDemonApplication` on every update) goes live on the next boot while the persistent upper is preserved. **Do not re-add `metacopy=on`/`index=on`/`redirect_dir=on`** - they bind the upper to a specific lower and reintroduce the corruption-on-update bug (the whole reason resets used to be needed).
+- **Version anchor.** The squashfs ships `/etc/yourxdemon/system-version` (baked from `versionCode` by `build-all.sh` -> `Dockerfile.rootfs` ARG -> `build-rootfs.sh`). The last-applied version persists at `/mnt/persist/.yourxdemon/applied-version`.
+- **One-time legacy normalization.** `init-yourxdemon` runs `podroid-overlay-normalize` (shipped in the squashfs, invoked via `/mnt/lower`, before the overlay is stacked) once per device (guarded by `/mnt/persist/.yourxdemon/normalized`) to strip pre-existing `metacopy`/`redirect`/`index` state from uppers created by the old metacopy overlay. No-op on fresh/normalized uppers.
+- **Imperative hooks.** `podroid-migrate` (OpenRC, runs `before podroid-bootstrap`) executes `/etc/yourxdemon/migrations/<v>.sh` for `applied < v <= system-version` in order, then advances `applied-version` atomically. **To ship a fixup in a new release** (e.g. enable a newly-added service): add `build-rootfs/files/etc/yourxdemon/migrations/<versionCode>.sh`, idempotent, install it in `build-rootfs.sh`. Pure file additions/changes need NO script - the overlay union surfaces them.
+- **Reliability:** the marker advances only after migration completes (crash -> idempotent re-run); nothing auto-wipes `/mnt/persist`; `init-yourxdemon` keeps its `FATAL -> exec sh` recovery shell.
 
 ## Common tasks
 
 - **Kotlin/UI change** → `./gradlew assembleDebug && ./gradlew installDebug`.
-- **OpenRC service / package list / guest CLI change** → edit under `build-rootfs/`, `./build-all.sh rootfs`, rebuild APK. New/changed system files go live on the **next VM boot** with no reset (the plain-overlay union surfaces them; see "VM migration / upgrades"). The exception is a path the user already modified - it lives in the persistent upper and keeps the user's version until removed, so use a `/etc/podroid/migrations/<v>.sh` script for that case.
-- **`init-podroid` change** → `./build-all.sh initramfs`, rebuild APK.
+- **OpenRC service / package list / guest CLI change** → edit under `build-rootfs/`, `./build-all.sh rootfs`, rebuild APK. New/changed system files go live on the **next VM boot** with no reset (the plain-overlay union surfaces them; see "VM migration / upgrades"). The exception is a path the user already modified - it lives in the persistent upper and keeps the user's version until removed, so use a `/etc/yourxdemon/migrations/<v>.sh` script for that case.
+- **`init-yourxdemon` change** → `./build-all.sh initramfs`, rebuild APK.
 - **New boot stage** → emit the marker in the right OpenRC service + match it in `BootStageDetector`.
 - **New setting** → add a DataStore key + Flow in `SettingsRepository`, UI in `SettingsScreen`, setter in `SettingsViewModel`, and plumb into `VmConfig`/`buildCommand()` if it affects the VM.
 - **New user-facing string** → add to `res/values` AND `res/values-zh`, use `stringResource`.
@@ -273,5 +273,5 @@ A device without that feature can *never* run `AvfEngine`, no matter the `Engine
 Reading the VM console depends on build type: `run-as` works on debug, but **release builds are not `run-as`-able**, so use `su` or **Settings → Diagnostics → Export Log** there.
 
 ```bash
-adb shell run-as com.excp.podroid.debug cat files/console.log   # debug only
+adb shell run-as com.opx.yourxdemon.debug cat files/console.log   # debug only
 ```

@@ -8,10 +8,10 @@ If something you maintain is included here and we missed you, please open an iss
 
 ## Virtual machine stack
 
-These projects make up the actual Linux system that runs inside Podroid.
+These projects make up the actual Linux system that runs inside YourXDemon.
 
 ### Linux kernel
-Podroid ships a custom build of the upstream Linux kernel (currently 7.1.5) configured specifically for OCI-compatible containers under QEMU TCG.
+YourXDemon ships a custom build of the upstream Linux kernel (currently 7.1.5) configured specifically for OCI-compatible containers under QEMU TCG.
 
 - Project: https://kernel.org
 - License: GNU General Public License v2.0
@@ -48,7 +48,7 @@ All maintained by the containers community; primarily Apache-2.0 / GPL-2.0 licen
 - **iproute2, iptables, nftables, bridge-utils**: networking utilities maintained by netfilter.org and the Linux community
 
 ### X11 desktop stack
-The in-app X11 viewer is backed by these components running inside the VM. Podroid's Android side speaks RFB 3.8 directly (no third-party VNC client) and decodes the audio stream natively.
+The in-app X11 viewer is backed by these components running inside the VM. YourXDemon's Android side speaks RFB 3.8 directly (no third-party VNC client) and decodes the audio stream natively.
 
 - **TigerVNC** (`Xvnc`): combined X server + RFB server (https://tigervnc.org, GPL-2.0)
 - **PulseAudio**: audio server, exposing a null-sink monitor over `module-simple-protocol-tcp` (https://www.freedesktop.org/wiki/Software/PulseAudio/, LGPL-2.1)
@@ -59,7 +59,7 @@ The in-app X11 viewer is backed by these components running inside the VM. Podro
 ## Emulation
 
 ### QEMU
-QEMU provides the machine emulation that makes everything else possible. Podroid currently builds against QEMU 11.0.2, cross-compiled for arm64 Android.
+QEMU provides the machine emulation that makes everything else possible. YourXDemon currently builds against QEMU 11.0.2, cross-compiled for arm64 Android.
 
 - Project: https://www.qemu.org
 - Repository: https://gitlab.com/qemu-project/qemu
@@ -68,19 +68,19 @@ QEMU provides the machine emulation that makes everything else possible. Podroid
 - Contributors: https://www.qemu.org/contributors/
 
 ### libslirp
-SLIRP is QEMU's user-mode network stack. Podroid links it into the QEMU binary statically.
+SLIRP is QEMU's user-mode network stack. YourXDemon links it into the QEMU binary statically.
 
 - Project: https://gitlab.freedesktop.org/slirp/libslirp
 - License: BSD-3-Clause
 
 ### libucontext
-Bionic does not implement the System V `ucontext.h` API, which QEMU coroutines depend on. Podroid links against Ariadne Conill's portable libucontext to fill the gap.
+Bionic does not implement the System V `ucontext.h` API, which QEMU coroutines depend on. YourXDemon links against Ariadne Conill's portable libucontext to fill the gap.
 
 - Project: https://github.com/kaniini/libucontext
 - License: ISC
 
 ### Limbo PC Emulator
-Limbo pioneered running QEMU on Android years ago and solved many of the platform-specific issues we no longer have to. Although Podroid is a fresh codebase with a different UI and pipeline, the lineage of "QEMU on Android" traces back to Max Kastanas's work.
+Limbo pioneered running QEMU on Android years ago and solved many of the platform-specific issues we no longer have to. Although YourXDemon is a fresh codebase with a different UI and pipeline, the lineage of "QEMU on Android" traces back to Max Kastanas's work.
 
 - Repository: https://github.com/limboemu/limbo
 - License: GNU General Public License v2.0
@@ -91,14 +91,14 @@ Limbo pioneered running QEMU on Android years ago and solved many of the platfor
 ## Terminal & UI
 
 ### Termux Terminal Emulator
-The terminal layer (xterm-256color emulator, escape-sequence parsing, mouse tracking, color theme parsing) is the Termux project's `terminal-view` and `terminal-emulator` libraries, consumed via JitPack as `com.github.termux:terminal-view:0.118.1`. Podroid rebuilds `libtermux.so` locally for 16 KB page alignment.
+The terminal layer (xterm-256color emulator, escape-sequence parsing, mouse tracking, color theme parsing) is the Termux project's `terminal-view` and `terminal-emulator` libraries, consumed via JitPack as `com.github.termux:terminal-view:0.118.1`. YourXDemon rebuilds `libtermux.so` locally for 16 KB page alignment.
 
 - Project: https://github.com/termux/termux-app
 - License: GNU General Public License v3.0
 - Maintainers: Fredrik Fornwall and the Termux community
 
 ### Color themes
-Podroid ships 122 terminal color schemes covering most of the popular ecosystem (Dracula, Nord, Solarized, Tokyo Night, Catppuccin, Gruvbox, Monokai, the base16 family, and more). The themes are sourced from the [**Gogh**](https://github.com/Gogh-Co/Gogh) project's curated collection (MIT). Individual color palette designers are credited within each `.properties` file.
+YourXDemon ships 122 terminal color schemes covering most of the popular ecosystem (Dracula, Nord, Solarized, Tokyo Night, Catppuccin, Gruvbox, Monokai, the base16 family, and more). The themes are sourced from the [**Gogh**](https://github.com/Gogh-Co/Gogh) project's curated collection (MIT). Individual color palette designers are credited within each `.properties` file.
 
 ### Bundled fonts
 
@@ -137,7 +137,7 @@ Podroid ships 122 terminal color schemes covering most of the popular ecosystem 
 
 ---
 
-## Podroid
+## YourXDemon
 
 YourXDemon is a rebrand of **Podroid** by **[ExTV](https://github.com/ExTV)**.
 

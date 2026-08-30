@@ -193,7 +193,7 @@ build-apk.yml (Build APK & Publish Release)
     1. Download fresh binaries from all-core-file release
     2. Generate debug keystore (for signing)
     3. ./gradlew assembleRelease (R8 minified!)
-    4. Publish Podroid-v1.0.0-release.apk
+    4. Publish YourXDemon-v1.0.0-release.apk
 ```
 
 ### Key CI Features
@@ -288,7 +288,7 @@ Added an animated extraction/decompression screen between setup wizard and home 
 
 | Asset | Size |
 |---|---|
-| `Podroid-v1.0.0-release.apk` | **279 MB** |
+| `YourXDemon-v1.0.0-release.apk` | **279 MB** |
 
 ---
 
