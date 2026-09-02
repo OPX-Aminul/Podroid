@@ -22,9 +22,8 @@ chroot "$ROOTFS" /bin/sh -c '
 export DEBIAN_FRONTEND=noninteractive
 apt-get update || true
 apt-get install -y --no-install-recommends \
-    base-files \
-    systemd systemd-sysv dbus \
-    busybox-static \
+    openrc \
+    busybox \
     bash \
     iproute2 \
     iputils-ping \
@@ -142,8 +141,8 @@ Welcome to YourXDemon (Debian \n \l)
 EOF
 
 # ── Set runlevels via direct symlinks ────────────────────────────────────────
-# Debian with systemd doesn't use OpenRC runlevels, but we still create them
-# for compatibility with our custom init scripts (inittab uses OpenRC).
+# Debian Trixie uses OpenRC (not systemd) to match our existing init scripts.
+# Create runlevel symlinks via direct ln -s (can't chroot into aarch64 to run rc-update).
 mkdir -p "$ROOTFS/etc/runlevels/default" "$ROOTFS/etc/runlevels/boot"
 for svc in podroid-migrate podroid-bootstrap podroid-network podroid-resize dropbear podroid-vsock podroid-hostd yourxdemon-agentd podroid-ready; do
     if [ -e "$ROOTFS/etc/init.d/$svc" ]; then

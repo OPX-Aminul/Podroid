@@ -28,9 +28,7 @@ WORKDIR /work
 
 # Fetch the Debian Trixie minimal rootfs via debootstrap.
 # We use a two-stage approach: first stage installs into a temporary dir,
-# then we copy the result. Using --variant=minbase for a minimal install.
-RUN debootstrap --variant=minbase --arch=${DEBIAN_ARCH} \
-    --include=systemd,systemd-sysv,dbus \
+# then we copy the result. Using --variant=minbase for a minimal install.RUN debootstrap --variant=minbase --arch=${DEBIAN_ARCH} \
     ${DEBIAN_RELEASE} /work/rootfs http://deb.debian.org/debian
 
 # Pull in the vsock-agent binary built in stage 1.
