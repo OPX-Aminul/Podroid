@@ -169,6 +169,14 @@ done
 rm -f "$ROOTFS/etc/runlevels/sysinit/procps"
 rm -f "$ROOTFS/etc/runlevels/sysinit/cgroups"
 
+# ── Fix merged-usr symlinks (CRITICAL for boot) ─────────────────────────────
+# Debian Trixie uses merged /usr: /bin → /usr/bin, /sbin → /usr/sbin.
+# debootstrap may create these as empty directories; replace them with
+# symlinks so /sbin/init, /sbin/openrc, /bin/sh etc. are resolvable.
+rm -rf "$ROOTFS/bin" "$ROOTFS/sbin"
+ln -sf usr/bin  "$ROOTFS/bin"
+ln -sf usr/sbin "$ROOTFS/sbin"
+
 # ── /sbin/init symlink for busybox init ─────────────────────────────────────
 # Debian's OpenRC package provides /sbin/openrc-init but NOT /sbin/init.
 # init-yourxdemon does: switch_root /mnt/overlay /sbin/init
@@ -180,10 +188,11 @@ rm -f "$ROOTFS/etc/runlevels/sysinit/cgroups"
 ln -sf /bin/busybox "$ROOTFS/usr/sbin/init"
 
 # ── Ensure busybox symlinks ──────────────────────────────────────────────────
-# Debian's busybox-static doesn't auto-create /bin/sh etc. Link them manually.
-if [ -x "$ROOTFS/bin/busybox" ]; then
-    cd "$ROOTFS/bin"
-    for cmd in sh ash bash awk sed grep find sort head tail cat cp mv rm ln chmod chown mkdir mount umount sleep stty kill pgrep init; do
+# With merged-usr, /bin/busybox lives at /usr/bin/busybox.
+# The /bin → /usr/bin symlink makes /bin/busybox resolvable.
+if [ -x "$ROOTFS/usr/bin/busybox" ]; then
+    cd "$ROOTFS/usr/bin"
+    for cmd in sh ash awk sed grep find sort head tail cat cp mv rm ln chmod chown mkdir mount umount sleep stty kill pgrep; do
         [ -e "$cmd" ] || ln -sf busybox "$cmd"
     done
     cd /work
