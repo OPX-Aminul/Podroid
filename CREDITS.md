@@ -1,6 +1,6 @@
 # Credits & Acknowledgements
 
-YourXDemon stands on the shoulders of an enormous amount of open-source work. Originally developed as **OPX** by **[ExTV](https://github.com/ExTV)**, rebranded by **OP Aminul FF (OPX)**. The list below covers the upstream projects whose code, designs, fonts, or themes are shipped inside the APK, along with the major Android-side dependencies. Every component remains under its own upstream license; see [LICENSE](LICENSE) for OPX's own license (GPL v2.0).
+YourXDemon stands on the shoulders of an enormous amount of open-source work. Every component remains under its own upstream license; see [LICENSE](LICENSE) for YourXDemon's own license (GPL v2.0).
 
 If something you maintain is included here and we missed you, please open an issue or a pull request and we will fix it.
 
@@ -17,11 +17,11 @@ YourXDemon ships a custom build of the upstream Linux kernel (currently 7.1.5) c
 - License: GNU General Public License v2.0
 - Maintainers: Linus Torvalds and the Linux kernel community
 
-### Alpine Linux
-The guest userspace is a slightly customized Alpine Linux 3.24 root filesystem.
+### Debian Trixie
+The guest userspace is a Debian Trixie (testing) root filesystem.
 
-- Project: https://alpinelinux.org
-- License: per-package (see Alpine's individual package licenses)
+- Project: https://www.debian.org
+- License: per-package (see Debian's individual package licenses)
 
 ### Container runtimes
 The full rootless OCI stack ships pre-installed and pre-configured. Docker and LXC are bundled alongside Podman for users who prefer them.
@@ -79,13 +79,6 @@ Bionic does not implement the System V `ucontext.h` API, which QEMU coroutines d
 - Project: https://github.com/kaniini/libucontext
 - License: ISC
 
-### Limbo PC Emulator
-Limbo pioneered running QEMU on Android years ago and solved many of the platform-specific issues we no longer have to. Although YourXDemon is a fresh codebase with a different UI and pipeline, the lineage of "QEMU on Android" traces back to Max Kastanas's work.
-
-- Repository: https://github.com/limboemu/limbo
-- License: GNU General Public License v2.0
-- Author: Max Kastanas (max2idea)
-
 ---
 
 ## Terminal & UI
@@ -139,10 +132,9 @@ YourXDemon ships 122 terminal color schemes covering most of the popular ecosyst
 
 ## YourXDemon
 
-YourXDemon is a rebrand of **OPX** by **[ExTV](https://github.com/ExTV)**.
+YourXDemon is an Android app that runs a real Debian Trixie Linux VM on stock Android 8+ (arm64) to provide rootless Podman/Docker/LXC containers and an in-app X11 desktop.
 
-- Original repository: https://github.com/ExTV/OPX
-- Rebranded by: OP Aminul FF (OPX)
+- Repository: https://github.com/OPX-Aminul/OPX
 - License: GNU General Public License v2.0 (or later)
 
 If you have contributed code, themes, fonts, or bug reports and would like to be listed here, please open an issue or a pull request.
@@ -151,4 +143,4 @@ If you have contributed code, themes, fonts, or bug reports and would like to be
 
 ## Reporting missing or incorrect attribution
 
-We take attribution seriously. If you believe your work is shipped in OPX but not properly credited, or if any information above is incorrect, please [open an issue](https://github.com/ExTV/OPX/issues/new) and we will get it fixed quickly.
+We take attribution seriously. If you believe your work is shipped in YourXDemon but not properly credited, or if any information above is incorrect, please [open an issue](https://github.com/OPX-Aminul/OPX/issues/new) and we will get it fixed quickly.

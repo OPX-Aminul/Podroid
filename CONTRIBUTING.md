@@ -2,9 +2,6 @@
 
 Thanks for considering a contribution. Bug reports, feature requests, and pull requests are all welcome.
 
-**Original developer:** [ExTV](https://github.com/ExTV) (OPX)
-**Rebranded by:** OP Aminul FF (OPX)
-
 Before you start, please skim [`CLAUDE.md`](CLAUDE.md). It documents the VM-engine abstraction and both backends, the boot pipeline, every native binary, and the design quirks you need to know to make changes that don't regress.
 
 ## Getting started
@@ -28,7 +25,7 @@ You will need:
 ```sh
 ./build-all.sh kernel       # custom Linux kernel (~5-10 min, Docker-cached)
 ./build-all.sh initramfs    # kernel + minimal initramfs
-./build-all.sh rootfs       # Alpine squashfs (~30 s, Docker-cached)
+./build-all.sh rootfs       # Debian Trixie squashfs (~30 s, Docker-cached)
 ./build-all.sh qemu         # QEMU + opx-bridge (~30 min first run)
 ./build-all.sh termux       # terminal-emulator JNI via local NDK
 ./build-all.sh apk          # Android APK via Gradle
@@ -58,7 +55,7 @@ Component versions are pinned in one place each, so read the pin rather than tru
 |---|---|
 | Linux kernel | `yourxdemonKernelVersion` in `gradle.properties` |
 | QEMU | `yourxdemonQemuVersion` in `gradle.properties` |
-| Alpine | `ARG ALPINE_RELEASE` in `build-rootfs/Dockerfile.rootfs` |
+| Debian | `ARG DEBIAN_RELEASE` in `build-rootfs/Dockerfile.rootfs` |
 
 Or, for the common case where you only changed Kotlin / UI code:
 
@@ -70,7 +67,7 @@ Or, for the common case where you only changed Kotlin / UI code:
 
 Please open an issue using the **Bug Report** template. The most useful single thing you can attach is the diagnostic log:
 
-`Settings → Diagnostics → Export Log`
+`Settings -> Diagnostics -> Export Log`
 
 It bundles app version, device model + Android version, settings, and full logcat in one file. If the bug is VM-side, also include the VM console:
 
@@ -158,23 +155,23 @@ YourXDemon/
 │       ├── jniLibs/arm64-v8a/            QEMU, opx-bridge, opx-launcher, libslirp
 │       └── assets/                       kernel, initramfs, squashfs, fonts, themes
 ├── terminal-view/, terminal-emulator/    vendored Termux fork (local Gradle modules)
-├── init-yourxdemon                          Minimal initramfs script (~45 lines)
-├── opx-bridge.c                      Native PTY <-> virtio-console relay
-├── opx-launcher.c                    exec wrapper tying QEMU's lifetime to the app
+├── init-yourxdemon                       Minimal initramfs script (~45 lines)
+├── opx-bridge.c                          Native PTY <-> virtio-console relay
+├── opx-launcher.c                        exec wrapper tying QEMU's lifetime to the app
 ├── Dockerfile                            Kernel + initramfs + QEMU build pipeline
 ├── build-tools/                          Static assets used during Docker builds
 │   └── cross-android-aarch64.ini         Meson cross-compilation config
-├── build-rootfs/                         Alpine squashfs build pipeline
+├── build-rootfs/                         Debian Trixie rootfs build pipeline
 │   ├── Dockerfile.rootfs
 │   ├── build-rootfs.sh
 │   ├── vsock-agent/                      AVF control/forward agent
 │   ├── host-bridge/                      guest to Android bridge daemon
 │   └── files/                            OpenRC services baked into the squashfs
 ├── build-all.sh                          Unified build / deploy script
-├── opx_kernel.config                 Custom kernel Kconfig fragment
+├── opx_kernel.config                     Custom kernel Kconfig fragment
 └── docs/                                 GitHub Pages site
 ```
 
 ## License
 
-By contributing, you agree that your work will be licensed under the **GNU General Public License v2.0**, the same license as the project.
+[GPLv2](LICENSE).

@@ -1,5 +1,5 @@
 /*
- * opx-bridge — virtio-console socket ↔ PTY relay for OPX
+ * opx-bridge — virtio-console socket <-> PTY relay for YourXDemon
  *
  * Bidirectional relay between:
  *   stdin/stdout  — PTY slave (Termux TerminalSession)

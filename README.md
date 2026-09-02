@@ -4,7 +4,7 @@
 
 **Run Linux on your Android phone. No root. A real VM with SSH access.**
 
-A real Alpine Linux VM with its own kernel — not a chroot or proot trick — running on stock Android 8+ (arm64).
+A real Debian Trixie (testing) Linux VM with its own kernel -- not a chroot or proot trick -- running on stock Android 8+ (arm64).
 
 [![Release](https://img.shields.io/github/v/release/OPX-Aminul/OPX?include_prereleases&style=flat-square&label=release&color=blue)](https://github.com/OPX-Aminul/OPX/releases)
 [![Downloads](https://img.shields.io/github/downloads/OPX-Aminul/OPX/total?style=flat-square&color=brightgreen)](https://github.com/OPX-Aminul/OPX/releases)
@@ -17,13 +17,14 @@ A real Alpine Linux VM with its own kernel — not a chroot or proot trick — r
 
 ## What you get
 
-- **A real VM** — Alpine Linux on a custom kernel via QEMU, or hardware-accelerated AVF on supported pKVM devices
-- **In-app terminal** — full xterm-256color, 122 color themes, 13 fonts, live resize
-- **USB WiFi support** — works with Realtek, MediaTek, Qualcomm, Intel, Broadcom, and more
-- **SSH access** — connect from any device on your network
-- **Port forwarding** — expose VM services to your phone and LAN
-- **X11 desktop** — run GUI Linux apps in a built-in viewer
-- **English and 中文**, no root, any arm64 device on Android 8+
+- **A real VM** -- Debian Trixie on a custom kernel via QEMU, or hardware-accelerated AVF on supported pKVM devices
+- **In-app terminal** -- full xterm-256color, 122 color themes, 13 fonts, live resize
+- **USB WiFi support** -- works with Realtek, MediaTek, Qualcomm, Intel, Broadcom, and more
+- **USB passthrough** -- hot-plug USB devices (WiFi adapters, storage, serial, Bluetooth) with Xiaomi/MIUI fix
+- **SSH access** -- connect from any device on your network
+- **Port forwarding** -- expose VM services to your phone and LAN
+- **X11 desktop** -- run GUI Linux apps in a built-in viewer
+- **English and Chinese**, no root, any arm64 device on Android 8+
 
 ## Quick start
 
@@ -43,11 +44,25 @@ cd OPX
 ./build-all.sh all     # kernel, rootfs, QEMU and APK (needs Docker + Android SDK/NDK)
 ```
 
+### Build targets
+
+```sh
+./build-all.sh kernel       # custom Linux kernel only
+./build-all.sh initramfs    # kernel + minimal initramfs
+./build-all.sh rootfs       # Debian Trixie squashfs
+./build-all.sh qemu         # QEMU + native helpers via Docker
+./build-all.sh termux       # terminal-emulator JNI for 16KB pages
+./build-all.sh apk          # Android APK via Gradle
+./build-all.sh all          # everything
+./build-all.sh deploy       # all + install + launch
+./build-all.sh test         # boot validation: installs, polls console.log for "Ready!"
+```
+
 ## Features
 
 | Feature | Status |
 |---|---|
-| Alpine Linux 3.24 VM | ✅ |
+| Debian Trixie (testing) VM | ✅ |
 | QEMU TCG (software emulation) | ✅ |
 | AVF/pKVM (hardware acceleration) | ✅ |
 | SSH (dropbear) | ✅ |
@@ -55,21 +70,20 @@ cd OPX
 | USB passthrough (Xiaomi/MIUI fix) | ✅ |
 | X11 desktop viewer | ✅ |
 | Port forwarding | ✅ |
-| Guest → Android bridge | ✅ |
+| Guest to Android bridge | ✅ |
+| OPX-wifi4 (pre-installed WiFi tool) | ✅ |
 | Release APK with R8 minification | ✅ |
 
-## Credits
+## Architecture
 
-| | |
-|---|---|
-| **Original developer** | [ExTV](https://github.com/ExTV) — created OPX |
-| **Rebranded by** | OP Aminul FF (OPX) |
-| [QEMU](https://www.qemu.org) | Machine emulation |
-| [Termux](https://github.com/termux/termux-app) | Terminal emulator engine |
-| [Alpine Linux](https://alpinelinux.org) | The guest distribution |
-
-This project is a fork/rebrand of [OPX](https://github.com/ExTV/OPX) by ExTV. All credit to the original developers for creating the VM engine, boot pipeline, and Android integration.
+- **Two VM backends** behind one interface (`VmEngine`):
+  - **QEMU (TCG)** -- software emulation, the default, needs no special permission
+  - **AVF (pKVM)** -- hardware-accelerated via the Android Virtualization Framework on Pixel-class devices
+- **Guest**: Debian Trixie with OpenRC as PID 1, persistent ext4 overlay on squashfs
+- **Storage**: grows on demand (never shrinks), user-configurable (2-512 GB)
+- **RAM**: 512 MB to 16 GB, user-configurable
+- **CPU**: 1-8 cores, user-configurable
 
 ## License
 
-[GPLv2](LICENSE). Based on [OPX](https://github.com/ExTV/OPX) by ExTV.
+[GPLv2](LICENSE).
