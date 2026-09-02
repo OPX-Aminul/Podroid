@@ -207,7 +207,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     kmod \
     util-linux \
     e2fsprogs \
-    e2fsprogs-extra \
     cpio \
     gzip \
     && rm -rf /var/lib/apt/lists/*
