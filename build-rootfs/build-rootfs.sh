@@ -158,10 +158,16 @@ for svc in podroid-migrate podroid-bootstrap podroid-network podroid-resize drop
     fi
 done
 
-# Disable services we don't need
+# Disable Alpine-specific services that don't exist or conflict on Debian
 for svc in hwclock swclock urandom networking sysctl bootmisc syslog; do
     rm -f "$ROOTFS/etc/runlevels/boot/$svc" "$ROOTFS/etc/runlevels/default/$svc"
 done
+
+# Debian-provided procps and cgroups depend on 'mountkernfs' which is an
+# Alpine-only OpenRC service. init-yourxdemon already mounts /proc, /sys,
+# /dev, and cgroups, so these are redundant and would just fail.
+rm -f "$ROOTFS/etc/runlevels/sysinit/procps"
+rm -f "$ROOTFS/etc/runlevels/sysinit/cgroups"
 
 # ── /sbin/init symlink for busybox init ─────────────────────────────────────
 # Debian's OpenRC package provides /sbin/openrc-init but NOT /sbin/init.

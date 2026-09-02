@@ -2,7 +2,7 @@
 description="Podroid VM system bootstrap (cgroups, modules, devpts, sysctl)"
 
 depend() {
-    need localmount
+    # no localmount — init-yourxdemon already mounts /proc, /sys, /dev, overlayfs
     before podroid-network
 }
 

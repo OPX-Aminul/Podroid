@@ -2,10 +2,9 @@
 description="Podroid system migrations (runs versioned upgrade scripts once)"
 
 # Run early, before the rest of Podroid bringup, so migrations can prepare state
-# the other services rely on. localmount is already satisfied (initramfs mounted
-# /mnt/persist), but we declare it for ordering correctness.
+# the other services rely on. No localmount dependency — init-yourxdemon already
+# mounted /mnt/persist before switch_root.
 depend() {
-    need localmount
     before podroid-bootstrap
 }
 
