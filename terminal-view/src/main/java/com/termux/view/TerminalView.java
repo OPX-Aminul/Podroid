@@ -1544,6 +1544,15 @@ public final class TerminalView extends View {
         if (mTextSelectionCursorController != null) {
             getViewTreeObserver().addOnTouchModeChangeListener(mTextSelectionCursorController);
         }
+
+        // Force scroll to the very bottom when the view re-attaches (app
+        // resume, navigation back, etc.). Without this, if no new PTY output
+        // arrived while the view was detached, onScreenUpdated() never fires
+        // and the viewport stays stuck wherever the user last scrolled.
+        if (mEmulator != null && mTopRow != 0) {
+            mTopRow = 0;
+            invalidate();
+        }
     }
 
     @Override

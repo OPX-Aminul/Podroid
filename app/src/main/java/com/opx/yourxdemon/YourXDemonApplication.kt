@@ -103,7 +103,7 @@ class YourXDemonApplication : Application() {
                 { copyAssetDir("qemu", filesDir, forceCopy) },
                 { copyAssetIfNeeded("vmlinuz-virt", filesDir, forceCopy) },
                 { copyAssetIfNeeded("initrd.img", filesDir, forceCopy) },
-                { copyAssetIfNeeded("alpine-rootfs.squashfs", filesDir, forceCopy) },
+                { copyAssetIfNeeded("yourxdemon-rootfs.squashfs", filesDir, forceCopy) },
             )
             val pool = Executors.newFixedThreadPool(tasks.size.coerceAtMost(4))
             var allSucceeded = true

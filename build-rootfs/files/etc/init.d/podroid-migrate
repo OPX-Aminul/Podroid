@@ -9,9 +9,9 @@ depend() {
     before podroid-bootstrap
 }
 
-SYSVER_FILE="/etc/podroid/system-version"
-APPLIED_FILE="/mnt/persist/.podroid/applied-version"
-MIGRATIONS_DIR="/etc/podroid/migrations"
+SYSVER_FILE="/etc/yourxdemon/system-version"
+APPLIED_FILE="/mnt/persist/.yourxdemon/applied-version"
+MIGRATIONS_DIR="/etc/yourxdemon/migrations"
 
 start() {
     ebegin "Running Podroid migrations"

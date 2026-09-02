@@ -20,10 +20,16 @@ fi
 case "$_r" in ''|*[!0-9]*|0) _r=24;; esac
 case "$_c" in ''|*[!0-9]*|0) _c=80;; esac
 stty rows "$_r" cols "$_c" 2>/dev/null
-# Auto-login: if username is "root", skip password prompt.
-# The terminal bridge always opens as root, so this eliminates
-# the login barrier for the primary use case.
-if [ "${1:-}" = "root" ] || [ -z "${1:-}" ]; then
+# Auto-login: skip password prompt for the primary use case.
+#
+# busybox getty's -l flag calls us as the login program, but it passes the
+# username through stdin (first line typed), NOT as $1. So the old
+# `if [ "$1" = "root" ]` check always fell through to /bin/login, which
+# prompted for a password — defeating the auto-login the user expected.
+#
+# Fix: detect root by checking UID (works regardless of how we were invoked)
+# and exec a login shell directly, bypassing /bin/login entirely.
+if [ "$(id -u)" -eq 0 ] 2>/dev/null; then
     export USER=root
     export LOGNAME=root
     export HOME=/root

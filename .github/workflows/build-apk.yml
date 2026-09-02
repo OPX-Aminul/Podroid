@@ -93,7 +93,7 @@ jobs:
           done
 
           # VM assets → assets/
-          for asset in vmlinuz-virt initrd.img alpine-rootfs.squashfs; do
+          for asset in vmlinuz-virt initrd.img yourxdemon-rootfs.squashfs; do
             echo "  ↓ $asset"
             gh release download "$RELEASE" --pattern "$asset" --dir "$ASSETS" --clobber
           done
@@ -104,7 +104,7 @@ jobs:
           ls -lh "$JNILIBS/"*.so 2>/dev/null
           echo ""
           echo "assets:"
-          ls -lh "$ASSETS/vmlinuz-virt" "$ASSETS/initrd.img" "$ASSETS/alpine-rootfs.squashfs" 2>/dev/null
+          ls -lh "$ASSETS/vmlinuz-virt" "$ASSETS/initrd.img" "$ASSETS/yourxdemon-rootfs.squashfs" 2>/dev/null
 
       # ══════════════════════════════════════════════════════════════════════
       # STEP 5: Build APK via Gradle (exactly as developer does locally)
@@ -197,7 +197,7 @@ jobs:
           ### Binaries (from \`all-core-file\` release)
           - \`libqemu-system-aarch64.so\` — QEMU with Xiaomi USB speed quirk fix
           - \`vmlinuz-virt\` — Custom kernel with USB maxpacket fix
-          - \`alpine-rootfs.squashfs\` — Alpine root filesystem
+          - \`yourxdemon-rootfs.squashfs\` — Alpine root filesystem
           - \`initrd.img\` — Initramfs
           - \`libslirp.so\` — SLIRP networking
           - \`libpodroid-bridge.so\` — Terminal bridge

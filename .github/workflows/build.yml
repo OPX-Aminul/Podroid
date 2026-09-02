@@ -115,10 +115,10 @@ jobs:
       - name: Extract rootfs squashfs
         run: |
           docker create --name rootfs-out podroid-rootfs /bin/sh -c 'exit 0'
-          docker cp rootfs-out:/alpine-rootfs.squashfs ./alpine-rootfs.squashfs
+          docker cp rootfs-out:/yourxdemon-rootfs.squashfs ./yourxdemon-rootfs.squashfs
           docker rm rootfs-out
           echo "✅ rootfs squashfs:"
-          ls -lh ./alpine-rootfs.squashfs
+          ls -lh ./yourxdemon-rootfs.squashfs
 
       # ══════════════════════════════════════════════════════════════════════
       # INITRAMFS: Developer's packer stage — kernel + rootfs → initrd.img
@@ -161,7 +161,7 @@ jobs:
           gh release upload all-core-file \
             ./vmlinuz-virt \
             ./initrd.img \
-            ./alpine-rootfs.squashfs \
+            ./yourxdemon-rootfs.squashfs \
             ./libqemu-system-aarch64.so \
             ./libslirp.so \
             ./libpodroid-bridge.so \

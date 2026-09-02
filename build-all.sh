@@ -33,8 +33,8 @@ Usage: $0 [command] [options]
 Commands:
   all           Build everything (Kernel, Initramfs, Rootfs, QEMU, APK)
   kernel        Build custom kernel only (podroid_kernel.config + Linux source)
-  initramfs     Build custom kernel + Alpine VM initramfs (vmlinuz + initrd)
-  rootfs        Build Alpine rootfs squashfs (alpine-rootfs.squashfs)
+  initramfs     Build custom kernel + Debian Trixie VM initramfs (vmlinuz + initrd)
+  rootfs        Build Debian Trixie rootfs squashfs (yourxdemon-rootfs.squashfs)
   qemu          Build QEMU + podroid-bridge + podroid-launcher
   apk           Build the Android APK (also builds libtermux.so via Gradle NDK)
   deploy        Build APK, uninstall old version, and install to device
@@ -105,7 +105,7 @@ build_kernel() {
 build_initramfs() {
     local kernel_ver
     kernel_ver=$(grep -E '^yourxdemonKernelVersion=' "${SCRIPT_DIR}/gradle.properties" | cut -d= -f2)
-    log "Building custom kernel + Alpine Initramfs (Docker)..."
+    log "Building custom kernel + Debian Initramfs (Docker)..."
     docker build --network=host \
         --build-arg "KERNEL_VERSION=${kernel_ver}" \
         -t podroid-builder --target packer "$SCRIPT_DIR"
@@ -121,15 +121,15 @@ build_initramfs() {
 }
 
 build_rootfs() {
-    log "Building Alpine rootfs squashfs..."
+    log "Building Debian Trixie rootfs squashfs..."
     local sysver
     sysver=$(grep -E '^[[:space:]]*versionCode[[:space:]]*=' "${SCRIPT_DIR}/app/build.gradle.kts" | grep -oE '[0-9]+' | head -1)
     docker build -f "${SCRIPT_DIR}/build-rootfs/Dockerfile.rootfs" \
-        -t podroid-rootfs:latest \
+        -t yourxdemon-rootfs:latest \
         --build-arg "SYSTEM_VERSION=${sysver:-0}" \
         --output type=local,dest="${ASSETS}" \
         "${SCRIPT_DIR}/build-rootfs/"
-    success "Built ${ASSETS}/alpine-rootfs.squashfs ($(du -h "${ASSETS}/alpine-rootfs.squashfs" | cut -f1)), system-version ${sysver:-0}"
+    success "Built ${ASSETS}/yourxdemon-rootfs.squashfs ($(du -h "${ASSETS}/yourxdemon-rootfs.squashfs" | cut -f1)), system-version ${sysver:-0}"
 }
 
 build_qemu() {
@@ -221,7 +221,7 @@ run_boot_test() {
     console=$(adb shell run-as "$pkg" cat files/console.log 2>/dev/null || echo "")
     
     local errors=0
-    local checks=("YourXDemon - Alpine Linux" "IP:" "Ready!" "Loading kernel modules")
+    local checks=("YourXDemon - Debian" "IP:" "Ready!" "Loading kernel modules")
     for check in "${checks[@]}"; do
         if echo "$console" | grep -q "$check"; then
             success "Check passed: $check"
@@ -262,7 +262,7 @@ case "$1" in
     clean)
         log "Cleaning up..."
         ./gradlew clean
-        docker rmi podroid-builder podroid-qemu-builder podroid-rootfs:latest 2>/dev/null || true
+        docker rmi yourxdemon-builder podroid-qemu-builder yourxdemon-rootfs:latest 2>/dev/null || true
         success "Cleaned."
         ;;
     *)
