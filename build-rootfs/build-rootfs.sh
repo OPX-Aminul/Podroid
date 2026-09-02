@@ -41,9 +41,15 @@ apt-get install -y --no-install-recommends \
     less \
     2>/dev/null || true
 
-# Install firmware packages if available (non-free).
+# Install WiFi firmware packages (non-free).
+# Covers Realtek, Qualcomm/Atheros, Broadcom, Marvell, Ralink/MediaTek.
+# Intel firmware (firmware-iwlwifi) excluded — too large (~50MB) for a VM.
 apt-get install -y --no-install-recommends \
-    firmware-realtek firmware-misc-nonfree \
+    firmware-realtek \
+    firmware-atheros \
+    firmware-brcm80211 \
+    firmware-libertas \
+    firmware-misc-nonfree \
     2>/dev/null || true
 
 # Clean up apt cache to shrink the squashfs.
