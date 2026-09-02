@@ -80,6 +80,7 @@ rm -rf "$ROOTFS/usr/share/man" "$ROOTFS/usr/share/doc" \
 mkdir -p "$ROOTFS/run"
 
 # ── Copy custom service files into the rootfs ────────────────────────────────
+mkdir -p "$ROOTFS/etc/init.d"
 cp /work/files/etc/init.d/opx-bootstrap "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/opx-network   "$ROOTFS/etc/init.d/"
 cp /work/files/etc/init.d/opx-resize    "$ROOTFS/etc/init.d/"
