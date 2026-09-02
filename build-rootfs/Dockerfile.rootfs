@@ -4,7 +4,7 @@
 # Uses qemu-user under the hood — no separate cross-toolchain needed.
 FROM --platform=linux/arm64 debian:trixie AS vsock-builder
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc make libc6-dev linux-headers ca-certificates \
+    gcc make libc6-dev ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 WORKDIR /work
 COPY vsock-agent /work/vsock-agent
