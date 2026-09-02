@@ -163,11 +163,21 @@ for svc in hwclock swclock urandom networking sysctl bootmisc syslog; do
     rm -f "$ROOTFS/etc/runlevels/boot/$svc" "$ROOTFS/etc/runlevels/default/$svc"
 done
 
+# ── /sbin/init symlink for busybox init ─────────────────────────────────────
+# Debian's OpenRC package provides /sbin/openrc-init but NOT /sbin/init.
+# init-yourxdemon does: switch_root /mnt/overlay /sbin/init
+# We point /sbin/init → busybox (not openrc-init) because:
+#   - busybox init reads /etc/inittab and processes:
+#       ::sysinit:/sbin/openrc sysinit  (starts OpenRC)
+#       hvc0::respawn:/usr/local/bin/podroid-getty hvc0  (starts terminal)
+#   - openrc-init ignores inittab → getty never starts → no terminal.
+ln -sf /bin/busybox "$ROOTFS/usr/sbin/init"
+
 # ── Ensure busybox symlinks ──────────────────────────────────────────────────
 # Debian's busybox-static doesn't auto-create /bin/sh etc. Link them manually.
 if [ -x "$ROOTFS/bin/busybox" ]; then
     cd "$ROOTFS/bin"
-    for cmd in sh ash bash awk sed grep find sort head tail cat cp mv rm ln chmod chown mkdir mount umount sleep stty kill pgrep; do
+    for cmd in sh ash bash awk sed grep find sort head tail cat cp mv rm ln chmod chown mkdir mount umount sleep stty kill pgrep init; do
         [ -e "$cmd" ] || ln -sf busybox "$cmd"
     done
     cd /work
