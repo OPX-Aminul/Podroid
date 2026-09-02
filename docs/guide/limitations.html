@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Limitations &amp; troubleshooting · Podroid docs</title>
-  <meta name="description" content="Known limitations of Podroid and a troubleshooting guide for common issues." />
+  <title>Limitations &amp; troubleshooting · OPX docs</title>
+  <meta name="description" content="Known limitations of OPX and a troubleshooting guide for common issues." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -49,7 +49,7 @@
 
     <main class="content">
       <h1>Limitations &amp; troubleshooting</h1>
-      <p class="lead">Podroid runs a real VM on hardware that was not designed for it. This page documents every known limitation honestly, and explains how to work around the most common problems.</p>
+      <p class="lead">OPX runs a real VM on hardware that was not designed for it. This page documents every known limitation honestly, and explains how to work around the most common problems.</p>
 
       <h2>Limitations</h2>
 
@@ -65,7 +65,7 @@
           <tr>
             <td>CPU / acceleration</td>
             <td>No KVM on the default QEMU path</td>
-            <td>KVM requires root access to <code>/dev/kvm</code>, which Podroid does not have. The default backend uses QEMU TCG (software CPU emulation), which is 5-20x slower than native for CPU-bound work. AVF/pKVM is the only hardware-accelerated option and is Pixel-only; see <a href="backends.html">Backends</a>.</td>
+            <td>KVM requires root access to <code>/dev/kvm</code>, which OPX does not have. The default backend uses QEMU TCG (software CPU emulation), which is 5-20x slower than native for CPU-bound work. AVF/pKVM is the only hardware-accelerated option and is Pixel-only; see <a href="backends.html">Backends</a>.</td>
           </tr>
           <tr>
             <td>Architecture</td>
@@ -80,17 +80,17 @@
           <tr>
             <td>AVF backend</td>
             <td>Pixel pKVM devices only; two ADB permissions required</td>
-            <td>AVF uses the Android Virtualization Framework, which requires a device that ships pKVM (currently Pixel 8 and later). Two one-time <code>adb</code> grants (or Shizuku) are needed before AVF can start. Devices that only support protected VMs and not non-protected VMs cannot use the AVF backend at all; Podroid falls back to QEMU automatically.</td>
+            <td>AVF uses the Android Virtualization Framework, which requires a device that ships pKVM (currently Pixel 8 and later). Two one-time <code>adb</code> grants (or Shizuku) are needed before AVF can start. Devices that only support protected VMs and not non-protected VMs cannot use the AVF backend at all; OPX falls back to QEMU automatically.</td>
           </tr>
           <tr>
             <td>AVF CPU count</td>
             <td>No fine-grained vCPU selection</td>
-            <td>The AVF API exposes only one vCPU or all host cores, not an exact count, so the CPU count setting is precise on the QEMU backend only. As of v1.2.5, multi-core AVF works reliably: if a device cannot bring up every core at boot (seen on Tensor G3/G4 Pixels), Podroid automatically retries with fewer cores and remembers the highest count that boots.</td>
+            <td>The AVF API exposes only one vCPU or all host cores, not an exact count, so the CPU count setting is precise on the QEMU backend only. As of v1.2.5, multi-core AVF works reliably: if a device cannot bring up every core at boot (seen on Tensor G3/G4 Pixels), OPX automatically retries with fewer cores and remembers the highest count that boots.</td>
           </tr>
           <tr>
             <td>AVF on the Android 17 beta</td>
             <td>VMs fail to boot (boot loop, empty console)</td>
-            <td>On the Android 17 beta, the system VM manager and its bundled crosvm disagree on guest networking, so AVF VMs reset before the guest loads. This is a platform-side beta regression, not a Podroid bug. Switch the backend to QEMU (TCG) in Settings until Google resolves it; QEMU is unaffected.</td>
+            <td>On the Android 17 beta, the system VM manager and its bundled crosvm disagree on guest networking, so AVF VMs reset before the guest loads. This is a platform-side beta regression, not a OPX bug. Switch the backend to QEMU (TCG) in Settings until Google resolves it; QEMU is unaffected.</td>
           </tr>
           <tr>
             <td>USB passthrough</td>
@@ -169,7 +169,7 @@
       <p>Not on the QEMU backend - KVM requires <code>/dev/kvm</code> access, which needs root. If you have a Pixel 8 or later (pKVM), switch to the <a href="backends.html">AVF backend</a> for near-native CPU speed. On any other device, the <a href="performance.html">Performance</a> page covers the TCG tuning options already applied (multi-threaded TCG, larger TB cache, iothread for disk I/O) and sets realistic expectations.</p>
 
       <h3>QEMU crashes with a hint about "Downloads sharing is unstable"</h3>
-      <p>This is the virtio-9p crash on certain ARMv9.2 devices, including the Pixel 10. Open Settings inside Podroid and disable <strong>Downloads sharing</strong>. The crash will stop. The underlying 9p driver instability is an open issue in the QEMU build for those chips.</p>
+      <p>This is the virtio-9p crash on certain ARMv9.2 devices, including the Pixel 10. Open Settings inside OPX and disable <strong>Downloads sharing</strong>. The crash will stop. The underlying 9p driver instability is an open issue in the QEMU build for those chips.</p>
 
       <h3>AVF stops on boot with reason=5 / STOP_REASON_REBOOT</h3>
       <p>This is a known issue on some Pixel 8, 8a, and 9 units where the pKVM firmware raises a stop event before the guest kernel finishes booting. To diagnose: enable <strong>Verbose AVF logging</strong> in Settings, reproduce the boot failure, then use <strong>Export diagnostic log</strong> to capture the output. While investigating, switch the Backend setting to <strong>QEMU</strong> to continue using the app.</p>
@@ -196,7 +196,7 @@
         <a class="prev" href="settings.html"><span class="dir">Previous</span>&larr; Terminal &amp; settings</a>
         <a class="next" href="use-cases.html"><span class="dir">Next</span>Use cases &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

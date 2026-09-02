@@ -7,19 +7,19 @@
  *
  *   serial.sock   — QEMU -serial (ttyAMA0 in the VM). Boot-log sink only:
  *                   QemuBootMonitor connects here for the lifetime of the VM,
- *                   streaming kernel messages and init-podroid boot stages
+ *                   streaming kernel messages and init-opx boot stages
  *                   into console.log + the in-memory ring buffer used by
  *                   BootStageDetector.
  *
  *   terminal.sock — QEMU virtio-console (/dev/hvc0 in the VM). Primary
- *                   terminal I/O. getty runs on hvc0; the podroid-bridge
+ *                   terminal I/O. getty runs on hvc0; the opx-bridge
  *                   binary connects here for bidirectional shell I/O. Fully
  *                   independent of serial.sock, so no socket hand-off.
  *
  *   ctrl.sock     — QEMU virtio-console (/dev/hvc1 in the VM). Resize signal
  *                   channel only. Bridge writes "RESIZE rows cols\n" on
  *                   SIGWINCH (debounced by RESIZE_DEBOUNCE_MS); the resize
- *                   daemon in init-podroid stty's hvc0 to deliver SIGWINCH
+ *                   daemon in init-opx stty's hvc0 to deliver SIGWINCH
  *                   to the foreground TUI inside the VM.
  */
 package com.opx.yourxdemon.engine
@@ -121,7 +121,7 @@ class QemuEngine @Inject constructor(
 
     /**
      * Single dedicated thread that BOTH fork/exec's QEMU and blocks in
-     * waitFor(). libpodroid-launcher sets PR_SET_PDEATHSIG(SIGKILL), which is
+     * waitFor(). libopx-launcher sets PR_SET_PDEATHSIG(SIGKILL), which is
      * THREAD-scoped: the kernel SIGKILLs QEMU when the thread that spawned it
      * dies — not when the app process dies. Forking from a Dispatchers.IO pool
      * thread let that thread be recycled (~60s idle keep-alive) once the start()
@@ -213,7 +213,7 @@ class QemuEngine @Inject constructor(
 
             // Bridge connects to terminal.sock (virtio-console, separate from serial).
             // No handoff with the boot monitor needed — they use different sockets.
-            val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libpodroid-bridge.so")
+            val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libopx-bridge.so")
             if (!bridgeExe.exists()) return@post
 
             val sess = TerminalSession(
@@ -250,9 +250,9 @@ class QemuEngine @Inject constructor(
         }
 
         // Fallback: create session now
-        val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libpodroid-bridge.so")
+        val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libopx-bridge.so")
         if (!bridgeExe.exists()) {
-            throw IllegalStateException("podroid-bridge not found at ${bridgeExe.absolutePath}")
+            throw IllegalStateException("opx-bridge not found at ${bridgeExe.absolutePath}")
         }
 
         val sess = TerminalSession(
@@ -339,11 +339,11 @@ class QemuEngine @Inject constructor(
             pb.redirectOutput(File("/dev/null"))
 
             // Fork QEMU on a private, long-lived thread (see qemuDispatcher).
-            // PR_SET_PDEATHSIG (set by libpodroid-launcher) is thread-scoped, so
+            // PR_SET_PDEATHSIG (set by libopx-launcher) is thread-scoped, so
             // the spawning thread must outlive QEMU — a Dispatchers.IO pool
             // thread does not. waitFor() below runs on this same thread.
             val dispatcher = Executors.newSingleThreadExecutor { r ->
-                Thread(r, "podroid-qemu").apply { isDaemon = true }
+                Thread(r, "opx-qemu").apply { isDaemon = true }
             }.asCoroutineDispatcher()
             qemuDispatcher = dispatcher
 
@@ -402,7 +402,7 @@ class QemuEngine @Inject constructor(
                 // IO thread and skips the dedicated-thread waitFor() reap. Set
                 // the error, signal a graceful stop, and fall through to the
                 // same waitFor() teardown the happy path uses (it reaps on the
-                // podroid-qemu thread). The guard below preserves this message.
+                // opx-qemu thread). The guard below preserves this message.
                 Log.e(TAG, "Socket timeout — QEMU sockets not ready after ${SOCKET_READY_TIMEOUT_MS}ms")
                 _state.value =
                     VmState.Error("QEMU failed to create sockets within ${SOCKET_READY_TIMEOUT_MS / 1000}s")
@@ -489,7 +489,7 @@ class QemuEngine @Inject constructor(
             } catch (_: Exception) {
                 proc.destroyForcibly()
             }
-        }, "podroid-qemu-stop").apply { isDaemon = true }.start()
+        }, "opx-qemu-stop").apply { isDaemon = true }.start()
     }
 
     override fun openHostTransport(): com.opx.yourxdemon.engine.hostbridge.HostTransport? =
@@ -579,9 +579,9 @@ class QemuEngine @Inject constructor(
                 if (userKernelExtras.isNotEmpty()) append(" ").append(userKernelExtras)
                 append(" androidip=").append(config.androidIp)
                 if (config.sshEnabled) append(" ssh=1")
-                append(" podroid.x11.dpi=").append(config.x11Dpi)
-                if (config.bandwidthMbps > 0) append(" podroid.bandwidth=").append(config.bandwidthMbps)
-                if (config.dnsServers.isNotEmpty()) append(" podroid.dns=").append(config.dnsServers.joinToString(","))
+                append(" opx.x11.dpi=").append(config.x11Dpi)
+                if (config.bandwidthMbps > 0) append(" opx.bandwidth=").append(config.bandwidthMbps)
+                if (config.dnsServers.isNotEmpty()) append(" opx.dns=").append(config.dnsServers.joinToString(","))
             }
             args += "-append"; args += cmdline
         } else {
@@ -683,13 +683,13 @@ class QemuEngine @Inject constructor(
         // hvc1 = control channel (init daemon reads RESIZE messages from ctrl.sock)
         args += "-device";  args += "virtio-serial-pci"
         args += "-chardev"; args += "socket,id=term0,path=$terminalSockPath,server=on,wait=off"
-        args += "-device";  args += "virtconsole,chardev=term0,name=org.podroid.term"
+        args += "-device";  args += "virtconsole,chardev=term0,name=org.opx.term"
         args += "-chardev"; args += "socket,id=ctrl0,path=$ctrlSockPath,server=on,wait=off"
-        args += "-device";  args += "virtconsole,chardev=ctrl0,name=org.podroid.ctrl"
+        args += "-device";  args += "virtconsole,chardev=ctrl0,name=org.opx.ctrl"
 
-        // hvc2 = host bridge (guest podroid-hostd <-> Android host.sock)
+        // hvc2 = host bridge (guest opx-hostd <-> Android host.sock)
         args += "-chardev"; args += "socket,id=host0,path=$hostSockPath,server=on,wait=off"
-        args += "-device";  args += "virtconsole,chardev=host0,name=org.podroid.host"
+        args += "-device";  args += "virtconsole,chardev=host0,name=org.opx.host"
 
         args += "-display"; args += "none"
         args += "-qmp";     args += "unix:$qmpSocketPath,server,nowait"
@@ -699,11 +699,11 @@ class QemuEngine @Inject constructor(
             args += userQemuExtras.split(Regex("\\s+"))
         }
 
-        // Wrap QEMU in podroid-launcher when available — it sets PR_SET_PDEATHSIG
+        // Wrap QEMU in opx-launcher when available — it sets PR_SET_PDEATHSIG
         // so QEMU dies with the app on uninstall/OOM/force-stop instead of leaking
         // as an orphan under PPID=1. If the launcher is missing (older deploys),
         // fall back to spawning QEMU directly.
-        val launcher = File(context.applicationInfo.nativeLibraryDir, "libpodroid-launcher.so")
+        val launcher = File(context.applicationInfo.nativeLibraryDir, "libopx-launcher.so")
         return if (launcher.exists()) {
             listOf(launcher.absolutePath, qemuExe.absolutePath) + args
         } else {

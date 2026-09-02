@@ -4,7 +4,7 @@
  * A real Alpine Linux VM running on stock Android (arm64), providing
  * rootless containers and an in-app X11 desktop. No root required.
  *
- * Originally developed as Podroid by ExTV.
+ * Originally developed by ExTV by ExTV.
  * Rebranded by OP Aminul FF (OPX).
  */
 plugins {
@@ -42,12 +42,12 @@ android {
 
     signingConfigs {
         create("release") {
-            val storePath = (project.findProperty("PODROID_RELEASE_STORE_FILE") as? String)
+            val storePath = (project.findProperty("OPX_RELEASE_STORE_FILE") as? String)
             if (storePath != null && file(storePath).exists()) {
                 storeFile     = file(storePath)
-                storePassword = project.findProperty("PODROID_RELEASE_STORE_PASSWORD") as? String
-                keyAlias      = project.findProperty("PODROID_RELEASE_KEY_ALIAS")      as? String
-                keyPassword   = project.findProperty("PODROID_RELEASE_KEY_PASSWORD")   as? String
+                storePassword = project.findProperty("OPX_RELEASE_STORE_PASSWORD") as? String
+                keyAlias      = project.findProperty("OPX_RELEASE_KEY_ALIAS")      as? String
+                keyPassword   = project.findProperty("OPX_RELEASE_KEY_PASSWORD")   as? String
             }
         }
     }

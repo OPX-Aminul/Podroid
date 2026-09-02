@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Desktops &amp; the X11 viewer · Podroid docs</title>
-  <meta name="description" content="Run an X11 Linux desktop inside Podroid and view it with the built-in VNC viewer. Covers setup-desktop, supported DEs, viewer settings, and known limitations." />
+  <title>Desktops &amp; the X11 viewer · OPX docs</title>
+  <meta name="description" content="Run an X11 Linux desktop inside OPX and view it with the built-in VNC viewer. Covers setup-desktop, supported DEs, viewer settings, and known limitations." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -49,16 +49,16 @@
 
     <main class="content">
       <h1>Desktops &amp; the X11 viewer</h1>
-      <p class="lead">Podroid includes a built-in VNC viewer that connects to <strong>Xvnc</strong> running inside the VM on display <code>:0</code> (port 5900, auto-forwarded). Tap the monitor icon in the terminal's top bar to open it.</p>
+      <p class="lead">OPX includes a built-in VNC viewer that connects to <strong>Xvnc</strong> running inside the VM on display <code>:0</code> (port 5900, auto-forwarded). Tap the monitor icon in the terminal's top bar to open it.</p>
 
       <h2>Installing a desktop</h2>
-      <p>Alpine ships <code>setup-desktop</code> as part of the <code>alpine-conf</code> package. It is an interactive helper that creates a user and installs a desktop environment of your choice. Run it in the Podroid terminal:</p>
+      <p>Alpine ships <code>setup-desktop</code> as part of the <code>alpine-conf</code> package. It is an interactive helper that creates a user and installs a desktop environment of your choice. Run it in the OPX terminal:</p>
       <pre><code><span class="p">#</span> setup-desktop</code></pre>
       <p>Follow the prompts to pick a desktop and create a user account. The script handles the <code>apk add</code> steps for you.</p>
 
       <div class="callout note">
         <span class="label">What setup-desktop also does</span>
-        <p><code>setup-desktop</code> installs <code>lightdm</code> with a greeter and enables it (<code>rc-update add lightdm</code>), and the Xfce and MATE choices also pull in Firefox, so the download is a good deal larger than the minimal example below. In Podroid the display manager is harmless but useless: the guest kernel has no graphics device, so <code>lightdm</code> starts at boot and idles without ever launching an X server, while Xvnc keeps display <code>:0</code>. Run <code>rc-update del lightdm</code> afterwards to keep boot clean, or use the "Complete example" section below for the minimal <code>apk add</code> route instead.</p>
+        <p><code>setup-desktop</code> installs <code>lightdm</code> with a greeter and enables it (<code>rc-update add lightdm</code>), and the Xfce and MATE choices also pull in Firefox, so the download is a good deal larger than the minimal example below. In OPX the display manager is harmless but useless: the guest kernel has no graphics device, so <code>lightdm</code> starts at boot and idles without ever launching an X server, while Xvnc keeps display <code>:0</code>. Run <code>rc-update del lightdm</code> afterwards to keep boot clean, or use the "Complete example" section below for the minimal <code>apk add</code> route instead.</p>
       </div>
 
       <div class="callout warn">
@@ -89,23 +89,23 @@
       <p>The app will appear in the viewer as soon as it opens a window.</p>
 
       <h2>Complete example: Xfce from a fresh VM</h2>
-      <p>Every command in order, starting from a VM you have just booted for the first time. Run these in the Podroid terminal:</p>
+      <p>Every command in order, starting from a VM you have just booted for the first time. Run these in the OPX terminal:</p>
       <pre><code><span class="c"># 1. install the desktop (about 400 MB)</span>
 <span class="p">#</span> apk add xfce4 xfce4-terminal
 
 <span class="c"># 2. start it; it keeps running in the background</span>
 <span class="p">#</span> startxfce4 &amp;</code></pre>
-      <p>Now tap the monitor icon in the terminal's top bar. The desktop appears in the built-in viewer. There is nothing to configure, no VNC server to install, and no ports to forward: <code>Xvnc</code> is already running as the X server and Podroid already forwards it to the viewer.</p>
+      <p>Now tap the monitor icon in the terminal's top bar. The desktop appears in the built-in viewer. There is nothing to configure, no VNC server to install, and no ports to forward: <code>Xvnc</code> is already running as the X server and OPX already forwards it to the viewer.</p>
 
       <h2>Connecting from another computer</h2>
       <p>The built-in viewer is the intended way to use the desktop, and it needs no setup. Reaching that same desktop from a PC takes one extra step, because of a deliberate safety decision.</p>
 
       <div class="callout warn">
         <span class="label">Why your VNC client cannot reach port 5900 directly</span>
-        <p>The X session inside the VM runs with no password (<code>-SecurityTypes None</code>). To stop that from becoming an open desktop for everyone on your network, Podroid forwards port <code>5900</code> to <code>127.0.0.1</code> on the phone only, so nothing outside the phone can dial it. Host ports <code>5900</code> and <code>4713</code> are reserved for this reason, and adding your own forwarding rule on them is refused with "Port 5900 is reserved for the in-app desktop".</p>
+        <p>The X session inside the VM runs with no password (<code>-SecurityTypes None</code>). To stop that from becoming an open desktop for everyone on your network, OPX forwards port <code>5900</code> to <code>127.0.0.1</code> on the phone only, so nothing outside the phone can dial it. Host ports <code>5900</code> and <code>4713</code> are reserved for this reason, and adding your own forwarding rule on them is refused with "Port 5900 is reserved for the in-app desktop".</p>
       </div>
 
-      <p>The recommended way in is an SSH tunnel, which carries the desktop over the SSH connection you already have. Enable SSH in Podroid's settings first, then run this <strong>on your computer</strong>:</p>
+      <p>The recommended way in is an SSH tunnel, which carries the desktop over the SSH connection you already have. Enable SSH in OPX's settings first, then run this <strong>on your computer</strong>:</p>
       <pre><code><span class="c"># replace with the phone's address shown on the Status screen</span>
 <span class="p">$</span> ssh -p 9922 -L 5900:127.0.0.1:5900 root@&lt;phone-ip&gt;</code></pre>
       <p>Leave that connection open, then point any VNC client at <code>localhost:5900</code>. The desktop is encrypted in transit, needs no extra forwarding rule, and works from whichever network the phone and PC share.</p>
@@ -133,7 +133,7 @@
 <span class="c"># security, which current Windows and FreeRDP clients refuse to complete.</span>
 <span class="p">#</span> cd /etc/xrdp
 <span class="p">#</span> openssl req -x509 -newkey rsa:2048 -nodes -days 3650 \
-      -keyout key.pem -out cert.pem -subj "/CN=podroid"
+      -keyout key.pem -out cert.pem -subj "/CN=opx"
 <span class="p">#</span> chmod 600 key.pem
 
 <span class="c"># xrdp offers its Xorg backend first and Alpine ships no xorgxrdp, so a</span>
@@ -155,11 +155,11 @@
 <span class="p">#</span> rc-update add xrdp-sesman
 <span class="p">#</span> rc-update add xrdp</code></pre>
 
-      <p>Then add a port forward in <strong>Settings &rarr; Port forwards</strong> from host port <code>3389</code> to VM port <code>3389</code>, and connect from the PC to <code>phone-address:3389</code> with the guest's own credentials: user <code>root</code>, password <code>podroid</code> unless you changed it. Be patient on the first login: on the QEMU backend the session can take a minute or more to start, and until openbox is up the screen is plain black with only a mouse cursor. The dark gray desktop appearing means the session is ready; the terminal from the autostart follows, and the right-click menu works from that point on.</p>
+      <p>Then add a port forward in <strong>Settings &rarr; Port forwards</strong> from host port <code>3389</code> to VM port <code>3389</code>, and connect from the PC to <code>phone-address:3389</code> with the guest's own credentials: user <code>root</code>, password <code>opx</code> unless you changed it. Be patient on the first login: on the QEMU backend the session can take a minute or more to start, and until openbox is up the screen is plain black with only a mouse cursor. The dark gray desktop appearing means the session is ready; the terminal from the autostart follows, and the right-click menu works from that point on.</p>
 
       <div class="callout note">
         <span class="label">On an older VM image, one more line</span>
-        <p>The guest sets <code>DISPLAY</code> for you so that programs started from the terminal appear on the in-app desktop, and xrdp reads the same profile before starting your session. Older images set it unconditionally, which sends an RDP session's windows to the phone's screen and leaves the remote desktop black. Check with <code>grep DISPLAY /etc/profile.d/podroid-x11.sh</code>: if it reads <code>export DISPLAY=:0</code> rather than <code>: "${DISPLAY:=:0}"</code>, run <code>sed -i 's/^export DISPLAY=:0$/: "${DISPLAY:=:0}"; export DISPLAY/' /etc/profile.d/podroid-x11.sh</code> once.</p>
+        <p>The guest sets <code>DISPLAY</code> for you so that programs started from the terminal appear on the in-app desktop, and xrdp reads the same profile before starting your session. Older images set it unconditionally, which sends an RDP session's windows to the phone's screen and leaves the remote desktop black. Check with <code>grep DISPLAY /etc/profile.d/opx-x11.sh</code>: if it reads <code>export DISPLAY=:0</code> rather than <code>: "${DISPLAY:=:0}"</code>, run <code>sed -i 's/^export DISPLAY=:0$/: "${DISPLAY:=:0}"; export DISPLAY/' /etc/profile.d/opx-x11.sh</code> once.</p>
       </div>
 
       <div class="callout warn">
@@ -167,10 +167,10 @@
         <p>Port forwards bind every interface, so an RDP listener is reachable by anyone on the same network. Unlike the VNC path above, this one does ask for a password, which is worth having. It is also the guest's well-known default password, which is not. Run <code>passwd</code> in the guest first.</p>
       </div>
 
-      <p>The session you get this way is its own desktop, separate from the one the in-app viewer shows, and it survives a disconnect: reconnecting drops you back into the same windows. That is usually what you want from a PC. If you would rather see the <em>same</em> screen as the phone, add this section to <code>/etc/xrdp/xrdp.ini</code> and set <code>autorun=podroid</code> instead of <code>autorun=Xvnc</code>, which points RDP at the running X session rather than starting a new one:</p>
+      <p>The session you get this way is its own desktop, separate from the one the in-app viewer shows, and it survives a disconnect: reconnecting drops you back into the same windows. That is usually what you want from a PC. If you would rather see the <em>same</em> screen as the phone, add this section to <code>/etc/xrdp/xrdp.ini</code> and set <code>autorun=opx</code> instead of <code>autorun=Xvnc</code>, which points RDP at the running X session rather than starting a new one:</p>
 
-      <pre><code>[podroid]
-name=Podroid desktop
+      <pre><code>[opx]
+name=OPX desktop
 lib=libvnc.so
 ip=127.0.0.1
 port=5900
@@ -248,7 +248,7 @@ password=na</code></pre>
         <a class="prev" href="packages.html"><span class="dir">Previous</span>← Packages &amp; services</a>
         <a class="next" href="settings.html"><span class="dir">Next</span>Terminal &amp; settings →</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

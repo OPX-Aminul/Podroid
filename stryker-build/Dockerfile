@@ -46,7 +46,7 @@ RUN wget -q https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.44/
 RUN wget -q https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz && tar xf libffi-3.4.6.tar.gz && cd libffi-3.4.6 && ./configure --host=aarch64-linux-android --prefix=${PREFIX} --enable-static --disable-shared CC="${CC}" && make -j$(nproc) install
 
 # iconv shim (Bionic API-26 lacks iconv symbols)
-RUN printf '#ifndef PODROID_ICONV_H\n#define PODROID_ICONV_H\n#include <stddef.h>\ntypedef void *iconv_t;\niconv_t iconv_open(const char *tocode, const char *fromcode);\nsize_t iconv(iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);\nint iconv_close(iconv_t cd);\n#endif\n' > ${PREFIX}/include/iconv.h \
+RUN printf '#ifndef OPX_ICONV_H\n#define OPX_ICONV_H\n#include <stddef.h>\ntypedef void *iconv_t;\niconv_t iconv_open(const char *tocode, const char *fromcode);\nsize_t iconv(iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);\nint iconv_close(iconv_t cd);\n#endif\n' > ${PREFIX}/include/iconv.h \
     && printf '#include <errno.h>\n#include <stddef.h>\n#include <string.h>\n#include <iconv.h>\niconv_t iconv_open(const char *tocode, const char *fromcode) {\n    if (!tocode || !fromcode) { errno = EINVAL; return (iconv_t)-1; }\n    return (iconv_t)1;\n}\nsize_t iconv(iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {\n    (void)cd;\n    if (!inbuf || !inbytesleft || !outbuf || !outbytesleft) { errno = EINVAL; return (size_t)-1; }\n    if (!*inbuf || *inbytesleft == 0) return 0;\n    if (!*outbuf || *outbytesleft == 0) { errno = E2BIG; return (size_t)-1; }\n    size_t n = (*inbytesleft < *outbytesleft) ? *inbytesleft : *outbytesleft;\n    memcpy(*outbuf, *inbuf, n);\n    *inbuf += n; *outbuf += n; *inbytesleft -= n; *outbytesleft -= n;\n    if (*inbytesleft != 0) { errno = E2BIG; return (size_t)-1; }\n    return 0;\n}\nint iconv_close(iconv_t cd) { (void)cd; return 0; }\n' > /tmp/iconv_shim.c \
     && ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -I${PREFIX}/include -c /tmp/iconv_shim.c -o /tmp/iconv_shim.o \
     && ${AR} rcs ${PREFIX}/lib/libiconv.a /tmp/iconv_shim.o \
@@ -63,7 +63,7 @@ RUN wget -q https://download.savannah.gnu.org/releases/attr/attr-2.5.2.tar.gz &&
 
 # libucontext (for coroutine)
 RUN git clone --depth=1 https://github.com/kaniini/libucontext.git /tmp/libucontext && make -C /tmp/libucontext ARCH=aarch64 CC="${CC}" EXPORT_UNPREFIXED=yes && install -Dm644 /tmp/libucontext/libucontext.a ${PREFIX}/lib/libucontext.a && install -Dm644 /tmp/libucontext/include/libucontext/libucontext.h ${PREFIX}/include/libucontext/libucontext.h && install -Dm644 /tmp/libucontext/arch/common/include/libucontext/bits.h ${PREFIX}/include/libucontext/bits.h \
-    && printf '#ifndef PODROID_UCONTEXT_SHIM_H\n#define PODROID_UCONTEXT_SHIM_H\n#include_next <ucontext.h>\n#include <libucontext/libucontext.h>\n#define getcontext libucontext_getcontext\n#define makecontext libucontext_makecontext\n#define setcontext libucontext_setcontext\n#define swapcontext libucontext_swapcontext\n#endif\n' > ${PREFIX}/include/ucontext.h
+    && printf '#ifndef OPX_UCONTEXT_SHIM_H\n#define OPX_UCONTEXT_SHIM_H\n#include_next <ucontext.h>\n#include <libucontext/libucontext.h>\n#define getcontext libucontext_getcontext\n#define makecontext libucontext_makecontext\n#define setcontext libucontext_setcontext\n#define swapcontext libucontext_swapcontext\n#endif\n' > ${PREFIX}/include/ucontext.h
 
 # libusb (for USB passthrough)
 RUN wget -q https://github.com/libusb/libusb/releases/download/v1.0.27/libusb-1.0.27.tar.bz2 \
@@ -89,7 +89,7 @@ RUN printf '# disabled for Android Bionic\n' > ${QEMU_DIR}/contrib/ivshmem-serve
     && printf '# disabled for Android Bionic\n' > ${QEMU_DIR}/contrib/ivshmem-client/meson.build
 
 # Patch 4: shm_open/shm_unlink shim (Bionic API-26)
-RUN printf '#ifndef PODROID_SHM_SHIM_H\n#define PODROID_SHM_SHIM_H\nextern int shm_open(const char *, int, unsigned);\nextern int shm_unlink(const char *);\n#endif\n' \
+RUN printf '#ifndef OPX_SHM_SHIM_H\n#define OPX_SHM_SHIM_H\nextern int shm_open(const char *, int, unsigned);\nextern int shm_unlink(const char *);\n#endif\n' \
     > /opt/shm_shim.h
 RUN printf '#include <sys/syscall.h>\n#include <unistd.h>\n#include <errno.h>\n#ifndef SYS_memfd_create\n#define SYS_memfd_create 279\n#endif\nint shm_open(const char *n, int f, unsigned m) {\n    (void)f; (void)m;\n    while (*n == '"'"'/'"'"') n++;\n    long fd = syscall(SYS_memfd_create, n, 0);\n    if (fd < 0) { errno = (int)(-fd); return -1; }\n    return (int)fd;\n}\nint shm_unlink(const char *n) { (void)n; return 0; }\n' \
     > /tmp/shm_stub.c \
@@ -126,7 +126,7 @@ RUN sed -i 's@^    rc = libusb_init(&ctx);@#if defined(__ANDROID__)\n    libusb_
 # from another — PAC AUTH fails → SIGILL. This shim saves/restores
 # callee-saved registers without PAC.
 
-RUN printf '#ifndef PODROID_QEMU_JMP_H\n#define PODROID_QEMU_JMP_H\n#include <setjmp.h>\nextern int _qemu_setjmp(sigjmp_buf);\n__attribute__((noreturn)) extern void _qemu_longjmp(sigjmp_buf, int);\n#endif\n' > /opt/qemu_jmp.h \
+RUN printf '#ifndef OPX_QEMU_JMP_H\n#define OPX_QEMU_JMP_H\n#include <setjmp.h>\nextern int _qemu_setjmp(sigjmp_buf);\n__attribute__((noreturn)) extern void _qemu_longjmp(sigjmp_buf, int);\n#endif\n' > /opt/qemu_jmp.h \
     && printf '.text\n.global _qemu_setjmp\n.type _qemu_setjmp,%%function\n_qemu_setjmp:\nstp x19,x20,[x0,#0]\nstp x21,x22,[x0,#16]\nstp x23,x24,[x0,#32]\nstp x25,x26,[x0,#48]\nstp x27,x28,[x0,#64]\nstp x29,x30,[x0,#80]\nmov x9,sp\nstr x9,[x0,#96]\nstp d8,d9,[x0,#104]\nstp d10,d11,[x0,#120]\nstp d12,d13,[x0,#136]\nstp d14,d15,[x0,#152]\nmov w0,#0\nret\n.size _qemu_setjmp,.-_qemu_setjmp\n.global _qemu_longjmp\n.type _qemu_longjmp,%%function\n_qemu_longjmp:\nldp x19,x20,[x0,#0]\nldp x21,x22,[x0,#16]\nldp x23,x24,[x0,#32]\nldp x25,x26,[x0,#48]\nldp x27,x28,[x0,#64]\nldp x29,x30,[x0,#80]\nldr x9,[x0,#96]\nmov sp,x9\nldp d8,d9,[x0,#104]\nldp d10,d11,[x0,#120]\nldp d12,d13,[x0,#136]\nldp d14,d15,[x0,#152]\ncmp w1,#0\ncsinc w0,w1,wzr,ne\nbr x30\n.size _qemu_longjmp,.-_qemu_longjmp\n.section .note.GNU-stack,"",%%progbits\n' > /tmp/qemu_jmp.S \
     && ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -c /tmp/qemu_jmp.S -o /tmp/qemu_jmp.o \
     && ${AR} rcs ${PREFIX}/lib/libqemujmp.a /tmp/qemu_jmp.o

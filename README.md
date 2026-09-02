@@ -6,12 +6,12 @@
 
 A real Alpine Linux VM with its own kernel — not a chroot or proot trick — running on stock Android 8+ (arm64).
 
-[![Release](https://img.shields.io/github/v/release/OPX-Aminul/Podroid?include_prereleases&style=flat-square&label=release&color=blue)](https://github.com/OPX-Aminul/Podroid/releases)
-[![Downloads](https://img.shields.io/github/downloads/OPX-Aminul/Podroid/total?style=flat-square&color=brightgreen)](https://github.com/OPX-Aminul/Podroid/releases)
+[![Release](https://img.shields.io/github/v/release/OPX-Aminul/OPX?include_prereleases&style=flat-square&label=release&color=blue)](https://github.com/OPX-Aminul/OPX/releases)
+[![Downloads](https://img.shields.io/github/downloads/OPX-Aminul/OPX/total?style=flat-square&color=brightgreen)](https://github.com/OPX-Aminul/OPX/releases)
 ![Android 8+](https://img.shields.io/badge/Android-8%2B-3DDC84?style=flat-square&logo=android&logoColor=white)
 ![arm64](https://img.shields.io/badge/arch-arm64-orange?style=flat-square)
 
-[**Download APK**](https://github.com/OPX-Aminul/Podroid/releases/latest)
+[**Download APK**](https://github.com/OPX-Aminul/OPX/releases/latest)
 
 </div>
 
@@ -27,7 +27,7 @@ A real Alpine Linux VM with its own kernel — not a chroot or proot trick — r
 
 ## Quick start
 
-1. [Download the APK](https://github.com/OPX-Aminul/Podroid/releases/latest) and install it.
+1. [Download the APK](https://github.com/OPX-Aminul/OPX/releases/latest) and install it.
 2. Tap **Start VM**, wait for **Ready!**, open the terminal.
 
 ```sh
@@ -38,8 +38,8 @@ ssh root@<phone-ip> -p 9922        # password: yourxdemon
 ## Build
 
 ```sh
-git clone https://github.com/OPX-Aminul/Podroid.git
-cd Podroid
+git clone https://github.com/OPX-Aminul/OPX.git
+cd OPX
 ./build-all.sh all     # kernel, rootfs, QEMU and APK (needs Docker + Android SDK/NDK)
 ```
 
@@ -62,14 +62,14 @@ cd Podroid
 
 | | |
 |---|---|
-| **Original developer** | [ExTV](https://github.com/ExTV) — created Podroid |
+| **Original developer** | [ExTV](https://github.com/ExTV) — created OPX |
 | **Rebranded by** | OP Aminul FF (OPX) |
 | [QEMU](https://www.qemu.org) | Machine emulation |
 | [Termux](https://github.com/termux/termux-app) | Terminal emulator engine |
 | [Alpine Linux](https://alpinelinux.org) | The guest distribution |
 
-This project is a fork/rebrand of [Podroid](https://github.com/ExTV/Podroid) by ExTV. All credit to the original developers for creating the VM engine, boot pipeline, and Android integration.
+This project is a fork/rebrand of [OPX](https://github.com/ExTV/OPX) by ExTV. All credit to the original developers for creating the VM engine, boot pipeline, and Android integration.
 
 ## License
 
-[GPLv2](LICENSE). Based on [Podroid](https://github.com/ExTV/Podroid) by ExTV.
+[GPLv2](LICENSE). Based on [OPX](https://github.com/ExTV/OPX) by ExTV.

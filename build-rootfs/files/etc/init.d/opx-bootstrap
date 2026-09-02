@@ -1,9 +1,9 @@
 #!/sbin/openrc-run
-description="Podroid VM system bootstrap (cgroups, modules, devpts, sysctl)"
+description="OPX VM system bootstrap (cgroups, modules, devpts, sysctl)"
 
 depend() {
     # no localmount — init-yourxdemon already mounts /proc, /sys, /dev, overlayfs
-    before podroid-network
+    before opx-network
 }
 
 start() {
@@ -14,11 +14,11 @@ start() {
     # emulated RTC the way QEMU TCG does, so without this the guest boots
     # at epoch (1970-01-01) and every TLS cert appears "not yet valid" —
     # `apk update` warns `server certificate not trusted`, curl/wget fail,
-    # etc. AvfEngine passes `podroid.epoch=<unix-secs>` on the cmdline; we
+    # etc. AvfEngine passes `opx.epoch=<unix-secs>` on the cmdline; we
     # parse it here. No-op when the marker is absent (QEMU path).
-    PODROID_EPOCH=$(sed -n 's/.*podroid\.epoch=\([0-9]*\).*/\1/p' /proc/cmdline)
-    if [ -n "$PODROID_EPOCH" ] && [ "$PODROID_EPOCH" -gt 0 ] 2>/dev/null; then
-        date -s "@$PODROID_EPOCH" >/dev/null 2>&1
+    OPX_EPOCH=$(sed -n 's/.*OPX\.epoch=\([0-9]*\).*/\1/p' /proc/cmdline)
+    if [ -n "$OPX_EPOCH" ] && [ "$OPX_EPOCH" -gt 0 ] 2>/dev/null; then
+        date -s "@$OPX_EPOCH" >/dev/null 2>&1
     fi
 
     # Make / shared so mount events propagate (needed for some container
@@ -55,7 +55,7 @@ start() {
         [ -w "$q" ] && echo mq-deadline > "$q" 2>/dev/null
     done
 
-    # Downloads share (QEMU virtio-9p). On AVF, podroid-downloads owns
+    # Downloads share (QEMU virtio-9p). On AVF, opx-downloads owns
     # /mnt/downloads instead (9p over vsock, rendezvous with the Android-side
     # 9p2000.L server) — skip the virtio-9p attempt there entirely.
     #
@@ -68,7 +68,7 @@ start() {
     # next-best after cache=fscache (which requires CONFIG_9P_FSCACHE=y, not
     # in this kernel build); mmap still page-caches mapped regions and is
     # noticeably better than cache=loose for re-reads.
-    if ! grep -q 'podroid\.backend=avf' /proc/cmdline 2>/dev/null; then
+    if ! grep -q 'OPX\.backend=avf' /proc/cmdline 2>/dev/null; then
         mkdir -p /mnt/downloads 2>/dev/null
         mount -t 9p -o trans=virtio,version=9p2000.L,rw,msize=262144,cache=mmap,noatime \
             downloads /mnt/downloads 2>/dev/null
@@ -100,7 +100,7 @@ start() {
     # OOM behavior: re-assert the kernel default (0 = let the OOM killer pick
     # the highest-badness victim, rather than killing whatever triggered the
     # allocation). Per-service immunity (-1000 for dropbear/Xvnc/agent) is set
-    # in podroid-ready once those services exist.
+    # in opx-ready once those services exist.
     [ -w /proc/sys/vm/oom_kill_allocating_task ] && \
         echo 0 > /proc/sys/vm/oom_kill_allocating_task
     # overcommit_memory=1 (always overcommit) avoids ENOMEM at mmap time.

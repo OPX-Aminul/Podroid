@@ -1,20 +1,20 @@
 #!/sbin/openrc-run
-description="Podroid X11 server (Xvnc + pulseaudio) for in-app viewer"
+description="OPX X11 server (Xvnc + pulseaudio) for in-app viewer"
 
 depend() {
     # Xvnc binds 127.0.0.1:5900 and pulseaudio 0.0.0.0:4713, both loopback,
     # neither needs eth0/default-route. Order after networking but don't let a
-    # podroid-network failure (slow NIC, probe timeout) needlessly kill the GUI.
-    need podroid-bootstrap
-    after podroid-network
-    before podroid-ready
+    # opx-network failure (slow NIC, probe timeout) needlessly kill the GUI.
+    need opx-bootstrap
+    after opx-network
+    before opx-ready
 }
 
 XVNC_DISPLAY=:0
 XVNC_GEOMETRY=1280x720
 XVNC_PORT=5900
 PA_PORT=4713
-PA_RUNTIME=/run/podroid-pulse
+PA_RUNTIME=/run/OPX-pulse
 PA_LOGFILE=/var/log/pulse.log
 XVNC_LOGFILE=/var/log/xvnc.log
 
@@ -24,7 +24,7 @@ start() {
     # Read per-boot DPI from the kernel cmdline token written by the Android app.
     # Digit-only capture: /proc/cmdline ends in '\n', and an `awk -v RS=' '`
     # parse would keep that newline on the last token, so Xvnc rejects -dpi.
-    XVNC_DPI=$(sed -n 's/.*podroid\.x11\.dpi=\([0-9]*\).*/\1/p' /proc/cmdline 2>/dev/null)
+    XVNC_DPI=$(sed -n 's/.*OPX\.x11\.dpi=\([0-9]*\).*/\1/p' /proc/cmdline 2>/dev/null)
     [ -z "$XVNC_DPI" ] && XVNC_DPI=96
 
     # /tmp lives on the persistent ext4 overlay, so a stale X server lock
@@ -82,8 +82,8 @@ start() {
         --daemonize=no \
         --disallow-exit \
         --exit-idle-time=-1 \
-        --load="module-null-sink sink_name=podroid_sink rate=44100 channels=2 format=s16le" \
-        --load="module-simple-protocol-tcp source=podroid_sink.monitor record=true rate=44100 format=s16le channels=2 listen=0.0.0.0 port=$PA_PORT" \
+        --load="module-null-sink sink_name=OPX_sink rate=44100 channels=2 format=s16le" \
+        --load="module-simple-protocol-tcp source=OPX_sink.monitor record=true rate=44100 format=s16le channels=2 listen=0.0.0.0 port=$PA_PORT" \
         --load="module-native-protocol-unix"
     _pa_rc=$?
     # Same liveness poll as Xvnc: --background hides an immediate crash

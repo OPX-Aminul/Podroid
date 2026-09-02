@@ -2,7 +2,7 @@
  * YourXDemon - Rootless Podman for Android
  * Copyright (C) 2024-2026 YourXDemon contributors
  *
- * Lists container backup archives written by the guest `podroid-backup` tool
+ * Lists container backup archives written by the guest `opx-backup` tool
  * into Downloads/YourXDemon/backups when sharing is enabled.
  */
 package com.opx.yourxdemon.data.repository
@@ -36,7 +36,7 @@ class ContainerBackupRepository @Inject constructor() {
 
     fun guestBackupPathLabel(): String =
         if (isDownloadsReachable()) "/mnt/downloads/YourXDemon/backups"
-        else "/var/backups/podroid"
+        else "/var/backups/opx"
 
     fun isDownloadsReachable(): Boolean {
         val dir = backupDirectory()
@@ -79,16 +79,16 @@ class ContainerBackupRepository @Inject constructor() {
     fun exportCommand(containerName: String): String {
         val q = ShellQuote.quote(containerName.trim())
         val fb = fallbackExportCommand(containerName)
-        return "if command -v podroid-backup >/dev/null 2>&1; then podroid-backup export $q; else $fb; fi"
+        return "if command -v opx-backup >/dev/null 2>&1; then opx-backup export $q; else $fb; fi"
     }
 
     fun saveImageCommand(imageRef: String): String {
         val q = ShellQuote.quote(imageRef.trim())
         val root = guestBackupPathLabel()
-        return "if command -v podroid-backup >/dev/null 2>&1; then podroid-backup save $q; else mkdir -p $root && podman save $q -o $root/\$(echo $q | tr -cd 'A-Za-z0-9._-')-\$(date +%Y%m%d-%H%M%S).tar; fi"
+        return "if command -v opx-backup >/dev/null 2>&1; then opx-backup save $q; else mkdir -p $root && podman save $q -o $root/\$(echo $q | tr -cd 'A-Za-z0-9._-')-\$(date +%Y%m%d-%H%M%S).tar; fi"
     }
 
-    fun listCommand(): String = "podroid-backup list"
+    fun listCommand(): String = "opx-backup list"
 
     fun fallbackExportCommand(containerName: String): String {
         val q = ShellQuote.quote(containerName.trim())

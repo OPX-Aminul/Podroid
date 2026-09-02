@@ -1,6 +1,6 @@
 # Credits & Acknowledgements
 
-YourXDemon stands on the shoulders of an enormous amount of open-source work. Originally developed as **Podroid** by **[ExTV](https://github.com/ExTV)**, rebranded by **OP Aminul FF (OPX)**. The list below covers the upstream projects whose code, designs, fonts, or themes are shipped inside the APK, along with the major Android-side dependencies. Every component remains under its own upstream license; see [LICENSE](LICENSE) for Podroid's own license (GPL v2.0).
+YourXDemon stands on the shoulders of an enormous amount of open-source work. Originally developed as **OPX** by **[ExTV](https://github.com/ExTV)**, rebranded by **OP Aminul FF (OPX)**. The list below covers the upstream projects whose code, designs, fonts, or themes are shipped inside the APK, along with the major Android-side dependencies. Every component remains under its own upstream license; see [LICENSE](LICENSE) for OPX's own license (GPL v2.0).
 
 If something you maintain is included here and we missed you, please open an issue or a pull request and we will fix it.
 
@@ -139,9 +139,9 @@ YourXDemon ships 122 terminal color schemes covering most of the popular ecosyst
 
 ## YourXDemon
 
-YourXDemon is a rebrand of **Podroid** by **[ExTV](https://github.com/ExTV)**.
+YourXDemon is a rebrand of **OPX** by **[ExTV](https://github.com/ExTV)**.
 
-- Original repository: https://github.com/ExTV/Podroid
+- Original repository: https://github.com/ExTV/OPX
 - Rebranded by: OP Aminul FF (OPX)
 - License: GNU General Public License v2.0 (or later)
 
@@ -151,4 +151,4 @@ If you have contributed code, themes, fonts, or bug reports and would like to be
 
 ## Reporting missing or incorrect attribution
 
-We take attribution seriously. If you believe your work is shipped in Podroid but not properly credited, or if any information above is incorrect, please [open an issue](https://github.com/ExTV/Podroid/issues/new) and we will get it fixed quickly.
+We take attribution seriously. If you believe your work is shipped in OPX but not properly credited, or if any information above is incorrect, please [open an issue](https://github.com/ExTV/OPX/issues/new) and we will get it fixed quickly.

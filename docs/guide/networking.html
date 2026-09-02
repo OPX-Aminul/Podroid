@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Networking &amp; port forwarding &middot; Podroid docs</title>
-  <meta name="description" content="How guest networking works in Podroid, implicit and user-defined port forwards, LAN reachability, and the privileged-port limit." />
+  <title>Networking &amp; port forwarding &middot; OPX docs</title>
+  <meta name="description" content="How guest networking works in OPX, implicit and user-defined port forwards, LAN reachability, and the privileged-port limit." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -66,7 +66,7 @@
         </tbody>
       </table>
 
-      <p>IPv6 is disabled on the QEMU netdev (<code>ipv6=off</code>). Outbound TCP and UDP both work. The <code>podroid-network</code> OpenRC service brings up eth0 with these addresses at boot. Because SLIRP's own forwarder is dead, the guest's <code>/etc/resolv.conf</code> lists the device's own resolver first (passed to the guest via <code>podroid.dns=</code> on the kernel command line), then <code>8.8.8.8</code> and <code>1.1.1.1</code>. In airplane mode there is no device resolver, so the list falls back to <code>10.0.2.3</code>, <code>8.8.8.8</code>, <code>1.1.1.1</code>.</p>
+      <p>IPv6 is disabled on the QEMU netdev (<code>ipv6=off</code>). Outbound TCP and UDP both work. The <code>opx-network</code> OpenRC service brings up eth0 with these addresses at boot. Because SLIRP's own forwarder is dead, the guest's <code>/etc/resolv.conf</code> lists the device's own resolver first (passed to the guest via <code>opx.dns=</code> on the kernel command line), then <code>8.8.8.8</code> and <code>1.1.1.1</code>. In airplane mode there is no device resolver, so the list falls back to <code>10.0.2.3</code>, <code>8.8.8.8</code>, <code>1.1.1.1</code>.</p>
 
       <div class="callout note">
         <span class="label">AVF backend</span>
@@ -126,59 +126,59 @@ curl http://&lt;phone-ip&gt;:8080</code></pre>
       <h3>Limits on the rule list</h3>
       <p>A host port that something else on the phone is already using cannot be forwarded. That rule alone fails and is retried whenever the list changes; the VM keeps running and every other rule is unaffected. Android hands out ports from 32768 upwards to ordinary apps, so a rule in that range is the most likely one to collide - pick host ports below it when you have the choice.</p>
 
-      <p>Up to 2048 rules can be saved. The limit exists because each rule is a listening socket and a row in Settings, and because a shell loop can otherwise add thousands of them in a second. <code>podroid-forward</code> reports an error rather than reporting success once the list is full.</p>
+      <p>Up to 2048 rules can be saved. The limit exists because each rule is a listening socket and a row in Settings, and because a shell loop can otherwise add thousands of them in a second. <code>opx-forward</code> reports an error rather than reporting success once the list is full.</p>
 
       <h2>Talking back to Android from the guest</h2>
       <p>Several command-line tools ship inside the VM so scripts and shell sessions can reach the Android side directly, without the in-app UI. They all work on the QEMU and AVF backends.</p>
 
-      <h3><code>podroid-forward</code> - manage port forwards from the shell</h3>
+      <h3><code>opx-forward</code> - manage port forwards from the shell</h3>
       <pre><code><span class="c"># forward phone :8888 -&gt; guest :80</span>
-podroid-forward add 8888 80 tcp
+opx-forward add 8888 80 tcp
 <span class="c"># shorthand for "add ... tcp"</span>
-podroid-forward 8888 80
+opx-forward 8888 80
 <span class="c"># list current rules</span>
-podroid-forward list
+opx-forward list
 <span class="c"># drop a rule</span>
-podroid-forward remove 8888 tcp
+opx-forward remove 8888 tcp
 <span class="c"># drop every user rule at once (replies "removed N")</span>
-podroid-forward clean</code></pre>
+opx-forward clean</code></pre>
       <p>Rules created this way are identical to ones added in Settings: they apply live, persist across reboots, and appear in the Settings list. Both TCP and UDP work on either backend. <code>clean</code> removes only user rules - the app's own SSH, display, and audio forwards are untouched.</p>
 
-      <h3><code>podroid-notify</code> - post an Android notification</h3>
+      <h3><code>opx-notify</code> - post an Android notification</h3>
       <pre><code><span class="c"># simplest form</span>
-podroid-notify "build finished"
+opx-notify "build finished"
 <span class="c"># with a title and priority (low | normal | high)</span>
-podroid-notify --title Podroid --priority high "container crashed"
+opx-notify --title OPX --priority high "container crashed"
 <span class="c"># reuse --id to update the same notification in place</span>
-podroid-notify --id 7 "progress 50%"</code></pre>
-      <p>Handy for long builds, downloads, cron jobs and container health alerts. Tapping the notification opens Podroid. Requires the standard Android notification permission, requested at first run.</p>
+opx-notify --id 7 "progress 50%"</code></pre>
+      <p>Handy for long builds, downloads, cron jobs and container health alerts. Tapping the notification opens OPX. Requires the standard Android notification permission, requested at first run.</p>
 
-      <h3><code>podroid-open</code> - open a URL on the phone</h3>
+      <h3><code>opx-open</code> - open a URL on the phone</h3>
       <pre><code><span class="c"># open a link in the phone's default browser</span>
-podroid-open https://github.com/ExTV/Podroid</code></pre>
+opx-open https://github.com/ExTV/OPX</code></pre>
       <p>Hands the URL to Android's <code>ACTION_VIEW</code> intent, so it opens in whatever app handles it on the phone. Only <code>http</code> and <code>https</code> URLs are accepted.</p>
 
-      <h3><code>podroid-power</code> - control the VM from inside the guest</h3>
+      <h3><code>opx-power</code> - control the VM from inside the guest</h3>
       <pre><code><span class="c"># stop the VM cleanly - the app returns to its stopped state</span>
-podroid-power stop
+opx-power stop
 <span class="c"># restart the VM</span>
-podroid-power restart
+opx-power restart
 <span class="c"># print the current VM state, e.g. Running</span>
-podroid-power status</code></pre>
+opx-power status</code></pre>
       <p>A clean lifecycle hook routed through the app, unlike an in-guest <code>poweroff</code> (which the app would treat as an unexpected exit). Useful for scripts that need to cycle the VM, or to shut it down from an SSH session.</p>
 
-      <h3><code>podroid-server</code> - server (headless) mode</h3>
+      <h3><code>opx-server</code> - server (headless) mode</h3>
       <pre><code><span class="c"># turn server mode on - the screen goes black at minimum brightness</span>
-podroid-server on
+opx-server on
 <span class="c"># turn it back off</span>
-podroid-server off
+opx-server off
 <span class="c"># query state (on | off)</span>
-podroid-server status</code></pre>
-      <p>Server mode keeps the VM running behind a pure-black, minimum-brightness full-screen overlay - for leaving the phone on a headless workload with minimal OLED draw and burn-in. The screen stays on (so the system does not kill the VM) but shows nothing. Exit by <strong>holding the screen for three seconds</strong>, or run <code>podroid-server off</code>. The same toggle lives in the terminal's top bar. <code>podroid-headless</code> is an alias for <code>podroid-server</code>.</p>
+opx-server status</code></pre>
+      <p>Server mode keeps the VM running behind a pure-black, minimum-brightness full-screen overlay - for leaving the phone on a headless workload with minimal OLED draw and burn-in. The screen stays on (so the system does not kill the VM) but shows nothing. Exit by <strong>holding the screen for three seconds</strong>, or run <code>opx-server off</code>. The same toggle lives in the terminal's top bar. <code>opx-headless</code> is an alias for <code>opx-server</code>.</p>
 
       <div class="callout note">
         <span class="label">How it works</span>
-        <p>A small guest daemon (<code>podroid-hostd</code>) relays each request to the Android side over the same control transport the app already uses - a virtio-console port on QEMU, vsock on AVF - which then performs the requested action: post a notification, write a port-forward rule, open a URL, or control the VM. Any process that can reach the guest socket can use these, so they work from a container too if you bind-mount <code>/run/podroid-host.sock</code> into it.</p>
+        <p>A small guest daemon (<code>opx-hostd</code>) relays each request to the Android side over the same control transport the app already uses - a virtio-console port on QEMU, vsock on AVF - which then performs the requested action: post a notification, write a port-forward rule, open a URL, or control the VM. Any process that can reach the guest socket can use these, so they work from a container too if you bind-mount <code>/run/opx-host.sock</code> into it.</p>
       </div>
 
       <h2>LAN reachability</h2>
@@ -186,7 +186,7 @@ podroid-server status</code></pre>
 
       <pre><code><span class="c"># SSH from a laptop on the same Wi-Fi</span>
 <span class="p">$</span> ssh root@&lt;phone-ip&gt; -p 9922
-<span class="c"># password: podroid</span>
+<span class="c"># password: opx</span>
 
 <span class="c"># VNC from any viewer</span>
 <span class="p">$</span> vncviewer &lt;phone-ip&gt;:5900
@@ -195,7 +195,7 @@ podroid-server status</code></pre>
 <span class="p">$</span> curl http://&lt;phone-ip&gt;:8080</code></pre>
 
       <h2>The privileged-port limit</h2>
-      <p>Android apps run as unprivileged Linux users and do not hold <code>CAP_NET_BIND_SERVICE</code>. The Linux kernel refuses to bind a TCP or UDP socket to any port below 1024 for a process without that capability. This is a kernel-level rule, not a Podroid restriction, and there is no in-app workaround without root.</p>
+      <p>Android apps run as unprivileged Linux users and do not hold <code>CAP_NET_BIND_SERVICE</code>. The Linux kernel refuses to bind a TCP or UDP socket to any port below 1024 for a process without that capability. This is a kernel-level rule, not a OPX restriction, and there is no in-app workaround without root.</p>
 
       <p>Consequences:</p>
 
@@ -277,7 +277,7 @@ pasv_addr_resolve=NO
       <p>Where a protocol is blocked only by the port number, the same workaround as elsewhere applies: run it on a high port and point clients at that port. It works for anything whose client lets you choose the port, which rules out Windows file sharing but not much else.</p>
 
       <h2>Port forwarding on AVF</h2>
-      <p>On the AVF backend, port forwarding is implemented over <strong>vsock</strong> rather than SLIRP hostfwd. Each rule creates a listener on <code>0.0.0.0:hostPort</code> on the Android side, which is bridged to a vsock port on the guest via the <code>podroid-vsock-agent</code> service. The privileged-port limit applies here too, for the same reason.</p>
+      <p>On the AVF backend, port forwarding is implemented over <strong>vsock</strong> rather than SLIRP hostfwd. Each rule creates a listener on <code>0.0.0.0:hostPort</code> on the Android side, which is bridged to a vsock port on the guest via the <code>opx-vsock-agent</code> service. The privileged-port limit applies here too, for the same reason.</p>
 
       <div class="callout note">
         <span class="label">UDP on AVF</span>
@@ -289,7 +289,7 @@ pasv_addr_resolve=NO
         <a class="prev" href="backends.html"><span class="dir">Previous</span>&larr; Backends: QEMU &amp; AVF</a>
         <a class="next" href="packages.html"><span class="dir">Next</span>Packages &amp; services &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

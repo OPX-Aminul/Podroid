@@ -24,7 +24,7 @@ class LanguageManager @Inject constructor(
         const val LANGUAGE_ZH = "zh"
         const val LANGUAGE_EN = "en"
 
-        private const val LANG_CACHE_FILE = "podroid_lang_cache"
+        private const val LANG_CACHE_FILE = "opx_lang_cache"
 
         /**
          * Synchronously reads the saved language preference from the cache file.

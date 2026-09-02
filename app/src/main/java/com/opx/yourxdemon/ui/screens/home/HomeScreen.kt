@@ -486,7 +486,7 @@ private fun HomeDataSection(
         YourXDemonListRow(label = stringResource(R.string.phone_ip), value = phoneIp, mono = true)
         YourXDemonListRow(
             label = stringResource(R.string.ssh),
-            value = if (meta.sshEnabled) ":9922 · podroid" else stringResource(R.string.off),
+            value = if (meta.sshEnabled) ":9922 · opx" else stringResource(R.string.off),
             mono = meta.sshEnabled,
         )
         YourXDemonListRow(

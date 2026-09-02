@@ -4,8 +4,8 @@ description="YourXDemon TCP agent (socat-based, StrykerApp-style)"
 
 depend() {
     need net
-    after podroid-bootstrap
-    before podroid-ready
+    after opx-bootstrap
+    before opx-ready
 }
 
 start() {

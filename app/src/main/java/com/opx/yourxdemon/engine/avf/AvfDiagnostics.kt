@@ -185,7 +185,7 @@ object AvfDiagnostics {
             val customCfg = buildCustomImageConfig(kernel.absolutePath, initrd.absolutePath)
             val config = buildVirtualMachineConfig(vmm, context, customCfg)
 
-            val name = "podroid-avf-smoke"
+            val name = "opx-avf-smoke"
             val vm = invokeOrCreate(vmm, name, config)
 
             // Start + immediately stop. We're proving the framework accepts us,
@@ -252,7 +252,7 @@ object AvfDiagnostics {
         val builderCls = Class.forName("$CLS_CUSTOM_CFG\$Builder")
         val ctor = builderCls.getDeclaredConstructor().apply { isAccessible = true }
         val builder = ctor.newInstance()
-        invokeSetter(builderCls, builder, "setName", String::class.java, "podroid-avf-smoke")
+        invokeSetter(builderCls, builder, "setName", String::class.java, "opx-avf-smoke")
         invokeSetter(builderCls, builder, "setKernelPath", String::class.java, kernelPath)
         invokeSetter(builderCls, builder, "setInitrdPath", String::class.java, initrdPath)
         runCatching {

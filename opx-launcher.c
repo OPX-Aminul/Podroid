@@ -1,5 +1,5 @@
 /*
- * podroid-launcher — sets PR_SET_PDEATHSIG before exec'ing QEMU.
+ * opx-launcher — sets PR_SET_PDEATHSIG before exec'ing QEMU.
  *
  * Why: ProcessBuilder.start() spawns QEMU as a child of our app process, but
  * Linux doesn't auto-kill the child when the parent dies. So when Android
@@ -20,10 +20,10 @@
  *   argv[1] = real QEMU binary path
  *   argv[2..] = QEMU arguments
  *
- * Build (mirrors podroid-bridge):
+ * Build (mirrors opx-bridge):
  *   ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android28 \
  *       -fPIE -pie -Wl,-z,max-page-size=16384 \
- *       podroid-launcher.c -o libpodroid-launcher.so
+ *       opx-launcher.c -o libopx-launcher.so
  */
 
 #include <signal.h>
@@ -33,7 +33,7 @@
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
-        fprintf(stderr, "podroid-launcher: usage: launcher <qemu-path> [args...]\n");
+        fprintf(stderr, "opx-launcher: usage: launcher <qemu-path> [args...]\n");
         return 2;
     }
 
@@ -58,6 +58,6 @@ int main(int argc, char *argv[]) {
     execv(argv[1], &argv[1]);
 
     /* execv only returns on failure. */
-    perror("podroid-launcher: execv");
+    perror("opx-launcher: execv");
     return 127;
 }

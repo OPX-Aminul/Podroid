@@ -1,0 +1,27 @@
+#!/sbin/openrc-run
+description="OPX guest -> Android host bridge (notify/forward)"
+pidfile="/run/opx-hostd.pid"
+
+depend() {
+    need opx-bootstrap
+    before opx-ready
+}
+
+start() {
+    ebegin "Starting opx-hostd"
+    start-stop-daemon --start --background \
+        --make-pidfile --pidfile "$pidfile" \
+        --stdout /var/log/opx-hostd.log \
+        --stderr /var/log/opx-hostd.log \
+        --exec /usr/local/bin/opx-hostd
+    eend $?
+}
+
+stop() {
+    if [ -f "$pidfile" ]; then
+        ebegin "Stopping opx-hostd"
+        start-stop-daemon --stop --pidfile "$pidfile"
+        rm -f "$pidfile"
+        eend $?
+    fi
+}

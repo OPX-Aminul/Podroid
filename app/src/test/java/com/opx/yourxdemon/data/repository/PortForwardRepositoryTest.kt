@@ -1,6 +1,6 @@
 /*
- * Podroid - Rootless Podman for Android
- * Copyright (C) 2024-2026 Podroid contributors
+ * OPX - Rootless Podman for Android
+ * Copyright (C) 2024-2026 OPX contributors
  *
  * Unit tests for PortForwardRule pure logic and dedup helper.
  */

@@ -68,7 +68,7 @@ data class PortForwardRule(
  */
 /**
  * Ceiling on persisted rules. Not a human limit — it exists because
- * `podroid-forward add` in a shell loop can produce thousands, and every rule is
+ * `opx-forward add` in a shell loop can produce thousands, and every rule is
  * a listening socket, a row in the Settings list, and a QMP round trip on every
  * boot. One user scripted 1005 of them and made their VM unstartable.
  */

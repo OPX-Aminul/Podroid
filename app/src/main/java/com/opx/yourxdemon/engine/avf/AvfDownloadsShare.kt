@@ -124,7 +124,7 @@ class AvfDownloadsShare(
     }
 
     companion object {
-        // Keep == PODROID_DOWNLOADS_VSOCK_PORT in build-rootfs/vsock-agent/podroid-vsock-agent.c
+        // Keep == OPX_DOWNLOADS_VSOCK_PORT in build-rootfs/vsock-agent/opx-vsock-agent.c
         const val DOWNLOADS_VSOCK_PORT = 200000
         private const val TAG = "AvfDownloadsShare"
         private const val DEFAULT_ATTEMPTS = 30

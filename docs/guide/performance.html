@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performance &amp; why it's slow · Podroid docs</title>
-  <meta name="description" content="Why QEMU TCG is slow, where the bottlenecks are, and every tuning knob Podroid exposes to help." />
+  <title>Performance &amp; why it's slow · OPX docs</title>
+  <meta name="description" content="Why QEMU TCG is slow, where the bottlenecks are, and every tuning knob OPX exposes to help." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -49,10 +49,10 @@
 
     <main class="content">
       <h1>Performance &amp; why it's slow</h1>
-      <p class="lead">On the default QEMU path, every guest CPU instruction is emulated in software. There is no shortcut: KVM hardware virtualization is impossible without root on Android. This page explains exactly what that means, where it hurts most, and every tuning knob Podroid applies.</p>
+      <p class="lead">On the default QEMU path, every guest CPU instruction is emulated in software. There is no shortcut: KVM hardware virtualization is impossible without root on Android. This page explains exactly what that means, where it hurts most, and every tuning knob OPX applies.</p>
 
       <h2>The core bottleneck: TCG software emulation</h2>
-      <p>QEMU's CPU backend on Podroid is <strong>TCG</strong> (Tiny Code Generator), a software JIT that translates guest ARM64 instructions into host ARM64 instructions at runtime. The pipeline for each guest basic block is: fetch guest instructions, decode, translate to host IR, optimize, emit host code, cache the result as a "translation block" (TB), execute. Simple scalar code runs at roughly 2-5x the cost of native; anything that creates many short-lived blocks (branch-heavy code, dynamic dispatch, interpreters) compounds that badly.</p>
+      <p>QEMU's CPU backend on OPX is <strong>TCG</strong> (Tiny Code Generator), a software JIT that translates guest ARM64 instructions into host ARM64 instructions at runtime. The pipeline for each guest basic block is: fetch guest instructions, decode, translate to host IR, optimize, emit host code, cache the result as a "translation block" (TB), execute. Simple scalar code runs at roughly 2-5x the cost of native; anything that creates many short-lived blocks (branch-heavy code, dynamic dispatch, interpreters) compounds that badly.</p>
 
       <p>Hardware virtualization via KVM would eliminate the translation entirely, letting the guest run directly on the physical CPU cores. KVM requires <code>CAP_SYS_ADMIN</code> or the Android Virtualization Framework's special permissions. The QEMU path has neither. AVF (pKVM) does, which is why it is dramatically faster on devices that support it - see <a href="backends.html">Backends: QEMU &amp; AVF</a>.</p>
 
@@ -65,16 +65,16 @@
       <p>Commands like <code>npm install</code>, <code>./configure</code>, and <code>make</code> spawn hundreds or thousands of short-lived child processes. Each new QEMU process starts with a <strong>cold translation cache</strong>. There is no shared TB cache between QEMU process invocations, and no persistent cache on disk. That means the same tiny utilities (<code>sh</code>, <code>awk</code>, <code>grep</code>, <code>cp</code>) are fully re-translated from scratch on every invocation. Even a build step that does trivially little actual computation feels slow because the TCG startup cost dominates. This is the mechanism behind "even small builds feel slow."</p>
 
       <h2>I/O</h2>
-      <p>Disk I/O travels through three layers: guest virtio-blk driver to QEMU device emulation, then to the host Android filesystem. Podroid assigns a dedicated <strong>I/O thread</strong> to each virtio-blk device so disk requests are handled on a separate thread and do not stall vCPU execution. The guest uses the <code>mq-deadline</code> I/O scheduler for request merging, which matters most for the random small writes Podman's overlay graph driver generates during container image extraction. The ext4 overlay volume is mounted with <code>noatime,commit=60,barrier=0</code> to reduce metadata write amplification.</p>
+      <p>Disk I/O travels through three layers: guest virtio-blk driver to QEMU device emulation, then to the host Android filesystem. OPX assigns a dedicated <strong>I/O thread</strong> to each virtio-blk device so disk requests are handled on a separate thread and do not stall vCPU execution. The guest uses the <code>mq-deadline</code> I/O scheduler for request merging, which matters most for the random small writes Podman's overlay graph driver generates during container image extraction. The ext4 overlay volume is mounted with <code>noatime,commit=60,barrier=0</code> to reduce metadata write amplification.</p>
 
       <h2>Memory</h2>
-      <p>The default allocation is 512 MB of guest RAM - enough for a shell and basic containers, but tight for npm or a JVM process. Podroid configures <strong>ZRAM swap</strong> inside the guest at <strong>1.5x the VM's RAM</strong>, using lz4 compression. Because lz4 averages around 3x on heap and text pages, that compressed swap costs only a fraction of its size in real RAM - so a 512 MB VM gets roughly 768 MB of extra swap on top of its RAM at near-zero I/O cost (ZRAM lives in RAM; there is no disk read or write). That headroom is what keeps an <code>npm install</code> or a browser tab from immediately hitting the out-of-memory killer. For memory-heavy work, raise RAM in <strong>Settings &rarr; RAM</strong>.</p>
+      <p>The default allocation is 512 MB of guest RAM - enough for a shell and basic containers, but tight for npm or a JVM process. OPX configures <strong>ZRAM swap</strong> inside the guest at <strong>1.5x the VM's RAM</strong>, using lz4 compression. Because lz4 averages around 3x on heap and text pages, that compressed swap costs only a fraction of its size in real RAM - so a 512 MB VM gets roughly 768 MB of extra swap on top of its RAM at near-zero I/O cost (ZRAM lives in RAM; there is no disk read or write). That headroom is what keeps an <code>npm install</code> or a browser tab from immediately hitting the out-of-memory killer. For memory-heavy work, raise RAM in <strong>Settings &rarr; RAM</strong>.</p>
 
       <h2>Network</h2>
-      <p>Podroid uses <strong>SLIRP</strong>, a userspace TCP/IP stack embedded inside QEMU. It is adequate for bulk transfers (container image pulls, SSH, HTTP) but adds per-packet CPU overhead compared to a kernel network path. High-connection-count workloads - tools that open hundreds of parallel connections like <code>npm install</code> with many dependencies - will feel this overhead in addition to the CPU emulation cost. There is no alternative without root: TAP networking requires a TUN/TAP device or elevated permissions.</p>
+      <p>OPX uses <strong>SLIRP</strong>, a userspace TCP/IP stack embedded inside QEMU. It is adequate for bulk transfers (container image pulls, SSH, HTTP) but adds per-packet CPU overhead compared to a kernel network path. High-connection-count workloads - tools that open hundreds of parallel connections like <code>npm install</code> with many dependencies - will feel this overhead in addition to the CPU emulation cost. There is no alternative without root: TAP networking requires a TUN/TAP device or elevated permissions.</p>
 
       <h2>Tuning summary</h2>
-      <p>The table below lists every tuning measure Podroid applies and what it buys. All of these are already active by default; they are not optional settings you need to find.</p>
+      <p>The table below lists every tuning measure OPX applies and what it buys. All of these are already active by default; they are not optional settings you need to find.</p>
 
       <table>
         <thead>
@@ -117,7 +117,7 @@
           </tr>
           <tr>
             <td>ZRAM swap at 1.5x RAM (lz4)</td>
-            <td>Guest init (<code>podroid-bootstrap</code> OpenRC service)</td>
+            <td>Guest init (<code>opx-bootstrap</code> OpenRC service)</td>
             <td>lz4 (~3x on heap/text) makes the compressed swap cost a fraction of its size, giving large headroom against the out-of-memory killer at near-zero I/O cost. Priority 100 so it is preferred over any file swap.</td>
           </tr>
           <tr>
@@ -136,7 +136,7 @@
       <h2>What won't help without root</h2>
       <p>Some common Linux performance tricks are simply unavailable on a stock Android device: <code>io_uring</code> is blocked by Android 12+ seccomp policy; CPU affinity (<code>taskset</code>) requires elevated scheduling permissions; KSM memory deduplication is a kernel knob; huge pages on the host are not user-configurable; TAP networking requires a TUN/TAP device. These are hard limits, not oversights.</p>
 
-      <p>Full hardware virtualization (KVM, or Qualcomm's Gunyah) is in the same category for the QEMU path: opening the hypervisor device node directly requires <strong>root</strong>, and on AVF it is gated to devices that allow non-protected pKVM (see <a href="backends.html">Backends</a>). Podroid stays no-root by design. If you are rooted on a recent Qualcomm Snapdragon device, a separate project such as <a href="https://github.com/Droid-VM/DroidVM" target="_blank" rel="noopener">DroidVM</a> uses Gunyah or KVM for near-native VMs; Podroid does not require root and uses QEMU or AVF instead.</p>
+      <p>Full hardware virtualization (KVM, or Qualcomm's Gunyah) is in the same category for the QEMU path: opening the hypervisor device node directly requires <strong>root</strong>, and on AVF it is gated to devices that allow non-protected pKVM (see <a href="backends.html">Backends</a>). OPX stays no-root by design. If you are rooted on a recent Qualcomm Snapdragon device, a separate project such as <a href="https://github.com/Droid-VM/DroidVM" target="_blank" rel="noopener">DroidVM</a> uses Gunyah or KVM for near-native VMs; OPX does not require root and uses QEMU or AVF instead.</p>
 
       <div class="callout tip">
         <span class="label">Biggest wins</span>
@@ -147,7 +147,7 @@
         <a class="prev" href="how-it-works.html"><span class="dir">Previous</span>&larr; How it works</a>
         <a class="next" href="backends.html"><span class="dir">Next</span>Backends: QEMU &amp; AVF &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

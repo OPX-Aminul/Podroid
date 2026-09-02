@@ -32,10 +32,10 @@ Usage: $0 [command] [options]
 
 Commands:
   all           Build everything (Kernel, Initramfs, Rootfs, QEMU, APK)
-  kernel        Build custom kernel only (podroid_kernel.config + Linux source)
+  kernel        Build custom kernel only (opx_kernel.config + Linux source)
   initramfs     Build custom kernel + Debian Trixie VM initramfs (vmlinuz + initrd)
   rootfs        Build Debian Trixie rootfs squashfs (yourxdemon-rootfs.squashfs)
-  qemu          Build QEMU + podroid-bridge + podroid-launcher
+  qemu          Build QEMU + opx-bridge + opx-launcher
   apk           Build the Android APK (also builds libtermux.so via Gradle NDK)
   deploy        Build APK, uninstall old version, and install to device
   test          Perform full build, install, and automated boot validation
@@ -92,13 +92,13 @@ build_kernel() {
     log "Building custom kernel ${kernel_ver} for aarch64 (Docker)..."
     docker build --network=host \
         --build-arg "KERNEL_VERSION=${kernel_ver}" \
-        -t podroid-kernel-builder --target kernel-builder "$SCRIPT_DIR"
+        -t opx-kernel-builder --target kernel-builder "$SCRIPT_DIR"
     log "Extracting kernel artifact..."
-    docker rm -f podroid-kernel-extract 2>/dev/null || true
-    docker create --name podroid-kernel-extract podroid-kernel-builder
+    docker rm -f opx-kernel-extract 2>/dev/null || true
+    docker create --name opx-kernel-extract opx-kernel-builder
     mkdir -p "$ASSETS"
-    docker cp podroid-kernel-extract:/output/vmlinuz-virt "$ASSETS/vmlinuz-virt"
-    docker rm podroid-kernel-extract >/dev/null
+    docker cp opx-kernel-extract:/output/vmlinuz-virt "$ASSETS/vmlinuz-virt"
+    docker rm opx-kernel-extract >/dev/null
     success "Custom kernel ready."
 }
 
@@ -108,15 +108,15 @@ build_initramfs() {
     log "Building custom kernel + Debian Initramfs (Docker)..."
     docker build --network=host \
         --build-arg "KERNEL_VERSION=${kernel_ver}" \
-        -t podroid-builder --target packer "$SCRIPT_DIR"
+        -t opx-builder --target packer "$SCRIPT_DIR"
 
     log "Extracting initramfs artifacts..."
-    docker rm podroid-extract 2>/dev/null || true
-    docker create --name podroid-extract podroid-builder /bin/true
+    docker rm opx-extract 2>/dev/null || true
+    docker create --name opx-extract opx-builder /bin/true
     mkdir -p "$ASSETS"
-    docker cp podroid-extract:/output/vmlinuz-virt "$ASSETS/vmlinuz-virt"
-    docker cp podroid-extract:/output/initrd.img "$ASSETS/initrd.img"
-    docker rm podroid-extract >/dev/null
+    docker cp opx-extract:/output/vmlinuz-virt "$ASSETS/vmlinuz-virt"
+    docker cp opx-extract:/output/initrd.img "$ASSETS/initrd.img"
+    docker rm opx-extract >/dev/null
     success "Kernel + initramfs ready."
 }
 
@@ -138,20 +138,20 @@ build_qemu() {
     log "Building QEMU ${qemu_ver} for Android ARM64 (Docker)..."
     
     docker build --build-arg "QEMU_VERSION=${qemu_ver}" \
-        -t podroid-qemu-builder --target final "${SCRIPT_DIR}"
+        -t opx-qemu-builder --target final "${SCRIPT_DIR}"
         
     log "Extracting QEMU artifacts..."
-    docker rm -f podroid-qemu-extract 2>/dev/null || true
-    docker create --name podroid-qemu-extract podroid-qemu-builder /bin/true
+    docker rm -f opx-qemu-extract 2>/dev/null || true
+    docker create --name opx-qemu-extract opx-qemu-builder /bin/true
     
     mkdir -p "$JNILIBS" "$ASSETS/qemu/keymaps"
-    docker cp podroid-qemu-extract:/libqemu-system-aarch64.so "$JNILIBS/"
-    docker cp podroid-qemu-extract:/libslirp.so               "$JNILIBS/"
-    docker cp podroid-qemu-extract:/libpodroid-bridge.so      "$JNILIBS/"
-    docker cp podroid-qemu-extract:/libpodroid-launcher.so    "$JNILIBS/"
-    docker cp podroid-qemu-extract:/qemu/efi-virtio.rom        "$ASSETS/qemu/"
-    docker cp podroid-qemu-extract:/qemu/keymaps/.             "$ASSETS/qemu/keymaps/"
-    docker rm podroid-qemu-extract >/dev/null
+    docker cp opx-qemu-extract:/libqemu-system-aarch64.so "$JNILIBS/"
+    docker cp opx-qemu-extract:/libslirp.so               "$JNILIBS/"
+    docker cp opx-qemu-extract:/libopx-bridge.so      "$JNILIBS/"
+    docker cp opx-qemu-extract:/libopx-launcher.so    "$JNILIBS/"
+    docker cp opx-qemu-extract:/qemu/efi-virtio.rom        "$ASSETS/qemu/"
+    docker cp opx-qemu-extract:/qemu/keymaps/.             "$ASSETS/qemu/keymaps/"
+    docker rm opx-qemu-extract >/dev/null
     
     verify_16kb_align "$JNILIBS/libqemu-system-aarch64.so"
     success "QEMU and bridge ready."
@@ -262,7 +262,7 @@ case "$1" in
     clean)
         log "Cleaning up..."
         ./gradlew clean
-        docker rmi yourxdemon-builder podroid-qemu-builder yourxdemon-rootfs:latest 2>/dev/null || true
+        docker rmi yourxdemon-builder opx-qemu-builder yourxdemon-rootfs:latest 2>/dev/null || true
         success "Cleaned."
         ;;
     *)

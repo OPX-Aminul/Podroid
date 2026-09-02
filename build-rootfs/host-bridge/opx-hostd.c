@@ -1,19 +1,19 @@
 /*
- * Podroid - Rootless Podman for Android
- * Copyright (C) 2024-2026 Podroid contributors
+ * OPX - Rootless Podman for Android
+ * Copyright (C) 2024-2026 OPX contributors
  *
- * podroid-hostd - guest side of the Android host bridge.
+ * opx-hostd - guest side of the Android host bridge.
  *
  * Multi-call binary (argv[0] basename):
- *   podroid-hostd     daemon: relays /run/podroid-host.sock <-> Android.
- *   podroid-notify    CLI: post an Android notification.
- *   podroid-forward   CLI: add/remove/list Android port forwards.
- *   podroid-open      CLI: open a URL on Android (ACTION_VIEW).
- *   podroid-power     CLI: stop/restart the VM, or query status.
- *   podroid-headless  CLI (alias podroid-server): toggle server mode.
+ *   opx-hostd     daemon: relays /run/opx-host.sock <-> Android.
+ *   opx-notify    CLI: post an Android notification.
+ *   opx-forward   CLI: add/remove/list Android port forwards.
+ *   opx-open      CLI: open a URL on Android (ACTION_VIEW).
+ *   opx-power     CLI: stop/restart the VM, or query status.
+ *   opx-headless  CLI (alias opx-server): toggle server mode.
  *
  * Daemon transport (one request line -> one response line, serialized):
- *   AVF  (podroid.backend=avf in /proc/cmdline): listen AF_VSOCK :9101, accept
+ *   AVF  (opx.backend=avf in /proc/cmdline): listen AF_VSOCK :9101, accept
  *        the Android connection.
  *   QEMU (otherwise): open /dev/hvc2.
  */
@@ -34,7 +34,7 @@
 #include <termios.h>
 #include <unistd.h>
 
-#define SOCK_PATH   "/run/podroid-host.sock"
+#define SOCK_PATH   "/run/opx-host.sock"
 #define HVC_PATH    "/dev/hvc2"
 #define VSOCK_PORT  9101
 #define HOST_TIMEOUT_S 5
@@ -212,16 +212,16 @@ static int cli_roundtrip(const char *req, char *resp, size_t cap) {
 /* Both failures are < 0, so callers keep a single error branch. */
 static int cli_roundtrip_failed(int rc) {
     if (rc == LINE_TOO_LONG)
-        fprintf(stderr, "podroid: the reply is too long to show in full\n");
+        fprintf(stderr, "OPX: the reply is too long to show in full\n");
     else
-        fprintf(stderr, "podroid: host bridge not available\n");
+        fprintf(stderr, "OPX: host bridge not available\n");
     return 1;
 }
 
 static int cli_report(const char *resp, int list_decode) {
     if (strncmp(resp, "ERR ", 4) == 0) {
         char *msg = b64decode(resp + 4);
-        fprintf(stderr, "podroid: %s\n", msg ? msg : "error");
+        fprintf(stderr, "OPX: %s\n", msg ? msg : "error");
         free(msg);
         return 1;
     }
@@ -237,7 +237,7 @@ static int cli_report(const char *resp, int list_decode) {
         return 0;
     }
     if (strcmp(resp, "PONG") == 0) { printf("PONG\n"); return 0; }
-    fprintf(stderr, "podroid: unexpected response: %s\n", resp);
+    fprintf(stderr, "OPX: unexpected response: %s\n", resp);
     return 1;
 }
 
@@ -250,11 +250,11 @@ static int cli_notify(int argc, char **argv) {
         else if (strcmp(argv[i], "--id") == 0 && i + 1 < argc) id = argv[++i];
         else break;
     }
-    if (i >= argc) { fprintf(stderr, "usage: podroid-notify [--title T] [--priority low|normal|high] [--id N] BODY\n"); return 2; }
+    if (i >= argc) { fprintf(stderr, "usage: opx-notify [--title T] [--priority low|normal|high] [--id N] BODY\n"); return 2; }
     size_t blen = 0;
     for (int j = i; j < argc; j++) blen += strlen(argv[j]) + 1;
     char *body = malloc(blen + 1);
-    if (!body) { fprintf(stderr, "podroid: out of memory\n"); return 1; }
+    if (!body) { fprintf(stderr, "OPX: out of memory\n"); return 1; }
     body[0] = '\0';
     for (int j = i; j < argc; j++) { if (j > i) strcat(body, " "); strcat(body, argv[j]); }
 
@@ -263,7 +263,7 @@ static int cli_notify(int argc, char **argv) {
     /* b64body is required; a NULL (allocation failure) must not reach snprintf's
      * %s. The title is optional and already falls back to the "-" sentinel. */
     if (!b64body) {
-        fprintf(stderr, "podroid: out of memory\n");
+        fprintf(stderr, "OPX: out of memory\n");
         free(body); free(b64title);
         return 1;
     }
@@ -274,7 +274,7 @@ static int cli_notify(int argc, char **argv) {
     /* A body over ~6 KB truncates the base64 mid-string, which the host decodes
      * as a confusing "bad body". Report a clear error instead. */
     if (reqlen < 0 || (size_t)reqlen >= sizeof(req)) {
-        fprintf(stderr, "podroid: notification body too long\n");
+        fprintf(stderr, "OPX: notification body too long\n");
         return 2;
     }
 
@@ -303,11 +303,11 @@ static int cli_forward(int argc, char **argv) {
     } else {
         fprintf(stderr,
             "usage:\n"
-            "  podroid-forward <hostPort> <guestPort>\n"
-            "  podroid-forward add <hostPort> <guestPort> [tcp|udp]\n"
-            "  podroid-forward remove <hostPort> [tcp|udp]\n"
-            "  podroid-forward list\n"
-            "  podroid-forward clean\n");
+            "  opx-forward <hostPort> <guestPort>\n"
+            "  opx-forward add <hostPort> <guestPort> [tcp|udp]\n"
+            "  opx-forward remove <hostPort> [tcp|udp]\n"
+            "  opx-forward list\n"
+            "  opx-forward clean\n");
         return 2;
     }
     char resp[8192];
@@ -317,7 +317,7 @@ static int cli_forward(int argc, char **argv) {
 }
 
 static int cli_open(int argc, char **argv) {
-    if (argc < 2) { fprintf(stderr, "usage: podroid-open <url>\n"); return 2; }
+    if (argc < 2) { fprintf(stderr, "usage: opx-open <url>\n"); return 2; }
     char *b64 = b64encode((const unsigned char *)argv[1], strlen(argv[1]));
     char req[8192];
     snprintf(req, sizeof(req), "OPEN %s", b64 ? b64 : "");
@@ -329,7 +329,7 @@ static int cli_open(int argc, char **argv) {
 }
 
 static int cli_power(int argc, char **argv) {
-    if (argc < 2) { fprintf(stderr, "usage: podroid-power <stop|restart|status>\n"); return 2; }
+    if (argc < 2) { fprintf(stderr, "usage: opx-power <stop|restart|status>\n"); return 2; }
     char req[64];
     snprintf(req, sizeof(req), "POWER %s", argv[1]);
     char resp[256];
@@ -339,7 +339,7 @@ static int cli_power(int argc, char **argv) {
 }
 
 static int cli_headless(int argc, char **argv) {
-    if (argc < 2) { fprintf(stderr, "usage: podroid-server <on|off|status>\n"); return 2; }
+    if (argc < 2) { fprintf(stderr, "usage: opx-server <on|off|status>\n"); return 2; }
     char req[64];
     snprintf(req, sizeof(req), "HEADLESS %s", argv[1]);
     char resp[256];
@@ -368,7 +368,7 @@ static int is_avf(void) {
     char buf[4096]; ssize_t n = read(fd, buf, sizeof(buf) - 1); close(fd);
     if (n <= 0) return 0;
     buf[n] = '\0';
-    return strstr(buf, "podroid.backend=avf") != NULL;
+    return strstr(buf, "opx.backend=avf") != NULL;
 }
 
 static int make_unix_listener(void) {
@@ -380,7 +380,7 @@ static int make_unix_listener(void) {
     strncpy(sa.sun_path, SOCK_PATH, sizeof(sa.sun_path) - 1);
     if (bind(fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) { close(fd); return -1; }
     /* 0660, not 0666: the socket exposes powerful verbs (POWER stop/restart,
-     * HEADLESS, NOTIFY, OPEN). The daemon and the podroid-* CLIs run as root in
+     * HEADLESS, NOTIFY, OPEN). The daemon and the OPX-* CLIs run as root in
      * the guest, so owner/group rw is sufficient; world-writable let any guest
      * UID (incl. processes in containers that bind-mount /run) drive them. */
     chmod(SOCK_PATH, 0660);
@@ -404,12 +404,12 @@ static int daemon_main(void) {
     signal(SIGPIPE, SIG_IGN);
     int avf = is_avf();
     int cli_listener = make_unix_listener();
-    if (cli_listener < 0) { perror("podroid-hostd: unix listener"); return 1; }
+    if (cli_listener < 0) { perror("opx-hostd: unix listener"); return 1; }
 
     int vsock_listener = -1;
     if (avf) {
         vsock_listener = make_vsock_listener();
-        if (vsock_listener < 0) { perror("podroid-hostd: vsock listener"); return 1; }
+        if (vsock_listener < 0) { perror("opx-hostd: vsock listener"); return 1; }
     }
 
     int host_fd = -1;
@@ -420,7 +420,7 @@ static int daemon_main(void) {
         char req[8192];
         /* Bound the CLI read: a guest process that connects but never sends a
          * newline would otherwise wedge this single-threaded loop forever and
-         * hang every other podroid-* call. The host channel below already uses
+         * hang every other OPX-* call. The host channel below already uses
          * the same timeout; the CLI side must too. */
         int rn = read_line_timeout(cli, req, sizeof(req), HOST_TIMEOUT_S);
         /* "request too long": relaying a cut-off request would have Android act
@@ -461,10 +461,10 @@ static int daemon_main(void) {
 
 int main(int argc, char **argv) {
     char *base = basename(argv[0]);
-    if (strcmp(base, "podroid-notify") == 0) return cli_notify(argc, argv);
-    if (strcmp(base, "podroid-forward") == 0) return cli_forward(argc, argv);
-    if (strcmp(base, "podroid-open") == 0) return cli_open(argc, argv);
-    if (strcmp(base, "podroid-power") == 0) return cli_power(argc, argv);
-    if (strcmp(base, "podroid-headless") == 0 || strcmp(base, "podroid-server") == 0) return cli_headless(argc, argv);
+    if (strcmp(base, "opx-notify") == 0) return cli_notify(argc, argv);
+    if (strcmp(base, "opx-forward") == 0) return cli_forward(argc, argv);
+    if (strcmp(base, "opx-open") == 0) return cli_open(argc, argv);
+    if (strcmp(base, "opx-power") == 0) return cli_power(argc, argv);
+    if (strcmp(base, "opx-headless") == 0 || strcmp(base, "opx-server") == 0) return cli_headless(argc, argv);
     return daemon_main();
 }

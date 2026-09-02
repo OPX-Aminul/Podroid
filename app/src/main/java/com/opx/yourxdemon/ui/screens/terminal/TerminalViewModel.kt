@@ -2,9 +2,9 @@
  * YourXDemon - Rootless Podman for Android
  * Copyright (C) 2024-2026 YourXDemon contributors
  *
- * Terminal ViewModel — wires TerminalView to the podroid-bridge binary.
+ * Terminal ViewModel — wires TerminalView to the opx-bridge binary.
  *
- * The bridge binary (libpodroid-bridge.so) runs as the TerminalSession
+ * The bridge binary (libopx-bridge.so) runs as the TerminalSession
  * subprocess. Termux allocates a real PTY for it; the bridge relays that
  * PTY to QEMU's virtio-console terminal.sock (= /dev/hvc0 in the VM).
  * Window resize is handled out-of-band over a second virtio-console port:
@@ -16,7 +16,7 @@
  *       keyboard-slide animation collapses to one event
  *     → reads final size via TIOCGWINSZ
  *     → writes "RESIZE rows cols\n" to ctrl.sock (= /dev/hvc1 in the VM)
- *     → init-podroid resize daemon calls stty on /dev/hvc0
+ *     → init-opx resize daemon calls stty on /dev/hvc0
  *     → Linux sends SIGWINCH to the VM's foreground process group
  *     → nvim / htop / btop redraws correctly
  *

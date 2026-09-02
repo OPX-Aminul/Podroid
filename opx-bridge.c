@@ -1,5 +1,5 @@
 /*
- * podroid-bridge — virtio-console socket ↔ PTY relay for Podroid
+ * opx-bridge — virtio-console socket ↔ PTY relay for OPX
  *
  * Bidirectional relay between:
  *   stdin/stdout  — PTY slave (Termux TerminalSession)

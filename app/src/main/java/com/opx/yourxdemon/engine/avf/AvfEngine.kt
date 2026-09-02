@@ -9,7 +9,7 @@
  * lands in the catch branch and transitions to VmState.Error.
  *
  * Terminal wiring: ConsoleFanout bridges AVF console streams to a filesystem
- * unix socket; libpodroid-bridge connects to that socket and splices PTY ↔
+ * unix socket; libopx-bridge connects to that socket and splices PTY ↔
  * socket, same as the QEMU path. The ctrl socket is a dummy path (never bound)
  * — bridge tolerates the connect failure gracefully (no resize on AVF, MVP).
  */
@@ -58,10 +58,10 @@ class AvfEngine @Inject constructor(
 
     companion object {
         private const val TAG = "AvfEngine"
-        // Use "podroid" as the VM name. The smoke-test in AvfDiagnostics used
-        // "podroid-avf-smoke" — a different name — so there is no config
+        // Use "opx" as the VM name. The smoke-test in AvfDiagnostics used
+        // "opx-avf-smoke" — a different name — so there is no config
         // conflict between the two paths.
-        private const val VM_NAME = "podroid"
+        private const val VM_NAME = "opx"
         // Safety net for a guest that never emits "Ready!" (a console quirk, a
         // lost marker, no onStopped/onDied) so it doesn't strand the engine in
         // Starting forever — EngineHolder.trySwap waits on a terminal state, so
@@ -582,7 +582,7 @@ class AvfEngine @Inject constructor(
     }
 
     /**
-     * Spawn libpodroid-bridge.so unconditionally at VM start, NOT on demand.
+     * Spawn libopx-bridge.so unconditionally at VM start, NOT on demand.
      * The fanout's accept() loops until the bridge connects; without an early
      * bridge spawn, the VM's console output is never drained and BootStageDetector
      * never sees "Ready!". This matches QemuEngine's autoStartBridge pattern but
@@ -591,7 +591,7 @@ class AvfEngine @Inject constructor(
     private fun spawnBridge() {
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             if (terminalSession != null) return@post
-            val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libpodroid-bridge.so")
+            val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libopx-bridge.so")
             if (!bridgeExe.exists()) {
                 Log.e(TAG, "bridge missing at ${bridgeExe.absolutePath}")
                 return@post
@@ -769,9 +769,9 @@ class AvfEngine @Inject constructor(
         }
         // start() hasn't reached spawnBridge yet — spawn synchronously as fallback.
         Log.w(TAG, "createTerminalSession called before bridge auto-spawn; spawning now")
-        val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libpodroid-bridge.so")
+        val bridgeExe = File(context.applicationInfo.nativeLibraryDir, "libopx-bridge.so")
         if (!bridgeExe.exists()) {
-            throw IllegalStateException("podroid-bridge not found at ${bridgeExe.absolutePath}")
+            throw IllegalStateException("opx-bridge not found at ${bridgeExe.absolutePath}")
         }
         val sess = com.opx.yourxdemon.engine.ResizeNotifyingSession(
             shellPath = bridgeExe.absolutePath,
@@ -985,13 +985,13 @@ class AvfEngine @Inject constructor(
         // captured input/output streams to hvc0; `console=hvc0` in the
         // kernel cmdline routes kernel logs the same way; the guest's
         // /etc/inittab spawns the getty on the device named by the
-        // `podroid.tty=` marker.
+        // `opx.tty=` marker.
         //
-        // `podroid.backend=avf` is a stable backend identifier — used by
-        // guest OpenRC scripts (podroid-network, podroid-vsock) to pick
+        // `opx.backend=avf` is a stable backend identifier — used by
+        // guest OpenRC scripts (opx-network, opx-vsock) to pick
         // AVF-specific behaviour without coupling to the tty choice.
         //
-        // `podroid.epoch=...` seeds the wall clock — AVF/crosvm doesn't
+        // `opx.epoch=...` seeds the wall clock — AVF/crosvm doesn't
         // wire an RTC the way QEMU TCG does, so without this the guest
         // boots at 1970-01-01 and TLS fails on every cert.
         val epoch = System.currentTimeMillis() / 1000
@@ -1016,9 +1016,9 @@ class AvfEngine @Inject constructor(
         val nrCpusFlag =
             if (effectiveCpus > 1 && !useExplicitCpuCount) " nr_cpus=$effectiveCpus" else ""
         val resolvedCmdline = ("console=hvc0 $earlycon root=/dev/ram0 mitigations=off " +
-            "elevator=mq-deadline podroid.tty=hvc0 podroid.backend=avf podroid.epoch=$epoch " +
-            "podroid.x11.dpi=${config.x11Dpi}$verboseFlags$nrCpusFlag " +
-            (if (config.bandwidthMbps > 0) "podroid.bandwidth=${config.bandwidthMbps} " else "") +
+            "elevator=mq-deadline opx.tty=hvc0 opx.backend=avf opx.epoch=$epoch " +
+            "opx.x11.dpi=${config.x11Dpi}$verboseFlags$nrCpusFlag " +
+            (if (config.bandwidthMbps > 0) "opx.bandwidth=${config.bandwidthMbps} " else "") +
             config.kernelExtraCmdline).trim()
         AvfReflect.addParams(cb, resolvedCmdline)
         if (config.verboseLogging) {

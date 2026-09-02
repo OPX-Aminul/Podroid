@@ -9,8 +9,8 @@ YourXDemon is an Android app that runs a real **Alpine 3.24** Linux VM on stock 
 - **Two interchangeable VM backends** behind one interface (`VmEngine`):
   - **QEMU (TCG)** - software emulation, the default, needs no special permission.
   - **AVF (pKVM)** - hardware-accelerated via the Android Virtualization Framework on Pixel-class devices, after a one-time `pm grant`.
-- The guest is a standard Alpine root with **OpenRC as PID 1**. System services live in `/etc/init.d/podroid-*` on a read-only squashfs; a persistent ext4 overlay captures user changes (`apk add`, `rc-update add`).
-- An embedded **Termux-based terminal**, an **X11/VNC viewer** (Xvnc + PulseAudio), and a **guest-to-Android bridge** (`podroid-notify` / `podroid-forward`) round it out.
+- The guest is a standard Alpine root with **OpenRC as PID 1**. System services live in `/etc/init.d/OPX-*` on a read-only squashfs; a persistent ext4 overlay captures user changes (`apk add`, `rc-update add`).
+- An embedded **Termux-based terminal**, an **X11/VNC viewer** (Xvnc + PulseAudio), and a **guest-to-Android bridge** (`opx-notify` / `opx-forward`) round it out.
 
 ## Key Facts
 
@@ -35,7 +35,7 @@ YourXDemon is an Android app that runs a real **Alpine 3.24** Linux VM on stock 
 All native/VM components are coordinated by `build-all.sh` (Docker-cached):
 
 ```bash
-./build-all.sh kernel      # custom kernel only (podroid_kernel.config)
+./build-all.sh kernel      # custom kernel only (opx_kernel.config)
 ./build-all.sh initramfs   # kernel + minimal initramfs
 ./build-all.sh rootfs      # Alpine squashfs -> app/src/main/assets/alpine-rootfs.squashfs
 ./build-all.sh qemu        # QEMU + native helpers via Docker (slow first time)
@@ -56,7 +56,7 @@ adb logcat -s YourXDemonQemu
 adb shell run-as com.opx.yourxdemon.debug cat files/console.log   # debug build
 ```
 
-**Release builds** are signed via `signingConfigs.release` (keystore `podroid-release.jks`), fed by the `PODROID_RELEASE_STORE_FILE` / `_PASSWORD` / `_KEY_ALIAS` / `_KEY_PASSWORD` Gradle properties. Release `applicationId = com.opx.yourxdemon`; debug gets `applicationIdSuffix = ".debug"` + `versionNameSuffix = "-debug"`. Any code comparing the local version against an upstream release tag must strip an optional `-debug` suffix (see `UpdateRepository.checkForUpdate`).
+**Release builds** are signed via `signingConfigs.release` (keystore `OPX-release.jks`), fed by the `OPX_RELEASE_STORE_FILE` / `_PASSWORD` / `_KEY_ALIAS` / `_KEY_PASSWORD` Gradle properties. Release `applicationId = com.opx.yourxdemon`; debug gets `applicationIdSuffix = ".debug"` + `versionNameSuffix = "-debug"`. Any code comparing the local version against an upstream release tag must strip an optional `-debug` suffix (see `UpdateRepository.checkForUpdate`).
 
 Native binaries require **16KB page alignment** (`-Wl,-z,max-page-size=16384`) - mandatory on Android 13+; verified by an ELF parser in `build-all.sh`.
 
@@ -77,15 +77,15 @@ When you touch VM behavior, decide whether it is backend-neutral (put it behind 
 ```
 Terminal UI (Compose)
     | TerminalSession (vendored Termux JNI)
-libpodroid-bridge.so  <->  terminal.sock + ctrl.sock  <->  VM  <->  hvc0 + hvc1
+libopx-bridge.so  <->  terminal.sock + ctrl.sock  <->  VM  <->  hvc0 + hvc1
 boot monitor          <->  serial.sock (QEMU) / console stream (AVF)  ->  console.log + boot-stage detector
 QmpClient             <->  qmp.sock (QEMU only)        -> runtime port forwards (netdev_add/remove)
-HostRequestServer     <->  host.sock/hvc2 (QEMU) | vsock:9101 (AVF)    <- podroid-notify / podroid-forward
+HostRequestServer     <->  host.sock/hvc2 (QEMU) | vsock:9101 (AVF)    <- opx-notify / opx-forward
 ```
 
 QEMU exposes these Unix sockets under `context.filesDir`, each with one role:
 
-- **`terminal.sock`** ↔ virtio-console `/dev/hvc0` - primary terminal I/O. getty runs on hvc0; `libpodroid-bridge.so` relays it to a Termux PTY.
+- **`terminal.sock`** ↔ virtio-console `/dev/hvc0` - primary terminal I/O. getty runs on hvc0; `libopx-bridge.so` relays it to a Termux PTY.
 - **`ctrl.sock`** ↔ virtio-console `/dev/hvc1` - resize channel. The bridge debounces SIGWINCH bursts and writes one `RESIZE rows cols\n`; a guest resize daemon `stty`s hvc0.
 - **`serial.sock`** ↔ PL011 `/dev/ttyAMA0` - boot-log sink only. The boot monitor streams kernel + init output into `console.log` and the boot-stage detector.
 - **`qmp.sock`** - QEMU Machine Protocol for runtime port forwarding and USB hot-plug.
@@ -99,25 +99,25 @@ On **AVF** there is no QMP and no PL011: the console is captured via `ConsoleFan
 2. **`init-yourxdemon`** (initramfs, ~45 lines): mounts the persistent ext4 (`/dev/vda` → upper) and the read-only squashfs (`/dev/vdb` → lower), stacks an overlayfs, moves the mounts into the new root, and `switch_root`s into `/sbin/init` (busybox).
 3. Busybox `/sbin/init` reads `/etc/inittab` and starts **OpenRC** (runlevels are pre-symlinked at build time - chroot-into-aarch64 doesn't work on an x86_64 builder).
 4. OpenRC services on the squashfs do all system bringup:
-   - `podroid-bootstrap` - kernel modules, cgroup v2, devpts/shm/mqueue, sysctl, ZRAM swap, `mount --make-rshared /`, container dirs.
-   - `podroid-network` - eth0 up, addressing, default route, `/etc/resolv.conf`.
-   - `podroid-resize` - reads `RESIZE rows cols` from `/dev/hvc1`, `stty`s `/dev/hvc0`.
-   - `podroid-hostd` - the host-bridge daemon (both backends).
-   - `podroid-vsock` - the AVF control/forward agent (AVF boots only).
+   - `opx-bootstrap` - kernel modules, cgroup v2, devpts/shm/mqueue, sysctl, ZRAM swap, `mount --make-rshared /`, container dirs.
+   - `opx-network` - eth0 up, addressing, default route, `/etc/resolv.conf`.
+   - `opx-resize` - reads `RESIZE rows cols` from `/dev/hvc1`, `stty`s `/dev/hvc0`.
+   - `opx-hostd` - the host-bridge daemon (both backends).
+   - `opx-vsock` - the AVF control/forward agent (AVF boots only).
    - `dropbear` - SSH, when enabled.
-   - `podroid-ready` - emits `Starting SSH...` / `Almost ready...` / `Ready!`, the markers `BootStageDetector` matches; `Ready!` flips state to `Running` and auto-starts the terminal bridge.
+   - `opx-ready` - emits `Starting SSH...` / `Almost ready...` / `Ready!`, the markers `BootStageDetector` matches; `Ready!` flips state to `Running` and auto-starts the terminal bridge.
 
 **Why `switch_root`, not `chroot`:** an earlier version `chroot`ed into the overlay, which broke `podman exec -it` - `setns(MNT)` in `crun exec` resets `fs->root`, so the exec'd process saw raw kernel paths (`/mnt/overlay/proc`) instead of `/proc`. `switch_root` reorganizes the kernel mount tree itself, so namespace forks see a clean `/`.
 
 ### Guest → Android host bridge
 
-Lets guest processes call back to Android. Guest side: `podroid-hostd` (multi-call C binary, `build-rootfs/host-bridge/podroid-hostd.c`) owns a guest-local `AF_UNIX` socket `/run/podroid-host.sock`; `argv[0]` dispatch also exposes it as `podroid-notify` and `podroid-forward` (symlinks). The daemon relays one request line / one response line to Android over a backend transport: `/dev/hvc2` on QEMU, `AF_VSOCK:9101` on AVF (chosen by the `podroid.backend=avf` cmdline marker). Android side: `engine/hostbridge/` - `HostRequestServer` reads requests over a `HostTransport` (`QemuHostTransport` via `LocalSocket` to `host.sock`, or `AvfHostTransport` via `connectVsock`), `HostRequestDispatcher` parses them, and routes to `NotificationPoster` (posts via `NotificationManagerCompat`) or `PortForwardRepository` (rules persist and `EngineHolder` applies them live). `YourXDemonService` starts/stops the server over the VM lifecycle. Free-text fields are base64 (`HostProtocol.kt`) so UTF-8 survives.
+Lets guest processes call back to Android. Guest side: `opx-hostd` (multi-call C binary, `build-rootfs/host-bridge/opx-hostd.c`) owns a guest-local `AF_UNIX` socket `/run/OPX-host.sock`; `argv[0]` dispatch also exposes it as `opx-notify` and `opx-forward` (symlinks). The daemon relays one request line / one response line to Android over a backend transport: `/dev/hvc2` on QEMU, `AF_VSOCK:9101` on AVF (chosen by the `opx.backend=avf` cmdline marker). Android side: `engine/hostbridge/` - `HostRequestServer` reads requests over a `HostTransport` (`QemuHostTransport` via `LocalSocket` to `host.sock`, or `AvfHostTransport` via `connectVsock`), `HostRequestDispatcher` parses them, and routes to `NotificationPoster` (posts via `NotificationManagerCompat`) or `PortForwardRepository` (rules persist and `EngineHolder` applies them live). `YourXDemonService` starts/stops the server over the VM lifecycle. Free-text fields are base64 (`HostProtocol.kt`) so UTF-8 survives.
 
 > **Gotcha:** `/dev/hvc2` is a virtio-console **TTY** that defaults to echo on. The daemon must `cfmakeraw()` it, or the TTY echoes Android's responses back and the protocol desyncs after the first request. AVF (a raw vsock socket) is unaffected.
 
 ### Downloads sharing over 9p (`engine/avf/AvfDownloadsShare.kt` + `engine/avf/ninep/`)
 
-**AVF only.** Serves the real Android Downloads directory into the guest by running an in-process **9p2000.L** server (`Ninep2000LServer.kt`, ~886 LoC; wire format in `NinepCodec.kt`) over vsock. This is why the guest can read and write user files without the app holding broad storage permissions, and it is how `podroid-backup` archives land in `Downloads/Podroid/backups` for `ContainerBackupRepository` to list.
+**AVF only.** Serves the real Android Downloads directory into the guest by running an in-process **9p2000.L** server (`Ninep2000LServer.kt`, ~886 LoC; wire format in `NinepCodec.kt`) over vsock. This is why the guest can read and write user files without the app holding broad storage permissions, and it is how `opx-backup` archives land in `Downloads/OPX/backups` for `ContainerBackupRepository` to list.
 
 There is no QEMU equivalent, so any feature built on the share is backend-asymmetric by construction and must degrade cleanly on QEMU.
 
@@ -173,15 +173,15 @@ Single-activity Compose app: `ui/navigation/NavGraph.kt` routes `setup → home 
 │       └── jniLibs/arm64-v8a/            # native executables (see below)
 ├── terminal-view/, terminal-emulator/   # vendored Termux fork (local Gradle modules)
 ├── init-yourxdemon                         # initramfs bootstrap: overlay + switch_root
-├── podroid-bridge.c                     # PTY <-> virtio-console relay -> libpodroid-bridge.so
-├── podroid-launcher.c                   # exec wrapper that ties QEMU's lifetime to the app -> libpodroid-launcher.so
+├── opx-bridge.c                     # PTY <-> virtio-console relay -> libopx-bridge.so
+├── opx-launcher.c                   # exec wrapper that ties QEMU's lifetime to the app -> libopx-launcher.so
 ├── Dockerfile                           # kernel + initramfs + QEMU build
 ├── build-tools/                         # static assets used during Docker builds
 │   └── cross-android-aarch64.ini        # Meson cross-compilation config for aarch64-android26
 ├── build-rootfs/
 │   ├── Dockerfile.rootfs, build-rootfs.sh
-│   ├── vsock-agent/                     # podroid-vsock-agent.c (AVF control/forward agent)
-│   ├── host-bridge/                     # podroid-hostd.c (guest->Android bridge daemon + CLIs)
+│   ├── vsock-agent/                     # opx-vsock-agent.c (AVF control/forward agent)
+│   ├── host-bridge/                     # opx-hostd.c (guest->Android bridge daemon + CLIs)
 │   └── files/etc/                       # OpenRC services + configs baked into the squashfs
 ├── build-all.sh, gradle.properties, build.gradle.kts, settings.gradle.kts
 └── README.md, CONTRIBUTING.md, CREDITS.md
@@ -194,8 +194,8 @@ ELF executables renamed `.so` for APK packaging; run via `ProcessBuilder` / `Ter
 | File | What it is |
 |---|---|
 | `libqemu-system-aarch64.so` | QEMU TCG emulator |
-| `libpodroid-bridge.so` | PTY ↔ virtio-console relay (from `podroid-bridge.c`) |
-| `libpodroid-launcher.so` | exec wrapper for QEMU process lifetime (from `podroid-launcher.c`) |
+| `libopx-bridge.so` | PTY ↔ virtio-console relay (from `opx-bridge.c`) |
+| `libopx-launcher.so` | exec wrapper for QEMU process lifetime (from `opx-launcher.c`) |
 | `libslirp.so` | SLIRP user-mode networking (soname patched `.so.0`→`.so`) |
 
 The terminal emulator JNI is built from the vendored `terminal-emulator` module (rebuilt for 16KB pages), not shipped as a prebuilt here.
@@ -210,8 +210,8 @@ The terminal emulator JNI is built from the vendored `terminal-emulator` module 
 
 ## Build pipelines
 
-- **`Dockerfile`** - custom Linux kernel (arm64 defconfig + `podroid_kernel.config` modules + `forced_builtin.config` forcing overlayfs / netfilter / bridge / veth / tun / FUSE / IPv6 etc. to `=y`) and QEMU cross-compiled against the NDK. A build-time check greps the resolved `.config` and **fails the build** if any critical option isn't `=y` (guards against silent Kconfig demotion from unmet tristate deps). QEMU needs `--enable-libusb` (for passthrough) and a few Android/Bionic patches; `build-all.sh qemu` may need `docker build --network=host`.
-- **`build-rootfs/Dockerfile.rootfs`** - fetches the Alpine minirootfs, runs `build-rootfs.sh` (apk-installs alpine-base + openrc + podman + crun + fuse-overlayfs + docker + lxc + dropbear + iptables/nftables + bridge-utils, sets root password `podroid`, seals file caps on `newuidmap`/`newgidmap`, copies the OpenRC services and the cross-compiled `podroid-vsock-agent` + `podroid-hostd`, wires runlevels via direct symlinks), then `mksquashfs -comp zstd` (kernel ships `CONFIG_SQUASHFS_ZSTD=y`).
+- **`Dockerfile`** - custom Linux kernel (arm64 defconfig + `opx_kernel.config` modules + `forced_builtin.config` forcing overlayfs / netfilter / bridge / veth / tun / FUSE / IPv6 etc. to `=y`) and QEMU cross-compiled against the NDK. A build-time check greps the resolved `.config` and **fails the build** if any critical option isn't `=y` (guards against silent Kconfig demotion from unmet tristate deps). QEMU needs `--enable-libusb` (for passthrough) and a few Android/Bionic patches; `build-all.sh qemu` may need `docker build --network=host`.
+- **`build-rootfs/Dockerfile.rootfs`** - fetches the Alpine minirootfs, runs `build-rootfs.sh` (apk-installs alpine-base + openrc + podman + crun + fuse-overlayfs + docker + lxc + dropbear + iptables/nftables + bridge-utils, sets root password `OPX`, seals file caps on `newuidmap`/`newgidmap`, copies the OpenRC services and the cross-compiled `opx-vsock-agent` + `opx-hostd`, wires runlevels via direct symlinks), then `mksquashfs -comp zstd` (kernel ships `CONFIG_SQUASHFS_ZSTD=y`).
 
 ## Performance tuning (TCG path; KVM is impossible without root)
 
@@ -224,7 +224,7 @@ In `QemuEngine.buildCommand()`: `tcg,thread=multi`, larger `tb-size` for ≥2GB 
 - **`Dockerfile` heredoc gotcha.** Docker BuildKit's parser treats `[section]` lines inside `RUN ... << 'EOF'` heredocs as unknown Dockerfile instructions and aborts the parse. Instead of using shell heredocs in `RUN` for multi-line config files, use `COPY build-tools/<file>` from the build context. The Meson cross-compilation config lives in `build-tools/cross-android-aarch64.ini` for this reason.
 - **Backend asymmetry is the #1 source of bugs.** QEMU = SLIRP + QMP + virtio-console (TTY); AVF = DHCP + vsock (raw sockets). Test both. The host bridge's `cfmakeraw` on hvc2 (above) is a concrete example.
 - **Boot detection** scans a rolling buffer, not per-read chunks (fast devices split markers).
-- **Bridge stderr is silenced** (`dup2(/dev/null, STDERR)`): it runs as a `TerminalSession` subprocess whose stderr IS the PTY. Never add `fprintf(stderr, ...)` to `podroid-bridge.c`.
+- **Bridge stderr is silenced** (`dup2(/dev/null, STDERR)`): it runs as a `TerminalSession` subprocess whose stderr IS the PTY. Never add `fprintf(stderr, ...)` to `opx-bridge.c`.
 - **`forceUpdateSizeFromView` must not multiply by scaledDensity** - `TerminalView` passes the raw int textSize to `Paint`; mismatched math renders TUI apps in the wrong grid.
 - **SLIRP's ICMP works here** - `ping 8.8.8.8` from the guest gets replies (libslirp proxies echo through an unprivileged ICMP socket, which Android grants app UIDs; the `ttl=255` on replies is SLIRP synthesizing them). A `ping: bad address` is therefore a DNS failure, not an ICMP one. SLIRP's DNS forwarder *is* unreliable on Android: `10.0.2.3` resolves upstream by reading the host's `/etc/resolv.conf`, which Android does not have, so the guest is given the device's own resolver plus public fallbacks instead.
 - **Privileged ports**: the app can't bind host ports < 1024 (no `CAP_NET_BIND_SERVICE`), so SSH is on 9922, not 22. Forward to a high host port.
@@ -237,8 +237,8 @@ The guest system layer updates across app versions with **no VM reset and no dat
 
 - **Plain overlay (never re-add metacopy/index/redirect).** `init-yourxdemon` mounts the rootfs overlay as `lowerdir=/mnt/lower,upperdir=/mnt/persist/upper,workdir=/mnt/persist/work` only. Plain overlayfs tolerates a swapped lower, so a new squashfs (re-extracted by `YourXDemonApplication` on every update) goes live on the next boot while the persistent upper is preserved. **Do not re-add `metacopy=on`/`index=on`/`redirect_dir=on`** - they bind the upper to a specific lower and reintroduce the corruption-on-update bug (the whole reason resets used to be needed).
 - **Version anchor.** The squashfs ships `/etc/yourxdemon/system-version` (baked from `versionCode` by `build-all.sh` -> `Dockerfile.rootfs` ARG -> `build-rootfs.sh`). The last-applied version persists at `/mnt/persist/.yourxdemon/applied-version`.
-- **One-time legacy normalization.** `init-yourxdemon` runs `podroid-overlay-normalize` (shipped in the squashfs, invoked via `/mnt/lower`, before the overlay is stacked) once per device (guarded by `/mnt/persist/.yourxdemon/normalized`) to strip pre-existing `metacopy`/`redirect`/`index` state from uppers created by the old metacopy overlay. No-op on fresh/normalized uppers.
-- **Imperative hooks.** `podroid-migrate` (OpenRC, runs `before podroid-bootstrap`) executes `/etc/yourxdemon/migrations/<v>.sh` for `applied < v <= system-version` in order, then advances `applied-version` atomically. **To ship a fixup in a new release** (e.g. enable a newly-added service): add `build-rootfs/files/etc/yourxdemon/migrations/<versionCode>.sh`, idempotent, install it in `build-rootfs.sh`. Pure file additions/changes need NO script - the overlay union surfaces them.
+- **One-time legacy normalization.** `init-yourxdemon` runs `opx-overlay-normalize` (shipped in the squashfs, invoked via `/mnt/lower`, before the overlay is stacked) once per device (guarded by `/mnt/persist/.yourxdemon/normalized`) to strip pre-existing `metacopy`/`redirect`/`index` state from uppers created by the old metacopy overlay. No-op on fresh/normalized uppers.
+- **Imperative hooks.** `opx-migrate` (OpenRC, runs `before opx-bootstrap`) executes `/etc/yourxdemon/migrations/<v>.sh` for `applied < v <= system-version` in order, then advances `applied-version` atomically. **To ship a fixup in a new release** (e.g. enable a newly-added service): add `build-rootfs/files/etc/yourxdemon/migrations/<versionCode>.sh`, idempotent, install it in `build-rootfs.sh`. Pure file additions/changes need NO script - the overlay union surfaces them.
 - **Reliability:** the marker advances only after migration completes (crash -> idempotent re-run); nothing auto-wipes `/mnt/persist`; `init-yourxdemon` keeps its `FATAL -> exec sh` recovery shell.
 
 ## Common tasks

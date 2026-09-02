@@ -1,0 +1,16 @@
+#!/bin/sh
+# Write Podman container count for the Android app (Downloads/OPX/container-count).
+set -eu
+
+count=0
+if command -v podman >/dev/null 2>&1; then
+	count="$(podman ps -aq 2>/dev/null | wc -l | tr -d ' ')"
+fi
+
+mkdir -p /var/lib/OPX
+printf '%s\n' "$count" > /var/lib/OPX/container-count
+
+if mountpoint -q /mnt/downloads 2>/dev/null; then
+	mkdir -p /mnt/downloads/OPX
+	printf '%s\n' "$count" > /mnt/downloads/OPX/container-count
+fi

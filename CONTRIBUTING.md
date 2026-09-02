@@ -2,7 +2,7 @@
 
 Thanks for considering a contribution. Bug reports, feature requests, and pull requests are all welcome.
 
-**Original developer:** [ExTV](https://github.com/ExTV) (Podroid)
+**Original developer:** [ExTV](https://github.com/ExTV) (OPX)
 **Rebranded by:** OP Aminul FF (OPX)
 
 Before you start, please skim [`CLAUDE.md`](CLAUDE.md). It documents the VM-engine abstraction and both backends, the boot pipeline, every native binary, and the design quirks you need to know to make changes that don't regress.
@@ -10,8 +10,8 @@ Before you start, please skim [`CLAUDE.md`](CLAUDE.md). It documents the VM-engi
 ## Getting started
 
 ```sh
-git clone https://github.com/OPX-Aminul/Podroid.git
-cd Podroid
+git clone https://github.com/OPX-Aminul/OPX.git
+cd OPX
 ```
 
 You will need:
@@ -29,7 +29,7 @@ You will need:
 ./build-all.sh kernel       # custom Linux kernel (~5-10 min, Docker-cached)
 ./build-all.sh initramfs    # kernel + minimal initramfs
 ./build-all.sh rootfs       # Alpine squashfs (~30 s, Docker-cached)
-./build-all.sh qemu         # QEMU + podroid-bridge (~30 min first run)
+./build-all.sh qemu         # QEMU + opx-bridge (~30 min first run)
 ./build-all.sh termux       # terminal-emulator JNI via local NDK
 ./build-all.sh apk          # Android APK via Gradle
 ./build-all.sh all          # everything
@@ -155,12 +155,12 @@ YourXDemon/
 │       │   ├── x11/                      X11/VNC viewer engine
 │       │   └── ui/                       Compose screens + theme
 │       ├── res/values, res/values-zh/    strings (English + Chinese, keep in sync)
-│       ├── jniLibs/arm64-v8a/            QEMU, podroid-bridge, podroid-launcher, libslirp
+│       ├── jniLibs/arm64-v8a/            QEMU, opx-bridge, opx-launcher, libslirp
 │       └── assets/                       kernel, initramfs, squashfs, fonts, themes
 ├── terminal-view/, terminal-emulator/    vendored Termux fork (local Gradle modules)
 ├── init-yourxdemon                          Minimal initramfs script (~45 lines)
-├── podroid-bridge.c                      Native PTY <-> virtio-console relay
-├── podroid-launcher.c                    exec wrapper tying QEMU's lifetime to the app
+├── opx-bridge.c                      Native PTY <-> virtio-console relay
+├── opx-launcher.c                    exec wrapper tying QEMU's lifetime to the app
 ├── Dockerfile                            Kernel + initramfs + QEMU build pipeline
 ├── build-tools/                          Static assets used during Docker builds
 │   └── cross-android-aarch64.ini         Meson cross-compilation config
@@ -171,7 +171,7 @@ YourXDemon/
 │   ├── host-bridge/                      guest to Android bridge daemon
 │   └── files/                            OpenRC services baked into the squashfs
 ├── build-all.sh                          Unified build / deploy script
-├── podroid_kernel.config                 Custom kernel Kconfig fragment
+├── opx_kernel.config                 Custom kernel Kconfig fragment
 └── docs/                                 GitHub Pages site
 ```
 

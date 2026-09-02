@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Getting started · Podroid docs</title>
-  <meta name="description" content="Install Podroid, run the setup wizard, and boot your first Alpine Linux VM on Android." />
+  <title>Getting started · OPX docs</title>
+  <meta name="description" content="Install OPX, run the setup wizard, and boot your first Alpine Linux VM on Android." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">☰</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -52,9 +52,9 @@
       <p class="lead">From APK download to a running Alpine Linux VM in about five minutes, plus a first boot that takes a little longer than you might expect - and why.</p>
 
       <h2>Install</h2>
-      <p>Podroid is distributed as a standard APK sideload. There is no Play Store listing.</p>
+      <p>OPX is distributed as a standard APK sideload. There is no Play Store listing.</p>
       <ol>
-        <li>Download the latest <code>Podroid-release-*.apk</code> from <a href="https://github.com/ExTV/Podroid/releases">GitHub Releases</a>.</li>
+        <li>Download the latest <code>OPX-release-*.apk</code> from <a href="https://github.com/ExTV/OPX/releases">GitHub Releases</a>.</li>
         <li>Enable "Install unknown apps" for your browser or file manager in Android Settings, then open the APK.</li>
         <li>Tap <strong>Install</strong>.</li>
       </ol>
@@ -65,7 +65,7 @@
       </div>
 
       <h2>Setup wizard</h2>
-      <p>The first time you open Podroid a three-step wizard runs before anything else.</p>
+      <p>The first time you open OPX a three-step wizard runs before anything else.</p>
 
       <h3>Step 1: Persistent storage size</h3>
       <p>Choose how large the writable VM disk image will be: from 2 GB up to 512 GB, limited to the free space on your phone. This image lives in the app's private storage and holds everything you install inside the VM - packages, container images, config files. Pick more than you think you need.</p>
@@ -108,14 +108,14 @@
       <p>Tap the terminal icon from the home screen to open a full VT100 terminal connected to the VM shell. Inside the terminal, tap the monitor icon in the top bar to open the X11 viewer - needed for GUI Linux apps and desktop environments.</p>
 
       <h2>Default credentials</h2>
-      <p>The default login is <code>root</code> with password <code>podroid</code>. The terminal banner reminds you of this on every boot. To create a regular user with sudo-equivalent access:</p>
+      <p>The default login is <code>root</code> with password <code>opx</code>. The terminal banner reminds you of this on every boot. To create a regular user with sudo-equivalent access:</p>
       <pre><code><span class="p">$</span> adduser -G wheel &lt;username&gt;</code></pre>
       <p>Members of <code>wheel</code> can use <code>doas</code> (and <code>sudo</code> if installed).</p>
 
       <h2>SSH from another device</h2>
       <p>With SSH enabled and both devices on the same Wi-Fi, connect from a laptop or desktop:</p>
       <pre><code><span class="p">$</span> ssh root@&lt;phone-ip&gt; -p 9922
-<span class="c"># password: podroid</span></code></pre>
+<span class="c"># password: opx</span></code></pre>
       <p>Port 9922 is the default; see the <a href="networking.html">Networking &amp; ports</a> page for how SLIRP forwarding works and how to add more port rules.</p>
 
       <div class="callout warn">
@@ -127,7 +127,7 @@
         <a class="prev" href="index.html"><span class="dir">Previous</span>&larr; Overview</a>
         <a class="next" href="how-it-works.html"><span class="dir">Next</span>How it works &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

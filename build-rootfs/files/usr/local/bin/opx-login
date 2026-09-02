@@ -1,11 +1,11 @@
 #!/bin/sh
 # Replacement login shell for getty. Restores the terminal size from
-# /run/term_size (written by podroid-resize on QEMU) before exec'ing the
+# /run/term_size (written by opx-resize on QEMU) before exec'ing the
 # real login binary — virtio-console + PL011 serial both reset winsize
 # to 0x0 on every getty respawn, so without this TUI apps (btop, htop,
 # vim, less) bail with "Failed to get size of terminal".
 #
-# AVF doesn't run podroid-resize for ttyS0 (no SIGWINCH propagation
+# AVF doesn't run opx-resize for ttyS0 (no SIGWINCH propagation
 # channel yet), so /run/term_size won't exist there — fall back to a
 # sensible default rather than leaving winsize at 0x0. The host-side
 # TerminalView will overwrite this the moment the user touches the
@@ -37,7 +37,7 @@ if [ "$(id -u)" -eq 0 ] 2>/dev/null; then
     cd /root 2>/dev/null || cd /
     echo ""
     echo "  Welcome to YourXDemon v1.0.0"
-    echo "  Developed by ExTV (Podroid) | Rebranded by OP Aminul FF (OPX)"
+    echo "  Developed by ExTV (OPX) | Rebranded by OP Aminul FF (OPX)"
     echo ""
     # Source profile for a proper login environment.
     # Debian's /bin/sh is dash which doesn't support --login, so source

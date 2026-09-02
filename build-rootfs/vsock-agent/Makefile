@@ -8,11 +8,11 @@ CFLAGS  ?= -O2 -Wall -Wextra -Wno-unused-parameter -static -D_GNU_SOURCE \
            -fstack-protector-strong -D_FORTIFY_SOURCE=2
 LDFLAGS ?=
 
-BIN = podroid-vsock-agent
+BIN = opx-vsock-agent
 
 all: $(BIN)
 
-$(BIN): podroid-vsock-agent.c
+$(BIN): opx-vsock-agent.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 clean:

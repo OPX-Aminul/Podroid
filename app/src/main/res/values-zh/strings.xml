@@ -2,7 +2,7 @@
 <!--
   YourXDemon - Terminal Emulator for Android
   Copyright (C) 2024-2026 YourXDemon contributors
-  Original developer: ExTV (Podroid)
+  Original developer: ExTV (OPX)
   Rebranded by: OP Aminul FF (OPX)
 -->
 <resources>
@@ -178,7 +178,7 @@
     <string name="container_backup_tools">工具</string>
     <string name="container_backup_copy_list">复制列表命令</string>
     <string name="container_backup_copy_all">复制全部备份命令</string>
-    <string name="container_backup_terminal_hint">粘贴到 YourXDemon 终端。较新的客户机镜像包含 podroid-backup；旧镜像会自动回退到 podman export。</string>
+    <string name="container_backup_terminal_hint">粘贴到 YourXDemon 终端。较新的客户机镜像包含 opx-backup；旧镜像会自动回退到 podman export。</string>
     <string name="container_backup_on_phone">手机上的备份</string>
     <string name="container_backup_refresh">刷新列表</string>
     <string name="container_backup_none">Downloads/YourXDemon/backups 中尚未找到备份归档。</string>

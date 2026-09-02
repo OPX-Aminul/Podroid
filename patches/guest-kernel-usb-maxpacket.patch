@@ -1,4 +1,4 @@
-From: Podroid <dev@podroid.local>
+From: OPX <dev@opx.local>
 Subject: [PATCH] USB: hub: accept low-speed device with maxpacket=64 (issue #85)
 
 When the host USB stack (e.g. Xiaomi/MIUI) misreports a full-speed

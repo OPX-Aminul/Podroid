@@ -19,7 +19,7 @@ RUN wget -q https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-${KERNEL_VERSION}
     && tar xf linux-${KERNEL_VERSION}.tar.xz \
     && rm linux-${KERNEL_VERSION}.tar.xz
 
-COPY podroid_kernel.config /tmp/podroid_kernel.config
+COPY opx_kernel.config /tmp/opx_kernel.config
 # Force-builtin fragment: options netavark + podman need as =y so there's no
 # modprobe round-trip (modules caused silent failures in the past). Applied
 # WITHOUT -m on top of the main fragment, then locked in with olddefconfig.
@@ -134,7 +134,7 @@ RUN printf '%s\n' \
     > /tmp/forced_builtin.config
 RUN cd linux-${KERNEL_VERSION} \
     && make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- defconfig \
-    && ./scripts/kconfig/merge_config.sh -m .config /tmp/podroid_kernel.config \
+    && ./scripts/kconfig/merge_config.sh -m .config /tmp/opx_kernel.config \
     && ./scripts/kconfig/merge_config.sh -m .config /tmp/forced_builtin.config \
     && make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- olddefconfig \
     && echo "=== verifying critical options are =y ===" \
@@ -261,7 +261,7 @@ RUN wget -q https://github.com/PCRE2Project/pcre2/releases/download/pcre2-10.44/
 RUN wget -q https://github.com/libffi/libffi/releases/download/v3.4.6/libffi-3.4.6.tar.gz && tar xf libffi-3.4.6.tar.gz && cd libffi-3.4.6 && ./configure --host=aarch64-linux-android --prefix=${PREFIX} --enable-static --disable-shared CC="${CC}" && make -j$(nproc) install
 # API-26 Bionic lacks iconv symbols in libc. Provide a tiny libiconv shim so
 # glib can link in the cross build. It implements byte-for-byte passthrough.
-RUN printf '#ifndef PODROID_ICONV_H\n#define PODROID_ICONV_H\n#include <stddef.h>\ntypedef void *iconv_t;\niconv_t iconv_open(const char *tocode, const char *fromcode);\nsize_t iconv(iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);\nint iconv_close(iconv_t cd);\n#endif\n' > ${PREFIX}/include/iconv.h \
+RUN printf '#ifndef OPX_ICONV_H\n#define OPX_ICONV_H\n#include <stddef.h>\ntypedef void *iconv_t;\niconv_t iconv_open(const char *tocode, const char *fromcode);\nsize_t iconv(iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft);\nint iconv_close(iconv_t cd);\n#endif\n' > ${PREFIX}/include/iconv.h \
     && printf '#include <errno.h>\n#include <stddef.h>\n#include <string.h>\n#include <iconv.h>\niconv_t iconv_open(const char *tocode, const char *fromcode) {\n    if (!tocode || !fromcode) { errno = EINVAL; return (iconv_t)-1; }\n    return (iconv_t)1;\n}\nsize_t iconv(iconv_t cd, char **inbuf, size_t *inbytesleft, char **outbuf, size_t *outbytesleft) {\n    (void)cd;\n    if (!inbuf || !inbytesleft || !outbuf || !outbytesleft) { errno = EINVAL; return (size_t)-1; }\n    if (!*inbuf || *inbytesleft == 0) return 0;\n    if (!*outbuf || *outbytesleft == 0) { errno = E2BIG; return (size_t)-1; }\n    size_t n = (*inbytesleft < *outbytesleft) ? *inbytesleft : *outbytesleft;\n    memcpy(*outbuf, *inbuf, n);\n    *inbuf += n;\n    *outbuf += n;\n    *inbytesleft -= n;\n    *outbytesleft -= n;\n    if (*inbytesleft != 0) { errno = E2BIG; return (size_t)-1; }\n    return 0;\n}\nint iconv_close(iconv_t cd) {\n    (void)cd;\n    return 0;\n}\n' > /tmp/iconv_shim.c \
     && ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -I${PREFIX}/include -c /tmp/iconv_shim.c -o /tmp/iconv_shim.o \
     && ${AR} rcs ${PREFIX}/lib/libiconv.a /tmp/iconv_shim.o \
@@ -270,7 +270,7 @@ RUN wget -q https://download.gnome.org/sources/glib/2.82/glib-2.82.5.tar.xz&& ta
 RUN wget -q https://cairographics.org/releases/pixman-0.44.2.tar.xz && tar xf pixman-0.44.2.tar.xz && cd pixman-0.44.2 && meson setup _build --cross-file /opt/cross-android-aarch64.ini --prefix ${PREFIX} --default-library static -Da64-neon=disabled && ninja -C _build install
 RUN wget -q https://download.savannah.gnu.org/releases/attr/attr-2.5.2.tar.gz && tar xf attr-2.5.2.tar.gz && cd attr-2.5.2 && ./configure --host=aarch64-linux-android --prefix=${PREFIX} --enable-static --disable-shared CC="${CC}" && make -j$(nproc) install && cp ${PREFIX}/lib/libattr.a ${LLVM}/sysroot/usr/lib/aarch64-linux-android/26/libattr.a
 RUN git clone --depth=1 https://github.com/kaniini/libucontext.git /tmp/libucontext && make -C /tmp/libucontext ARCH=aarch64 CC="${CC}" EXPORT_UNPREFIXED=yes && install -Dm644 /tmp/libucontext/libucontext.a ${PREFIX}/lib/libucontext.a && install -Dm644 /tmp/libucontext/include/libucontext/libucontext.h ${PREFIX}/include/libucontext/libucontext.h && install -Dm644 /tmp/libucontext/arch/common/include/libucontext/bits.h ${PREFIX}/include/libucontext/bits.h \
-    && printf '#ifndef PODROID_UCONTEXT_SHIM_H\n#define PODROID_UCONTEXT_SHIM_H\n#include_next <ucontext.h>\n#include <libucontext/libucontext.h>\n#define getcontext libucontext_getcontext\n#define makecontext libucontext_makecontext\n#define setcontext libucontext_setcontext\n#define swapcontext libucontext_swapcontext\n#endif\n' > ${PREFIX}/include/ucontext.h
+    && printf '#ifndef OPX_UCONTEXT_SHIM_H\n#define OPX_UCONTEXT_SHIM_H\n#include_next <ucontext.h>\n#include <libucontext/libucontext.h>\n#define getcontext libucontext_getcontext\n#define makecontext libucontext_makecontext\n#define setcontext libucontext_setcontext\n#define swapcontext libucontext_swapcontext\n#endif\n' > ${PREFIX}/include/ucontext.h
 
 # libusb — required for QEMU's usb-host device. USB passthrough on Android can
 # never open /dev/bus/usb itself, so QEMU receives an already-open fd over QMP
@@ -291,7 +291,7 @@ RUN printf '# disabled for Android Bionic\n' > ${QEMU_DIR}/contrib/ivshmem-serve
 # shm_open/shm_unlink are absent from the NDK API-26 stubs.
 # Shim header: forward-declares them for all QEMU TUs.
 # libshm.a: provides an implementation via memfd_create (works on all Android 8+ kernels).
-RUN printf '#ifndef PODROID_SHM_SHIM_H\n#define PODROID_SHM_SHIM_H\nextern int shm_open(const char *, int, unsigned);\nextern int shm_unlink(const char *);\n#endif\n' \
+RUN printf '#ifndef OPX_SHM_SHIM_H\n#define OPX_SHM_SHIM_H\nextern int shm_open(const char *, int, unsigned);\nextern int shm_unlink(const char *);\n#endif\n' \
     > /opt/shm_shim.h
 RUN printf '#include <sys/syscall.h>\n#include <unistd.h>\n#include <errno.h>\n#ifndef SYS_memfd_create\n#define SYS_memfd_create 279\n#endif\nint shm_open(const char *n, int f, unsigned m) {\n    (void)f; (void)m;\n    while (*n == '"'"'/'"'"') n++;\n    long fd = syscall(SYS_memfd_create, n, 0);\n    if (fd < 0) { errno = (int)(-fd); return -1; }\n    return (int)fd;\n}\nint shm_unlink(const char *n) { (void)n; return 0; }\n' \
     > /tmp/shm_stub.c \
@@ -305,7 +305,7 @@ RUN printf '#include <sys/syscall.h>\n#include <unistd.h>\n#include <errno.h>\n#
 # This shim provides drop-in replacements that just save/restore the AArch64
 # callee-saved register set (x19-x30, sp, d8-d15) with no PAC, no signal mask,
 # no syscalls, no stack-protector wrapping. ~22 doublewords -> fits in sigjmp_buf.
-RUN printf '#ifndef PODROID_QEMU_JMP_H\n#define PODROID_QEMU_JMP_H\n#include <setjmp.h>\nextern int _qemu_setjmp(sigjmp_buf);\n__attribute__((noreturn)) extern void _qemu_longjmp(sigjmp_buf, int);\n#endif\n' > /opt/qemu_jmp.h \
+RUN printf '#ifndef OPX_QEMU_JMP_H\n#define OPX_QEMU_JMP_H\n#include <setjmp.h>\nextern int _qemu_setjmp(sigjmp_buf);\n__attribute__((noreturn)) extern void _qemu_longjmp(sigjmp_buf, int);\n#endif\n' > /opt/qemu_jmp.h \
     && printf '.text\n.global _qemu_setjmp\n.type _qemu_setjmp,%%function\n_qemu_setjmp:\nstp x19,x20,[x0,#0]\nstp x21,x22,[x0,#16]\nstp x23,x24,[x0,#32]\nstp x25,x26,[x0,#48]\nstp x27,x28,[x0,#64]\nstp x29,x30,[x0,#80]\nmov x9,sp\nstr x9,[x0,#96]\nstp d8,d9,[x0,#104]\nstp d10,d11,[x0,#120]\nstp d12,d13,[x0,#136]\nstp d14,d15,[x0,#152]\nmov w0,#0\nret\n.size _qemu_setjmp,.-_qemu_setjmp\n.global _qemu_longjmp\n.type _qemu_longjmp,%%function\n_qemu_longjmp:\nldp x19,x20,[x0,#0]\nldp x21,x22,[x0,#16]\nldp x23,x24,[x0,#32]\nldp x25,x26,[x0,#48]\nldp x27,x28,[x0,#64]\nldp x29,x30,[x0,#80]\nldr x9,[x0,#96]\nmov sp,x9\nldp d8,d9,[x0,#104]\nldp d10,d11,[x0,#120]\nldp d12,d13,[x0,#136]\nldp d14,d15,[x0,#152]\ncmp w1,#0\ncsinc w0,w1,wzr,ne\nbr x30\n.size _qemu_longjmp,.-_qemu_longjmp\n.section .note.GNU-stack,"",%%progbits\n' > /tmp/qemu_jmp.S \
     && ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -c /tmp/qemu_jmp.S -o /tmp/qemu_jmp.o \
     && ${AR} rcs ${PREFIX}/lib/libqemujmp.a /tmp/qemu_jmp.o
@@ -337,12 +337,12 @@ RUN cd ${QEMU_DIR}/hw/usb \
 RUN cd ${QEMU_DIR} && ./configure --cc="${CC}" --cross-prefix="${LLVM}/bin/llvm-" --extra-cflags="-fPIC -DANDROID -include /opt/shm_shim.h -I${PREFIX}/include -I${PREFIX}/include/glib-2.0 -I${PREFIX}/lib/glib-2.0/include" --extra-ldflags="-L${PREFIX}/lib -Wl,-z,max-page-size=16384 ${PREFIX}/lib/libucontext.a ${PREFIX}/lib/libshm.a ${PREFIX}/lib/libqemujmp.a" --prefix=/opt/qemu-out --target-list=aarch64-softmmu --enable-tcg --enable-slirp --enable-virtfs --enable-libusb --enable-pie --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-vhost-user --disable-plugins --with-coroutine=ucontext && make -j$(nproc) install
 
 # Bridge
-COPY podroid-bridge.c /tmp/podroid-bridge.c
-RUN ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -fPIE -pie -Wl,-z,max-page-size=16384 /tmp/podroid-bridge.c -o /opt/qemu-out/libpodroid-bridge.so
+COPY opx-bridge.c /tmp/opx-bridge.c
+RUN ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -fPIE -pie -Wl,-z,max-page-size=16384 /tmp/opx-bridge.c -o /opt/qemu-out/libopx-bridge.so
 
-# Launcher (PR_SET_PDEATHSIG wrapper for QEMU — see podroid-launcher.c)
-COPY podroid-launcher.c /tmp/podroid-launcher.c
-RUN ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -fPIE -pie -Wl,-z,max-page-size=16384 /tmp/podroid-launcher.c -o /opt/qemu-out/libpodroid-launcher.so
+# Launcher (PR_SET_PDEATHSIG wrapper for QEMU — see opx-launcher.c)
+COPY opx-launcher.c /tmp/opx-launcher.c
+RUN ${CC} --sysroot=${LLVM}/sysroot -target aarch64-linux-android26 -fPIE -pie -Wl,-z,max-page-size=16384 /tmp/opx-launcher.c -o /opt/qemu-out/libopx-launcher.so
 
 # Soname fix
 RUN cp /opt/qemu-out/bin/qemu-system-aarch64 /opt/qemu-out/libqemu-system-aarch64.so \
@@ -361,7 +361,7 @@ COPY --from=packer /output/initrd.img /initrd.img
 # QEMU
 COPY --from=qemu-builder /opt/qemu-out/libqemu-system-aarch64.so /libqemu-system-aarch64.so
 COPY --from=qemu-builder /opt/qemu-out/libslirp.so /libslirp.so
-COPY --from=qemu-builder /opt/qemu-out/libpodroid-bridge.so /libpodroid-bridge.so
-COPY --from=qemu-builder /opt/qemu-out/libpodroid-launcher.so /libpodroid-launcher.so
+COPY --from=qemu-builder /opt/qemu-out/libopx-bridge.so /libopx-bridge.so
+COPY --from=qemu-builder /opt/qemu-out/libopx-launcher.so /libopx-launcher.so
 COPY --from=qemu-builder /opt/qemu-out/share/qemu/efi-virtio.rom /qemu/efi-virtio.rom
 COPY --from=qemu-builder /opt/qemu-out/share/qemu/keymaps/ /qemu/keymaps/

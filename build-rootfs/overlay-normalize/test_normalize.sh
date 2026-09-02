@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")"
 command -v setfattr >/dev/null || { echo "SKIP: need attr/setfattr"; exit 0; }
 
-cc -O2 -Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE -o /tmp/pon podroid-overlay-normalize.c
+cc -O2 -Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE -o /tmp/pon opx-overlay-normalize.c
 
 T=$(mktemp -d)
 mkdir -p "$T/upper/sub" "$T/work/index/deep"
@@ -14,7 +14,7 @@ echo ""       > "$T/upper/metacopyfile"
 setfattr -n user.overlay.metacopy -v y "$T/upper/metacopyfile"
 setfattr -n user.overlay.redirect -v /old "$T/upper/sub"
 
-PODROID_NORMALIZE_NS=user.overlay. /tmp/pon "$T/upper" "$T/work"
+OPX_NORMALIZE_NS=user.overlay. /tmp/pon "$T/upper" "$T/work"
 
 fail=0
 [ -f "$T/upper/realfile" ]      || { echo "FAIL: realfile removed"; fail=1; }

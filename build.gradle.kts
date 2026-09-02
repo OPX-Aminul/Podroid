@@ -1,5 +1,5 @@
 /*
- * Podroid — Top-level build file
+ * OPX — Top-level build file
  *
  * Do not place application-specific dependencies here; they belong in the
  * app-level build.gradle.kts.

@@ -58,10 +58,10 @@ class HostRequestDispatcherTest {
     @Test fun notifyPostsAndReturnsId() = runBlocking {
         val poster = FakePoster()
         val d = dispatcher(poster)
-        val resp = d.handle("NOTIFY high 42 ${HostProtocol.enc("Podroid")} ${HostProtocol.enc("done")}")
+        val resp = d.handle("NOTIFY high 42 ${HostProtocol.enc("OPX")} ${HostProtocol.enc("done")}")
         assertEquals("OK 42", resp)
         assertEquals(1, poster.posts.size)
-        assertEquals("Podroid", poster.posts[0].title)
+        assertEquals("OPX", poster.posts[0].title)
         assertEquals("done", poster.posts[0].body)
         assertEquals(HostProtocol.PRIO_HIGH, poster.posts[0].priority)
         assertEquals(42, poster.posts[0].id)
@@ -97,7 +97,7 @@ class HostRequestDispatcherTest {
 
     @Test fun fwdAddAcceptsExplicitTcpLine() = runBlocking {
         // The dispatcher takes a fully-formed line; the tcp-defaulting sugar lives
-        // in the CLI, so this checks we accept the exact line `podroid-forward 8080 80` emits.
+        // in the CLI, so this checks we accept the exact line `opx-forward 8080 80` emits.
         val rules = mutableListOf<PortForwardRule>()
         assertEquals("OK", dispatcher(rules = rules).handle("FWD-ADD 8080 80 tcp"))
         assertEquals("tcp", rules.single().protocol)

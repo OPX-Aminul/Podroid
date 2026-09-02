@@ -4,7 +4,7 @@
  *
  * Length-prefixed framing for UDP datagrams tunneled over the AVF vsock stream.
  * Each frame is [u16 big-endian length][payload]. Must stay byte-compatible with
- * udp_relay() in build-rootfs/vsock-agent/podroid-vsock-agent.c. Pure (no
+ * udp_relay() in build-rootfs/vsock-agent/opx-vsock-agent.c. Pure (no
  * android.*) so it unit-tests on the JVM.
  */
 package com.opx.yourxdemon.engine.avf

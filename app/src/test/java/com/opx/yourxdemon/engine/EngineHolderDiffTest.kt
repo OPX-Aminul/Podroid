@@ -1,6 +1,6 @@
 /*
- * Podroid - Rootless Podman for Android
- * Copyright (C) 2024-2026 Podroid contributors
+ * OPX - Rootless Podman for Android
+ * Copyright (C) 2024-2026 OPX contributors
  */
 package com.opx.yourxdemon.engine
 
@@ -84,7 +84,7 @@ class EngineHolderDiffTest {
 
     @Test
     fun `implicit always-on forwards are never removed`() {
-        // SSH/VNC/audio are injected into the launch set by PodroidService but
+        // SSH/VNC/audio are injected into the launch set by OPXService but
         // never persisted to the DataStore, so they appear in launchRules yet
         // not in `rules`. The diff loop folds them back in (desired = rules +
         // implicit) so they are never computed as removed. Without that fold the

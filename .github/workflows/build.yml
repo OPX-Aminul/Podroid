@@ -12,13 +12,13 @@ on:
     branches: [main]
     paths:
       - 'Dockerfile'
-      - 'podroid_kernel.config'
+      - 'opx_kernel.config'
       - 'gradle.properties'
       - 'build-tools/**'
       - 'build-rootfs/**'
       - 'init-yourxdemon'
-      - 'podroid-bridge.c'
-      - 'podroid-launcher.c'
+      - 'opx-bridge.c'
+      - 'opx-launcher.c'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -58,20 +58,20 @@ jobs:
           context: .
           target: qemu-builder
           load: true
-          tags: podroid-qemu-patch
+          tags: opx-qemu-patch
           build-args: QEMU_VERSION=${{ steps.ver.outputs.qemu }}
           cache-from: type=gha,scope=qemu
           cache-to: type=gha,scope=qemu,mode=max
 
       - name: Extract QEMU binaries
         run: |
-          docker create --name qemu-out podroid-qemu-patch /bin/true
+          docker create --name qemu-out opx-qemu-patch /bin/true
           docker cp qemu-out:/opt/qemu-out/libqemu-system-aarch64.so ./libqemu-system-aarch64.so
           docker cp qemu-out:/opt/qemu-out/libslirp.so ./libslirp.so
-          docker cp qemu-out:/opt/qemu-out/libpodroid-bridge.so ./libpodroid-bridge.so
-          docker cp qemu-out:/opt/qemu-out/libpodroid-launcher.so ./libpodroid-launcher.so
+          docker cp qemu-out:/opt/qemu-out/libopx-bridge.so ./libopx-bridge.so
+          docker cp qemu-out:/opt/qemu-out/libopx-launcher.so ./libopx-launcher.so
           docker rm qemu-out
-          ls -lh ./libqemu-system-aarch64.so ./libslirp.so ./libpodroid-bridge.so ./libpodroid-launcher.so
+          ls -lh ./libqemu-system-aarch64.so ./libslirp.so ./libopx-bridge.so ./libopx-launcher.so
 
       # ══════════════════════════════════════════════════════════════════════
       # KERNEL: Custom kernel with USB maxpacket fix + all WiFi drivers =y
@@ -83,14 +83,14 @@ jobs:
           context: .
           target: kernel-builder
           load: true
-          tags: podroid-kernel-patch
+          tags: opx-kernel-patch
           build-args: KERNEL_VERSION=${{ steps.ver.outputs.kernel }}
           cache-from: type=gha,scope=kernel
           cache-to: type=gha,scope=kernel,mode=max
 
       - name: Extract kernel image
         run: |
-          docker create --name kernel-out podroid-kernel-patch
+          docker create --name kernel-out opx-kernel-patch
           docker cp kernel-out:/output/vmlinuz-virt ./vmlinuz-virt
           docker rm kernel-out
           ls -lh ./vmlinuz-virt
@@ -107,14 +107,14 @@ jobs:
           file: build-rootfs/Dockerfile.rootfs
           context: build-rootfs/
           load: true
-          tags: podroid-rootfs
+          tags: opx-rootfs
           build-args: SYSTEM_VERSION=${{ steps.ver.outputs.sysver }}
           cache-from: type=gha,scope=rootfs-full
           cache-to: type=gha,scope=rootfs-full,mode=max
 
       - name: Extract rootfs squashfs
         run: |
-          docker create --name rootfs-out podroid-rootfs /bin/sh -c 'exit 0'
+          docker create --name rootfs-out opx-rootfs /bin/sh -c 'exit 0'
           docker cp rootfs-out:/yourxdemon-rootfs.squashfs ./yourxdemon-rootfs.squashfs
           docker rm rootfs-out
           echo "✅ rootfs squashfs:"
@@ -132,7 +132,7 @@ jobs:
           context: .
           target: packer
           load: true
-          tags: podroid-packer
+          tags: opx-packer
           build-args: KERNEL_VERSION=${{ steps.ver.outputs.kernel }}
           cache-from: |
             type=gha,scope=kernel
@@ -142,7 +142,7 @@ jobs:
 
       - name: Extract initramfs
         run: |
-          docker create --name packer-out podroid-packer
+          docker create --name packer-out opx-packer
           docker cp packer-out:/output/initrd.img ./initrd.img
           docker rm packer-out
           echo "✅ initramfs:"
@@ -164,8 +164,8 @@ jobs:
             ./yourxdemon-rootfs.squashfs \
             ./libqemu-system-aarch64.so \
             ./libslirp.so \
-            ./libpodroid-bridge.so \
-            ./libpodroid-launcher.so \
+            ./libopx-bridge.so \
+            ./libopx-launcher.so \
             --clobber
 
           echo ""
@@ -175,4 +175,4 @@ jobs:
 
       - name: Cleanup
         if: always()
-        run: docker rmi podroid-qemu-patch podroid-kernel-patch podroid-rootfs podroid-packer 2>/dev/null || true
+        run: docker rmi opx-qemu-patch opx-kernel-patch opx-rootfs opx-packer 2>/dev/null || true

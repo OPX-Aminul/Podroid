@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Use cases · Podroid docs</title>
-  <meta name="description" content="Practical use cases for Podroid: self-hosting containers, local Linux development, GUI apps, and learning Linux." />
+  <title>Use cases · OPX docs</title>
+  <meta name="description" content="Practical use cases for OPX: self-hosting containers, local Linux development, GUI apps, and learning Linux." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -49,14 +49,14 @@
 
     <main class="content">
       <h1>Use cases</h1>
-      <p class="lead">What Podroid is genuinely good for, what it does with caveats, and what to avoid - with honest notes on TCG performance throughout.</p>
+      <p class="lead">What OPX is genuinely good for, what it does with caveats, and what to avoid - with honest notes on TCG performance throughout.</p>
 
       <h2>Self-hosting via containers</h2>
       <p>Rootless Podman, Docker and LXC are all ready the moment the VM boots: Podman needs no daemon, and the Docker and LXC services are enabled in the default runlevel, so they start automatically. You can run any ARM64 container image from Docker Hub or GHCR.</p>
       <p>Port forwarding rules (see <a href="networking.html">Networking &amp; ports</a>) expose guest ports on the phone's real IP. Use a host port above 1024 for anything you expose, because an unprivileged Android app cannot bind host ports below 1024.</p>
       <p>If you have never run a container before, start with this. It serves one page and proves the whole chain works, from the container to your phone's browser:</p>
       <pre><code><span class="c"># 1. write a page for it to serve</span>
-<span class="p">$</span> mkdir -p ~/site &amp;&amp; echo '&lt;h1&gt;Hello from Podroid&lt;/h1&gt;' &gt; ~/site/index.html
+<span class="p">$</span> mkdir -p ~/site &amp;&amp; echo '&lt;h1&gt;Hello from OPX&lt;/h1&gt;' &gt; ~/site/index.html
 
 <span class="c"># 2. run nginx, serving that folder on guest port 80</span>
 <span class="p">$</span> podman run -d --name hello \
@@ -103,8 +103,8 @@
       <h2>Backing up containers</h2>
       <p>The <strong>Backup</strong> screen (the home screen's <strong>Backup</strong> button, or Settings) builds shell commands for exporting a container, saving an image, listing existing backups, or backing up everything at once. It doesn't run anything itself - it builds the command and you copy it into the terminal.</p>
       <pre><code><span class="c"># The screen builds a command like this one, which you paste into the terminal</span>
-<span class="p">$</span> podman export pihole -o /mnt/downloads/Podroid/backups/pihole.tar</code></pre>
-      <p>It uses a <code>podroid-backup</code> helper when one is present in the guest, and falls back to plain <code>podman save</code> / <code>podman export</code> otherwise. Backups are written inside the guest to <code>/mnt/downloads/Podroid/backups</code>. With <a href="settings.html">Downloads folder sharing</a> enabled, that path appears on the phone under <code>Download/Podroid/backups</code>; with sharing off, backups stay inside the VM at <code>/var/backups/podroid</code>.</p>
+<span class="p">$</span> podman export pihole -o /mnt/downloads/OPX/backups/pihole.tar</code></pre>
+      <p>It uses a <code>opx-backup</code> helper when one is present in the guest, and falls back to plain <code>podman save</code> / <code>podman export</code> otherwise. Backups are written inside the guest to <code>/mnt/downloads/OPX/backups</code>. With <a href="settings.html">Downloads folder sharing</a> enabled, that path appears on the phone under <code>Download/OPX/backups</code>; with sharing off, backups stay inside the VM at <code>/var/backups/opx</code>.</p>
 
       <h2>Checking VM and phone status</h2>
       <p>The <strong>Status</strong> screen (the home screen's <strong>Status</strong> button, or the monitor icon in the header) gives a single view of both sides of the system: phone RAM, storage, CPU cores, and load average (when readable) alongside the VM's status, uptime, active backend (QEMU or AVF), and the phone's IP. The backend shown is the one actually running: when a forced AVF selection falls back to QEMU, Status says so explicitly ("AVF unavailable, running QEMU").</p>
@@ -138,7 +138,7 @@
       <p>See <a href="desktop.html">Desktops &amp; X11 viewer</a> for how to start and configure the Xvnc session. Note that only X11 desktop sessions render correctly; Wayland sessions (GNOME on Wayland, Plasma Wayland, sway) do not render in the viewer - see <a href="limitations.html">Limitations</a>.</p>
 
       <h2>Learning Linux and containers</h2>
-      <p>Podroid gives you a real Linux kernel with cgroup v2, network namespaces, overlayfs, netfilter/nftables, and OpenRC - all on hardware you already own. Nothing is simulated or mocked; the same kernel features that production servers use are present and explorable.</p>
+      <p>OPX gives you a real Linux kernel with cgroup v2, network namespaces, overlayfs, netfilter/nftables, and OpenRC - all on hardware you already own. Nothing is simulated or mocked; the same kernel features that production servers use are present and explorable.</p>
       <pre><code><span class="c"># Inspect the cgroup v2 hierarchy</span>
 <span class="p">$</span> mount | grep cgroup
 <span class="p">$</span> ls /sys/fs/cgroup/
@@ -186,7 +186,7 @@
         <a class="prev" href="limitations.html"><span class="dir">Previous</span>&larr; Limitations &amp; troubleshooting</a>
         <span></span>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

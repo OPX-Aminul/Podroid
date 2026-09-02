@@ -1,8 +1,8 @@
 #!/sbin/openrc-run
-description="Podroid VM ready marker (consumed by Android boot detector)"
+description="OPX VM ready marker (consumed by Android boot detector)"
 
 depend() {
-    need podroid-network
+    need opx-network
     after dropbear *
 }
 
@@ -12,15 +12,15 @@ start() {
     # gets reaped first.
     # -1000 makes a process completely immune to OOM. Match by argv[0]
     # basename instead of pidfile to catch all variants.
-    for _name in dropbear podroid-vsock-agent; do
+    for _name in dropbear opx-vsock-agent; do
         for _pid in $(pgrep -x "$_name" 2>/dev/null); do
             echo -1000 > "/proc/$_pid/oom_score_adj" 2>/dev/null
         done
     done
 
-    # Emit the boot stages PodroidQemu.detectBootStage() expects.
-    if [ -x /usr/local/bin/podroid-update-stats ]; then
-        /usr/local/bin/podroid-update-stats || true
+    # Emit the boot stages OPXQemu.detectBootStage() expects.
+    if [ -x /usr/local/bin/opx-update-stats ]; then
+        /usr/local/bin/opx-update-stats || true
     fi
     echo "Starting SSH..." > /dev/console
     echo "Almost ready..." > /dev/console

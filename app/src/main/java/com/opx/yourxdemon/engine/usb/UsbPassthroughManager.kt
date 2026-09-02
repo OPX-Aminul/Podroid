@@ -185,7 +185,7 @@ class UsbPassthroughManager @Inject constructor(
                     connection.close()
                     return
                 }
-                val qemuId = "podroid_usb_${device.deviceId}"
+                val qemuId = "opx_usb_${device.deviceId}"
                 val args = JSONObject()
                     .put("driver", "usb-host")
                     .put("id", qemuId)

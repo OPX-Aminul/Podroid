@@ -87,7 +87,7 @@ jobs:
           mkdir -p "$JNILIBS" "$ASSETS"
 
           # Native executables → jniLibs/
-          for bin in libqemu-system-aarch64.so libslirp.so libpodroid-bridge.so libpodroid-launcher.so; do
+          for bin in libqemu-system-aarch64.so libslirp.so libopx-bridge.so libopx-launcher.so; do
             echo "  ↓ $bin"
             gh release download "$RELEASE" --pattern "$bin" --dir "$JNILIBS" --clobber
           done
@@ -127,7 +127,7 @@ jobs:
       - name: Generate debug keystore for CI signing
         run: |
           # Generate a debug keystore so assembleRelease can sign the APK.
-          # The release keystore (podroid-release.jks) is not available in CI.
+          # The release keystore (opx-release.jks) is not available in CI.
           keytool -genkeypair -v \
             -keystore /tmp/debug.keystore \
             -alias debug \
@@ -139,10 +139,10 @@ jobs:
       - name: Build release APK (R8 minified)
         run: |
           ./gradlew assembleRelease --no-daemon \
-            -PPODROID_RELEASE_STORE_FILE=/tmp/debug.keystore \
-            -PPODROID_RELEASE_STORE_PASSWORD=android \
-            -PPODROID_RELEASE_KEY_ALIAS=debug \
-            -PPODROID_RELEASE_KEY_PASSWORD=android
+            -POPX_RELEASE_STORE_FILE=/tmp/debug.keystore \
+            -POPX_RELEASE_STORE_PASSWORD=android \
+            -POPX_RELEASE_KEY_ALIAS=debug \
+            -POPX_RELEASE_KEY_PASSWORD=android
 
       - name: Verify APK output
         run: |
@@ -185,7 +185,7 @@ jobs:
 
           🤖 **Real Linux VM on Android** — no root, no custom recovery.
 
-          **Original developer:** ExTV (Podroid)
+          **Original developer:** ExTV (OPX)
           **Rebranded by:** OP Aminul FF (OPX)
 
           ### What's Included
@@ -200,8 +200,8 @@ jobs:
           - \`yourxdemon-rootfs.squashfs\` — Alpine root filesystem
           - \`initrd.img\` — Initramfs
           - \`libslirp.so\` — SLIRP networking
-          - \`libpodroid-bridge.so\` — Terminal bridge
-          - \`libpodroid-launcher.so\` — QEMU launcher
+          - \`libopx-bridge.so\` — Terminal bridge
+          - \`libopx-launcher.so\` — QEMU launcher
 
           ### Installation
           1. Download \`YourXDemon-${TAG}-release.apk\`

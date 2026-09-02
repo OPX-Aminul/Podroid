@@ -2,7 +2,7 @@
  * YourXDemon - Rootless Podman for Android
  * Copyright (C) 2024-2026 YourXDemon contributors
  *
- * Reads the container count written by the guest `podroid-update-stats` tool
+ * Reads the container count written by the guest `opx-update-stats` tool
  * into Downloads/YourXDemon/container-count when sharing is enabled.
  */
 package com.opx.yourxdemon.data.repository

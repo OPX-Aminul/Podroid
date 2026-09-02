@@ -1,0 +1,10 @@
+#!/sbin/openrc-run
+description="OPX terminal resize daemon (hvc1 → stty hvc0)"
+command="/usr/local/bin/opx-resize"
+command_background="yes"
+pidfile="/run/opx-resize.pid"
+
+depend() {
+    need opx-bootstrap
+    before opx-ready
+}

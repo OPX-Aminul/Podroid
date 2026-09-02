@@ -101,7 +101,7 @@ object NetworkUtils {
      *
      * IPv4-only here on purpose: musl's resolver in the Alpine guest reads a plain
      * `nameserver <addr>` line per line, and the guest network stack this feeds (see
-     * `podroid-network`) is IPv4-only, so a literal we can't reach is worse than none.
+     * `opx-network`) is IPv4-only, so a literal we can't reach is worse than none.
      */
     fun dnsServers(context: Context): List<String> = try {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager

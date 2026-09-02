@@ -1,11 +1,11 @@
 #!/sbin/openrc-run
-description="Podroid system migrations (runs versioned upgrade scripts once)"
+description="OPX system migrations (runs versioned upgrade scripts once)"
 
-# Run early, before the rest of Podroid bringup, so migrations can prepare state
+# Run early, before the rest of OPX bringup, so migrations can prepare state
 # the other services rely on. No localmount dependency — init-yourxdemon already
 # mounted /mnt/persist before switch_root.
 depend() {
-    before podroid-bootstrap
+    before opx-bootstrap
 }
 
 SYSVER_FILE="/etc/yourxdemon/system-version"
@@ -13,8 +13,8 @@ APPLIED_FILE="/mnt/persist/.yourxdemon/applied-version"
 MIGRATIONS_DIR="/etc/yourxdemon/migrations"
 
 start() {
-    ebegin "Running Podroid migrations"
-    mkdir -p /mnt/persist/.podroid
+    ebegin "Running OPX migrations"
+    mkdir -p /mnt/persist/.OPX
     mkdir -p /mnt/persist/.yourxdemon
 
     current=$(cat "$SYSVER_FILE" 2>/dev/null || echo 0)
@@ -40,9 +40,9 @@ start() {
     for base in $(ls "$MIGRATIONS_DIR" 2>/dev/null | sed -n 's/\.sh$//p' | sort -n); do
         case "$base" in *[!0-9]*) continue ;; esac   # digits only
         if [ "$base" -gt "$applied" ] 2>/dev/null && [ "$base" -le "$current" ] 2>/dev/null; then
-            echo "podroid-migrate: applying $base" > /dev/console
+            echo "opx-migrate: applying $base" > /dev/console
             sh "$MIGRATIONS_DIR/$base.sh" > /dev/console 2>&1 \
-                || echo "podroid-migrate: $base failed (continuing)" > /dev/console
+                || echo "opx-migrate: $base failed (continuing)" > /dev/console
         fi
     done
 

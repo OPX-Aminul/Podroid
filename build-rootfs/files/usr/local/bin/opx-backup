@@ -1,50 +1,50 @@
 #!/bin/sh
-# Podroid container backup — export containers/images to tar archives.
-# With Downloads sharing: /mnt/downloads/Podroid/backups/
-# Otherwise: /var/backups/podroid/
+# OPX container backup — export containers/images to tar archives.
+# With Downloads sharing: /mnt/downloads/OPX/backups/
+# Otherwise: /var/backups/opx/
 set -eu
 
 backup_root() {
 	if mountpoint -q /mnt/downloads 2>/dev/null; then
-		printf '%s\n' "/mnt/downloads/Podroid/backups"
+		printf '%s\n' "/mnt/downloads/OPX/backups"
 	else
-		printf '%s\n' "/var/backups/podroid"
+		printf '%s\n' "/var/backups/opx"
 	fi
 }
 
 notify_ok() {
 	body="$1"
-	if command -v podroid-notify >/dev/null 2>&1; then
-		podroid-notify --title "Podroid backup" "$body" 2>/dev/null || true
+	if command -v opx-notify >/dev/null 2>&1; then
+		opx-notify --title "OPX backup" "$body" 2>/dev/null || true
 	fi
 }
 
 notify_err() {
 	body="$1"
-	if command -v podroid-notify >/dev/null 2>&1; then
-		podroid-notify --priority high --title "Podroid backup failed" "$body" 2>/dev/null || true
+	if command -v opx-notify >/dev/null 2>&1; then
+		opx-notify --priority high --title "OPX backup failed" "$body" 2>/dev/null || true
 	fi
 }
 
 refresh_stats() {
-	if [ -x /usr/local/bin/podroid-update-stats ]; then
-		/usr/local/bin/podroid-update-stats || true
+	if [ -x /usr/local/bin/opx-update-stats ]; then
+		/usr/local/bin/opx-update-stats || true
 	fi
 }
 
 usage() {
 	cat <<'EOF'
 usage:
-  podroid-backup list
-  podroid-backup export <container> [output.tar]
-  podroid-backup save <image> [output.tar]
-  podroid-backup all
+  opx-backup list
+  opx-backup export <container> [output.tar]
+  opx-backup save <image> [output.tar]
+  opx-backup all
 
 Examples:
-  podroid-backup list
-  podroid-backup export my-nginx
-  podroid-backup save docker.io/library/nginx:latest
-  podroid-backup all
+  opx-backup list
+  opx-backup export my-nginx
+  opx-backup save docker.io/library/nginx:latest
+  opx-backup all
 EOF
 }
 

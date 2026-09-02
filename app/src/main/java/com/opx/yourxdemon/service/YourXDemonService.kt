@@ -519,7 +519,7 @@ class YourXDemonService : Service() {
 
     companion object {
         private const val TAG = "YourXDemonService"
-        private const val CHANNEL_ID = "podroid_service"
+        private const val CHANNEL_ID = "opx_service"
         private const val NOTIFICATION_ID = 1001
 
         const val ACTION_START   = "com.opx.yourxdemon.action.START"

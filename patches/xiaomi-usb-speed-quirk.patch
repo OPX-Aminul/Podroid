@@ -1,4 +1,4 @@
-From: Podroid <dev@podroid.local>
+From: OPX <dev@opx.local>
 Subject: [PATCH] QEMU: USB speed correction quirk for Xiaomi/MIUI (issue #85)
 
 Xiaomi/MIUI host stacks misreport full-speed USB devices as low-speed.

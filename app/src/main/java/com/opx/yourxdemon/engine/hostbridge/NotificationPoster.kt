@@ -43,7 +43,7 @@ class AndroidNotificationPoster @Inject constructor(
 ) : NotificationPoster {
 
     companion object {
-        private const val CHANNEL_ID = "podroid_guest"
+        private const val CHANNEL_ID = "opx_guest"
         // Guest notification ids live well above YourXDemonService.NOTIFICATION_ID (1001)
         // so a guest --id can never replace the foreground-service notification.
         private const val ID_BASE = 0x7000_0000
@@ -55,7 +55,7 @@ class AndroidNotificationPoster @Inject constructor(
     init {
         val channel = NotificationChannel(
             CHANNEL_ID, "VM notifications", NotificationManager.IMPORTANCE_DEFAULT,
-        ).apply { description = "Notifications sent from inside the VM (podroid-notify)" }
+        ).apply { description = "Notifications sent from inside the VM (opx-notify)" }
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 

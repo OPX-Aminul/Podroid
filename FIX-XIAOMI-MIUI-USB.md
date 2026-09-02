@@ -4,7 +4,7 @@
 
 Xiaomi/MIUI devices (e.g., Poco F1) misreport full-speed USB devices as low-speed
 through their custom USB host controller driver. This causes the Linux kernel inside
-the Podroid VM to reject the device with:
+the OPX VM to reject the device with:
 
 ```
 usb 1-1: Invalid ep0 maxpacket: 64
@@ -239,7 +239,7 @@ Host (Xiaomi) → QEMU (host-libusb.c) → Guest Kernel (hub.c)
 Triggers on push to main when these files change:
 - `Dockerfile`
 - `build-tools/**`
-- `podroid_kernel.config`
+- `opx_kernel.config`
 - `gradle.properties`
 - `.github/workflows/build.yml`
 
@@ -265,7 +265,7 @@ Builds:
 After building, test on a Xiaomi/MIUI device:
 
 ```bash
-# In the Podroid terminal:
+# In the OPX terminal:
 lsusb                    # Should show connected USB devices
 dmesg | grep -i usb      # Should NOT contain "Invalid ep0 maxpacket"
 dmesg | grep -i "low-speed device with maxpacket=64"  # QEMU quirk log

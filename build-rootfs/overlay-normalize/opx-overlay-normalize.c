@@ -1,8 +1,8 @@
 /*
- * Podroid - Rootless Podman for Android
- * Copyright (C) 2024-2026 Podroid contributors
+ * OPX - Rootless Podman for Android
+ * Copyright (C) 2024-2026 OPX contributors
  *
- * podroid-overlay-normalize <upper_dir> <work_dir>
+ * opx-overlay-normalize <upper_dir> <work_dir>
  *
  * One-time cleanup of a legacy overlayfs upper that was built with
  * metacopy=on,redirect_dir=on,index=on against an OLD lower squashfs, so it is
@@ -16,7 +16,7 @@
  *   - everything else (real files, whiteouts, full copy-ups) is left untouched.
  *
  * <ns> is "trusted.overlay." in production; the host test overrides it via
- * PODROID_NORMALIZE_NS to use "user.overlay." (no CAP_SYS_ADMIN needed).
+ * OPX_NORMALIZE_NS to use "user.overlay." (no CAP_SYS_ADMIN needed).
  *
  * Conservative + idempotent: re-running on an already-normalized upper is a
  * no-op (no entries carry the xattrs anymore).
@@ -93,10 +93,10 @@ static void walk(const char *dir) {
 
 int main(int argc, char **argv) {
     if (argc != 3) {
-        fprintf(stderr, "usage: podroid-overlay-normalize <upper_dir> <work_dir>\n");
+        fprintf(stderr, "usage: opx-overlay-normalize <upper_dir> <work_dir>\n");
         return 2;
     }
-    const char *ns = getenv("PODROID_NORMALIZE_NS");
+    const char *ns = getenv("OPX_NORMALIZE_NS");
     if (!ns || !*ns) ns = "trusted.overlay.";
     snprintf(metacopy_xattr, sizeof(metacopy_xattr), "%smetacopy", ns);
     snprintf(redirect_xattr, sizeof(redirect_xattr), "%sredirect", ns);

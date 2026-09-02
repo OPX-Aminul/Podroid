@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Packages &amp; services &middot; Podroid docs</title>
-  <meta name="description" content="Alpine package management with apk, what ships pre-installed in Podroid, and how to manage OpenRC services inside the VM." />
+  <title>Packages &amp; services &middot; OPX docs</title>
+  <meta name="description" content="Alpine package management with apk, what ships pre-installed in OPX, and how to manage OpenRC services inside the VM." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -79,7 +79,7 @@
       </div>
 
       <h2>What ships pre-installed</h2>
-      <p>The following packages are baked into the Alpine squashfs that Podroid ships. You do not need to install them.</p>
+      <p>The following packages are baked into the Alpine squashfs that OPX ships. You do not need to install them.</p>
 
       <table>
         <thead>
@@ -131,8 +131,8 @@
 <span class="c"># Start, stop, restart, or check a service</span>
 <span class="p">~#</span> rc-service dropbear start
 <span class="p">~#</span> rc-service docker stop
-<span class="p">~#</span> rc-service podroid-x11 restart
-<span class="p">~#</span> rc-service podroid-x11 status
+<span class="p">~#</span> rc-service opx-x11 restart
+<span class="p">~#</span> rc-service opx-x11 status
 
 <span class="c"># Enable a service you installed on every boot (adds to the 'default' runlevel)</span>
 <span class="p">~#</span> rc-update add crond default
@@ -140,8 +140,8 @@
 <span class="c"># Disable a service from auto-starting (e.g. Docker, to save memory)</span>
 <span class="p">~#</span> rc-update del docker default</code></pre>
 
-      <h2>Podroid system services</h2>
-      <p>These OpenRC services are part of Podroid's Alpine image. Most start automatically; a few are conditional.</p>
+      <h2>OPX system services</h2>
+      <p>These OpenRC services are part of OPX's Alpine image. Most start automatically; a few are conditional.</p>
 
       <table>
         <thead>
@@ -149,36 +149,36 @@
         </thead>
         <tbody>
           <tr>
-            <td><code>podroid-bootstrap</code></td>
+            <td><code>opx-bootstrap</code></td>
             <td>First service to run. Sets the system clock (AVF path), enables cgroup v2, loads kernel modules, mounts devpts/shm/mqueue and configfs (<code>/sys/kernel/config</code>, needed by targetcli/LIO), configures ZRAM swap, sets sysctl tunables, sets the hostname, and bind-mounts the persistent ext4 storage onto the Podman/Docker/LXC data directories.</td>
           </tr>
           <tr>
-            <td><code>podroid-network</code></td>
+            <td><code>opx-network</code></td>
             <td>Brings up eth0 (10.0.2.15/24 on QEMU, DHCP on AVF), adds the default route, and writes <code>/etc/resolv.conf</code> with the device's own resolver first, then <code>8.8.8.8</code> / <code>1.1.1.1</code>.</td>
           </tr>
           <tr>
-            <td><code>podroid-resize</code></td>
+            <td><code>opx-resize</code></td>
             <td>Runs the terminal resize daemon: reads <code>RESIZE rows cols</code> messages from the ctrl virtio-console (hvc1) and calls <code>stty</code> on hvc0 so the shell prompt redraws correctly after keyboard or orientation changes.</td>
           </tr>
           <tr>
-            <td><code>podroid-x11</code></td>
+            <td><code>opx-x11</code></td>
             <td>Starts Xvnc on display <code>:0</code> (port 5900) and PulseAudio on port 4713. These back the in-app X11 viewer and audio stream.</td>
           </tr>
           <tr>
-            <td><code>podroid-vsock</code></td>
+            <td><code>opx-vsock</code></td>
             <td>AVF only. Starts the vsock port-forwarding agent that bridges Android-side TCP connections to guest vsock ports. On QEMU this service marks itself inactive and does nothing.</td>
           </tr>
           <tr>
-            <td><code>podroid-hostd</code></td>
-            <td>The guest-to-Android bridge daemon (both backends). Listens on a guest-local Unix socket and relays requests from the <code>podroid-notify</code>, <code>podroid-forward</code>, <code>podroid-open</code>, <code>podroid-power</code>, and <code>podroid-server</code> CLIs to the Android app over its control transport (a virtio-console port on QEMU, vsock on AVF), which posts the notification or writes the port-forward rule. See <a href="networking.html">Networking &amp; ports</a>.</td>
+            <td><code>opx-hostd</code></td>
+            <td>The guest-to-Android bridge daemon (both backends). Listens on a guest-local Unix socket and relays requests from the <code>opx-notify</code>, <code>opx-forward</code>, <code>opx-open</code>, <code>opx-power</code>, and <code>opx-server</code> CLIs to the Android app over its control transport (a virtio-console port on QEMU, vsock on AVF), which posts the notification or writes the port-forward rule. See <a href="networking.html">Networking &amp; ports</a>.</td>
           </tr>
           <tr>
-            <td><code>podroid-ready</code></td>
+            <td><code>opx-ready</code></td>
             <td>Runs last (after all other services). Emits the boot-stage markers (<code>Starting SSH...</code>, <code>Almost ready...</code>, <code>Ready!</code>) that the Android app watches to detect a successful boot. Also sets OOM scores on infrastructure processes so the kernel reaps user apps before killing the VM.</td>
           </tr>
           <tr>
             <td><code>dropbear</code></td>
-            <td>SSH server on guest port 22, started at boot. It is reachable from the host and LAN only when the SSH toggle is on (which adds the <code>9922&rarr;22</code> forward). Default credentials: <code>root</code> / <code>podroid</code>.</td>
+            <td>SSH server on guest port 22, started at boot. It is reachable from the host and LAN only when the SSH toggle is on (which adds the <code>9922&rarr;22</code> forward). Default credentials: <code>root</code> / <code>opx</code>.</td>
           </tr>
           <tr>
             <td><code>docker</code></td>
@@ -199,7 +199,7 @@
         <a class="prev" href="networking.html"><span class="dir">Previous</span>&larr; Networking &amp; ports</a>
         <a class="next" href="migrations.html"><span class="dir">Next</span>Updates &amp; migrations &rarr;</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 

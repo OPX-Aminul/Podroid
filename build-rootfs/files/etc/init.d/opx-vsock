@@ -1,10 +1,10 @@
 #!/sbin/openrc-run
-description="Podroid vsock control + port forwarding agent (AVF only)"
-pidfile="/run/podroid-vsock-agent.pid"
+description="OPX vsock control + port forwarding agent (AVF only)"
+pidfile="/run/opx-vsock-agent.pid"
 
 depend() {
-    need podroid-bootstrap
-    before podroid-ready
+    need opx-bootstrap
+    before opx-ready
 }
 
 start() {
@@ -13,17 +13,17 @@ start() {
     # "this service intentionally didn't start" and produces a one-line
     # "skipping" message instead of "* ERROR: <svc> failed to start" (which
     # is what `start_pre` returning non-zero would yield).
-    if ! grep -q 'podroid\.backend=avf' /proc/cmdline 2>/dev/null; then
-        einfo "Not an AVF boot — skipping podroid-vsock"
+    if ! grep -q 'OPX\.backend=avf' /proc/cmdline 2>/dev/null; then
+        einfo "Not an AVF boot — skipping opx-vsock"
         mark_service_inactive
         return 0
     fi
-    ebegin "Starting podroid-vsock-agent"
+    ebegin "Starting opx-vsock-agent"
     start-stop-daemon --start --background \
         --make-pidfile --pidfile "$pidfile" \
-        --stdout /var/log/podroid-vsock-agent.log \
-        --stderr /var/log/podroid-vsock-agent.log \
-        --exec /usr/local/bin/podroid-vsock-agent
+        --stdout /var/log/opx-vsock-agent.log \
+        --stderr /var/log/opx-vsock-agent.log \
+        --exec /usr/local/bin/opx-vsock-agent
     _agent_rc=$?
     # --background returns 0 the instant the child forks, even if the agent
     # exits immediately (e.g. AF_VSOCK bind failure). Poll the pidfile's PID:
@@ -39,13 +39,13 @@ start() {
         done
         kill -0 "$_agent_pid" 2>/dev/null || _agent_rc=1
     fi
-    [ "$_agent_rc" -eq 0 ] || ewarn "podroid-vsock-agent failed to start (see /var/log/podroid-vsock-agent.log)"
+    [ "$_agent_rc" -eq 0 ] || ewarn "opx-vsock-agent failed to start (see /var/log/opx-vsock-agent.log)"
     eend "$_agent_rc"
 }
 
 stop() {
     if [ -f "$pidfile" ]; then
-        ebegin "Stopping podroid-vsock-agent"
+        ebegin "Stopping opx-vsock-agent"
         start-stop-daemon --stop --pidfile "$pidfile"
         rm -f "$pidfile"
         eend $?

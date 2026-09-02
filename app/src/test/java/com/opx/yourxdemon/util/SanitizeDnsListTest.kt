@@ -1,6 +1,6 @@
 /*
- * Podroid - Rootless Podman for Android
- * Copyright (C) 2024-2026 Podroid contributors
+ * OPX - Rootless Podman for Android
+ * Copyright (C) 2024-2026 OPX contributors
  *
  * Validation rules for DNS resolver strings before they reach the guest's resolv.conf.
  */

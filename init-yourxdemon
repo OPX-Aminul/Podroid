@@ -1,13 +1,13 @@
 #!/bin/sh
-# Podroid initramfs bootstrap — mounts overlay, switch_root to /sbin/init.
-# All system bringup logic now lives in /etc/init.d/podroid-* services
+# OPX initramfs bootstrap — mounts overlay, switch_root to /sbin/init.
+# All system bringup logic now lives in /etc/init.d/opx-* services
 # on the Alpine squashfs.
 set -e
 
 # Ensure mount points exist (defensive: cpio packing can omit empty dirs).
 mkdir -p /proc /sys /dev /run
 
-echo "[podroid-init] mounting virtual filesystems" > /dev/console
+echo "[opx-init] mounting virtual filesystems" > /dev/console
 
 # Place -o BEFORE the device and mountpoint arguments.
 # util-linux's getopt stops processing options at the first non-option
@@ -16,9 +16,9 @@ echo "[podroid-init] mounting virtual filesystems" > /dev/console
 # the mount(2) syscall being called with flags=0 and returning EPERM,
 # producing "must be superuser to use mount" even for root.
 mount -t proc    -o noexec,nosuid,nodev     proc      /proc
-echo "[podroid-init] mounted /proc" > /dev/console
+echo "[opx-init] mounted /proc" > /dev/console
 mount -t sysfs   -o noexec,nosuid,nodev     sysfs     /sys
-echo "[podroid-init] mounted /sys" > /dev/console
+echo "[opx-init] mounted /sys" > /dev/console
 
 # CONFIG_DEVTMPFS_MOUNT=y causes the kernel to pre-mount devtmpfs at /dev
 # before executing /init.  A second mount(2) there can return EBUSY, and
@@ -28,7 +28,7 @@ echo "[podroid-init] mounted /sys" > /dev/console
 # encodes as exitcode=0x00002000 ("Attempted to kill init!").
 # The kernel's pre-populated /dev is sufficient; || true makes this non-fatal.
 mount -t devtmpfs -o exec,nosuid,mode=0755  devtmpfs  /dev || true
-echo "[podroid-init] mounted /dev (or reused kernel pre-mount)" > /dev/console
+echo "[opx-init] mounted /dev (or reused kernel pre-mount)" > /dev/console
 
 echo "Mounting storage..." > /dev/console
 
@@ -73,7 +73,7 @@ echo "Mounting system..." > /dev/console
 mount -t squashfs -o ro /dev/vdb /mnt/lower \
     || { echo "FATAL: squashfs (/dev/vdb) mount failed" > /dev/console; ls -l /dev/vd* > /dev/console 2>&1; exec sh; }
 
-mkdir -p /mnt/persist/upper /mnt/persist/work /mnt/persist/.podroid \
+mkdir -p /mnt/persist/upper /mnt/persist/work /mnt/persist/.opx \
     || { echo "FATAL: mkdir overlay upper/work failed" > /dev/console; exec sh; }
 
 # One-time legacy-overlay normalization: older versions mounted the overlay with
@@ -81,10 +81,10 @@ mkdir -p /mnt/persist/upper /mnt/persist/work /mnt/persist/.podroid \
 # We now use a PLAIN overlay (below), so before stacking we strip that legacy
 # metadata from the upper using the normalizer shipped in the (new) squashfs.
 # No-op on a fresh or already-normalized upper. Guarded so it runs at most once.
-if [ ! -f /mnt/persist/.podroid/normalized ]; then
+if [ ! -f /mnt/persist/.opx/normalized ]; then
     echo "Normalizing overlay (one-time)..." > /dev/console
-    /mnt/lower/usr/local/bin/podroid-overlay-normalize /mnt/persist/upper /mnt/persist/work > /dev/console 2>&1 || true
-    : > /mnt/persist/.podroid/normalized
+    /mnt/lower/usr/local/bin/opx-overlay-normalize /mnt/persist/upper /mnt/persist/work > /dev/console 2>&1 || true
+    : > /mnt/persist/.opx/normalized
 fi
 
 echo "Stacking overlay..." > /dev/console
@@ -118,5 +118,5 @@ mount --move /sys  /mnt/overlay/sys \
 mount --move /dev  /mnt/overlay/dev \
     || { echo "FATAL: mount --move /dev failed" > /dev/console; exec sh; }
 
-echo "[podroid-init] switching to real root" > /dev/console
+echo "[opx-init] switching to real root" > /dev/console
 exec /sbin/switch_root /mnt/overlay /sbin/init

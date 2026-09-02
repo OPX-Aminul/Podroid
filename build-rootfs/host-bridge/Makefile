@@ -5,11 +5,11 @@ CFLAGS  ?= -O2 -Wall -Wextra -Wno-unused-parameter -static -D_GNU_SOURCE \
            -fstack-protector-strong -D_FORTIFY_SOURCE=2
 LDFLAGS ?=
 
-BINS = podroid-hostd yourxdemon-agentd
+BINS = opx-hostd yourxdemon-agentd
 
 all: $(BINS)
 
-podroid-hostd: podroid-hostd.c
+opx-hostd: opx-hostd.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
 
 yourxdemon-agentd: yourxdemon-agentd.c

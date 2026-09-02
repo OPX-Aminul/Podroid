@@ -1,10 +1,10 @@
 /*
- * Podroid - Rootless Podman for Android
- * Copyright (C) 2024-2026 Podroid contributors
+ * OPX - Rootless Podman for Android
+ * Copyright (C) 2024-2026 OPX contributors
  *
- * podroid-vsock-agent — guest-side peer for Podroid's AVF backend.
+ * opx-vsock-agent — guest-side peer for OPX's AVF backend.
  *
- * Reads /etc/podroid/forwards.conf at startup. Each line is one of:
+ * Reads /etc/opx/forwards.conf at startup. Each line is one of:
  *
  *   <vport> tcp <host> <gport>     listen on AF_VSOCK port vport, splice each
  *                                  accepted connection to TCP host:gport
@@ -18,7 +18,7 @@
  * Control protocol (LF-terminated ASCII):
  *
  *   RESIZE <rows> <cols>           stty rows/cols on /dev/ttyS0, also persist
- *                                  to /run/term_size for podroid-login restore
+ *                                  to /run/term_size for OPX-login restore
  *   ADD    <vport> <tcp|udp> <host> <gp> append to forwards.conf, fork new
  *                                  listener immediately (idempotent on vport)
  *   REMOVE <vport>                 kill listener child for vport, remove line
@@ -31,7 +31,7 @@
  * All TCP listeners bind to AF_VSOCK with CID = VMADDR_CID_ANY (host can reach
  * us regardless of the assigned CID).
  *
- * Invoked as `podroid-vsock-agent downloads-9p` (argv[1] dispatch, separate
+ * Invoked as `opx-vsock-agent downloads-9p` (argv[1] dispatch, separate
  * from the config-driven modes above): runs only the Downloads share's 9p
  * rendezvous listener (see downloads_9p_serve()) instead of the forwards.conf
  * + ctl loop.
@@ -60,21 +60,21 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#define CONFIG_PATH     "/etc/podroid/forwards.conf"
+#define CONFIG_PATH     "/etc/opx/forwards.conf"
 #define TERM_SIZE_PATH  "/run/term_size"
-#define LOG_TAG         "podroid-vsock-agent"
+#define LOG_TAG         "opx-vsock-agent"
 
 /* Reserved vsock port for the AVF Downloads share's 9p rendezvous. Keep this
  * equal to AvfDownloadsShare.DOWNLOADS_VSOCK_PORT in the Android code. */
-#define PODROID_DOWNLOADS_VSOCK_PORT 200000
-#define PODROID_DOWNLOADS_MOUNT      "/mnt/downloads"
+#define OPX_DOWNLOADS_VSOCK_PORT 200000
+#define OPX_DOWNLOADS_MOUNT      "/mnt/downloads"
 
 /* ── Logging ─────────────────────────────────────────────────────────────── */
 
 /*
  * Single-syscall log. fprintf+vfprintf+fprintf+fflush issues 3–4 write()s
  * which under fork() interleave at the byte level across child processes
- * (we saw "podroid-vsock-agent [error] podroid-vsock-agent [error] ctl
+ * (we saw "opx-vsock-agent [error] opx-vsock-agent [error] ctl
  * socket() failed: ...vsock socket() failed: ..." mixed in /var/log).
  * write(2, buf, n) is atomic for n < PIPE_BUF (4096) on Linux for regular
  * files and pipes — formatting the whole line into a stack buffer then
@@ -581,8 +581,8 @@ static void remove_config_line(int vport) {
 static void handle_resize(int rows, int cols) {
     /* /dev/hvc0 since the perf fix — virtio-console runs at line-rate,
      * unlike the old PL011 ttyS0 path that throttled TUI redraws to
-     * ~14 KB/s. The getty also moved to hvc0 (per podroid-getty + the
-     * `podroid.tty=hvc0` cmdline marker AVF now passes). */
+     * ~14 KB/s. The getty also moved to hvc0 (per OPX-getty + the
+     * `opx.tty=hvc0` cmdline marker AVF now passes). */
     /* O_RDWR: TIOCSWINSZ is a set/write ioctl; O_RDONLY can be rejected. */
     int fd = open("/dev/hvc0", O_RDWR | O_NOCTTY);
     if (fd >= 0) {
@@ -721,18 +721,18 @@ static void downloads_9p_serve(void) {
     memset(&sa, 0, sizeof(sa));
     sa.svm_family = AF_VSOCK;
     sa.svm_cid    = VMADDR_CID_ANY;
-    sa.svm_port   = PODROID_DOWNLOADS_VSOCK_PORT;
+    sa.svm_port   = OPX_DOWNLOADS_VSOCK_PORT;
     if (bind(s, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-        LOG_E("downloads-9p: vsock bind(%d) failed: %s", PODROID_DOWNLOADS_VSOCK_PORT, strerror(errno));
+        LOG_E("downloads-9p: vsock bind(%d) failed: %s", OPX_DOWNLOADS_VSOCK_PORT, strerror(errno));
         close(s);
         return;
     }
     if (listen(s, 1) < 0) {
-        LOG_E("downloads-9p: vsock listen(%d) failed: %s", PODROID_DOWNLOADS_VSOCK_PORT, strerror(errno));
+        LOG_E("downloads-9p: vsock listen(%d) failed: %s", OPX_DOWNLOADS_VSOCK_PORT, strerror(errno));
         close(s);
         return;
     }
-    LOG_I("downloads-9p: listening on vsock:%d", PODROID_DOWNLOADS_VSOCK_PORT);
+    LOG_I("downloads-9p: listening on vsock:%d", OPX_DOWNLOADS_VSOCK_PORT);
 
     for (;;) {
         int cfd = accept4(s, NULL, NULL, 0);
@@ -742,17 +742,17 @@ static void downloads_9p_serve(void) {
             break;
         }
 
-        mkdir(PODROID_DOWNLOADS_MOUNT, 0755);
+        mkdir(OPX_DOWNLOADS_MOUNT, 0755);
         char opts[160];
         snprintf(opts, sizeof(opts),
                  "trans=fd,rfdno=%d,wfdno=%d,version=9p2000.L,msize=262144,cache=none,access=any",
                  cfd, cfd);
-        if (mount("downloads", PODROID_DOWNLOADS_MOUNT, "9p", 0, opts) < 0) {
+        if (mount("downloads", OPX_DOWNLOADS_MOUNT, "9p", 0, opts) < 0) {
             LOG_W("downloads-9p: mount failed: %s", strerror(errno));
             close(cfd);
             continue;  // non-fatal - wait for Android to reconnect
         }
-        LOG_I("downloads-9p: mounted %s", PODROID_DOWNLOADS_MOUNT);
+        LOG_I("downloads-9p: mounted %s", OPX_DOWNLOADS_MOUNT);
 
         /* Block until the connection dies (Android side closed, VM stopping,
          * sharing toggled off), then unmount and go back to accept(). */
@@ -767,7 +767,7 @@ static void downloads_9p_serve(void) {
         }
 
         LOG_I("downloads-9p: connection ended, unmounting");
-        if (umount2(PODROID_DOWNLOADS_MOUNT, MNT_DETACH) < 0 && errno != EINVAL && errno != ENOENT)
+        if (umount2(OPX_DOWNLOADS_MOUNT, MNT_DETACH) < 0 && errno != EINVAL && errno != ENOENT)
             LOG_W("downloads-9p: umount2 failed: %s", strerror(errno));
         close(cfd);
         // loop back to accept() - best-effort reconnect

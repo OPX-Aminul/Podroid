@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Terminal &amp; settings · Podroid docs</title>
-  <meta name="description" content="Reference for the Podroid terminal (Quick Settings, themes, fonts) and every in-app setting: RAM, CPU, storage, SSH, port forwards, backend, advanced QEMU args, diagnostics." />
+  <title>Terminal &amp; settings · OPX docs</title>
+  <meta name="description" content="Reference for the OPX terminal (Quick Settings, themes, fonts) and every in-app setting: RAM, CPU, storage, SSH, port forwards, backend, advanced QEMU args, diagnostics." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">&#9776;</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -49,7 +49,7 @@
 
     <main class="content">
       <h1>Terminal &amp; settings</h1>
-      <p class="lead">The Podroid terminal is built on the Termux engine: xterm-256color, true color, mouse tracking, and live resize. This page covers the Quick Settings drawer in the terminal and every option in the main Settings screen.</p>
+      <p class="lead">The OPX terminal is built on the Termux engine: xterm-256color, true color, mouse tracking, and live resize. This page covers the Quick Settings drawer in the terminal and every option in the main Settings screen.</p>
 
       <h2>Terminal Quick Settings</h2>
       <p>Tap the tune icon in the terminal's top bar to open the Quick Settings drawer. All changes apply immediately without restarting the VM.</p>
@@ -110,7 +110,7 @@
           <tr>
             <td>Load balance</td>
             <td>Toggle</td>
-            <td>When on, Podroid automatically tunes CPU, RAM, storage, and bandwidth for the device, and the manual controls below are managed for you. Turn it off to set CPU, RAM, and storage manually.</td>
+            <td>When on, OPX automatically tunes CPU, RAM, storage, and bandwidth for the device, and the manual controls below are managed for you. Turn it off to set CPU, RAM, and storage manually.</td>
           </tr>
           <tr>
             <td>RAM</td>
@@ -130,7 +130,7 @@
           <tr>
             <td>Start VM on boot</td>
             <td>Toggle</td>
-            <td>Off by default. When on, the VM boots after the phone starts - on a PIN-locked phone, after the first unlock. Automation apps can also start and stop the VM with the intent actions <code>com.excp.podroid.action.START_VM</code> (activity intent) and <code>com.excp.podroid.action.STOP_VM</code> (broadcast).</td>
+            <td>Off by default. When on, the VM boots after the phone starts - on a PIN-locked phone, after the first unlock. Automation apps can also start and stop the VM with the intent actions <code>com.excp.opx.action.START_VM</code> (activity intent) and <code>com.excp.opx.action.STOP_VM</code> (broadcast).</td>
           </tr>
         </tbody>
       </table>
@@ -148,12 +148,12 @@
           <tr>
             <td>SSH</td>
             <td>Toggle</td>
-            <td>Exposes dropbear on host port 9922 (forwarded to guest port 22). Default credentials: username <code>root</code>, password <code>podroid</code>. Injects and removes the 9922 forward live via QMP.</td>
+            <td>Exposes dropbear on host port 9922 (forwarded to guest port 22). Default credentials: username <code>root</code>, password <code>opx</code>. Injects and removes the 9922 forward live via QMP.</td>
           </tr>
           <tr>
             <td>Port forwards</td>
             <td>Add / Remove / Clean all</td>
-            <td>Add TCP, UDP, or both forwarding rules. Changes apply live via QMP without a VM restart. Clean all removes every user rule after a confirmation; the app-managed SSH, display, and audio rows are unaffected. Can also be managed from inside the VM with <code>podroid-forward</code> (see <a href="networking.html">Networking</a>). The rules the app manages itself - SSH, and the desktop's screen and audio channels - are listed above your own as read-only entries, so a port that is already taken is visible before you try to reuse it.</td>
+            <td>Add TCP, UDP, or both forwarding rules. Changes apply live via QMP without a VM restart. Clean all removes every user rule after a confirmation; the app-managed SSH, display, and audio rows are unaffected. Can also be managed from inside the VM with <code>opx-forward</code> (see <a href="networking.html">Networking</a>). The rules the app manages itself - SSH, and the desktop's screen and audio channels - are listed above your own as read-only entries, so a port that is already taken is visible before you try to reuse it.</td>
           </tr>
           <tr>
             <td>Bandwidth limit</td>
@@ -224,7 +224,7 @@
         <a class="prev" href="desktop.html"><span class="dir">Previous</span>← Desktops &amp; X11 viewer</a>
         <a class="next" href="limitations.html"><span class="dir">Next</span>Limitations &amp; troubleshooting →</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
 
     </main>
   </div>

@@ -1,9 +1,9 @@
 #!/bin/sh
 # Reads "RESIZE rows cols" lines from /dev/hvc1 (ctrl.sock) and applies
-# them to /dev/hvc0 via stty. The Android side's libpodroid-bridge
+# them to /dev/hvc0 via stty. The Android side's libOPX-bridge
 # debounces SIGWINCH bursts and emits one line per stable size.
 #
-# Also writes the last-known size to /run/term_size so podroid-login
+# Also writes the last-known size to /run/term_size so opx-login
 # can restore it after each getty respawn (virtio-console resets winsize
 # to 0x0 every time the line is reopened).
 #
@@ -25,7 +25,7 @@ while IFS= read -r _line; do
             set -- $_line
             # Reject empty / non-numeric / zero rows or cols before persisting:
             # a malformed line must not stamp junk into /run/term_size (which
-            # podroid-login reads back) or stty a 0x0 winsize onto hvc0.
+            # opx-login reads back) or stty a 0x0 winsize onto hvc0.
             case "$2" in ''|*[!0-9]*|0) continue;; esac
             case "$3" in ''|*[!0-9]*|0) continue;; esac
             stty rows "$2" cols "$3" </dev/hvc0 2>/dev/null

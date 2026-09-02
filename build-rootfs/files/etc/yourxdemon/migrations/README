@@ -1,6 +1,6 @@
-Podroid migration scripts.
+OPX migration scripts.
 
-podroid-migrate (OpenRC) runs each <version>.sh here exactly once, when the
+OPX-migrate (OpenRC) runs each <version>.sh here exactly once, when the
 guest upgrades across that version: it executes every <v>.sh with
   applied-version < v <= system-version
 in ascending numeric order, then records system-version as the new

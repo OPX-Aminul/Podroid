@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview · Podroid docs</title>
-  <meta name="description" content="Podroid documentation: run Linux containers and a Linux desktop on Android with no root, via a real Alpine VM on QEMU or AVF/pKVM." />
+  <title>Overview · OPX docs</title>
+  <meta name="description" content="OPX documentation: run Linux containers and a Linux desktop on Android with no root, via a real Alpine VM on QEMU or AVF/pKVM." />
   <link rel="icon" type="image/png" href="../logo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,12 +13,12 @@
 </head>
 <body>
   <nav>
-    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="Podroid" />Podroid</a>
+    <a class="nav-logo" href="../index.html"><img src="../logo.png" alt="OPX" />OPX</a>
     <button class="menu-toggle" aria-label="Toggle menu">☰</button>
     <ul class="nav-links">
       <li><a href="../index.html">Home</a></li>
       <li><a href="index.html" class="cta">Docs</a></li>
-      <li><a href="https://github.com/ExTV/Podroid">GitHub</a></li>
+      <li><a href="https://github.com/ExTV/OPX">GitHub</a></li>
     </ul>
   </nav>
 
@@ -48,10 +48,10 @@
     </aside>
 
     <main class="content">
-      <h1>Podroid documentation</h1>
-      <p class="lead">Podroid runs real Linux - Podman, Docker, LXC, and a Linux desktop - on an Android phone, with no root and no custom recovery. It boots an Alpine Linux VM with a custom Linux 7.1.5 kernel inside the app.</p>
+      <h1>OPX documentation</h1>
+      <p class="lead">OPX runs real Linux - Podman, Docker, LXC, and a Linux desktop - on an Android phone, with no root and no custom recovery. It boots an Alpine Linux VM with a custom Linux 7.1.5 kernel inside the app.</p>
 
-      <p>There are two ways the VM runs. By default it uses <strong>QEMU</strong> with software CPU emulation (TCG), which works on any ARM64 Android 8+ device. On recent Pixel devices that ship pKVM, Podroid can instead use the <strong>Android Virtualization Framework (AVF)</strong> for near-native speed. Either way you get the same Alpine guest, the same terminal, and the same in-app X11 viewer for GUI apps.</p>
+      <p>There are two ways the VM runs. By default it uses <strong>QEMU</strong> with software CPU emulation (TCG), which works on any ARM64 Android 8+ device. On recent Pixel devices that ship pKVM, OPX can instead use the <strong>Android Virtualization Framework (AVF)</strong> for near-native speed. Either way you get the same Alpine guest, the same terminal, and the same in-app X11 viewer for GUI apps.</p>
 
       <div class="callout note">
         <span class="label">No root required</span>
@@ -70,7 +70,7 @@
       <p><strong>Getting started</strong> covers installing the app, the first boot, and a tour of how the whole thing fits together. <strong>Going deeper</strong> explains performance (and honestly, why some things are slow), the two backends and how to enable AVF, networking and port forwarding, Alpine package management, the desktop/X11 viewer, and every in-app setting. <strong>Reference</strong> is the complete limitations + troubleshooting list and a set of grounded use cases.</p>
 
       <h2>The honest summary</h2>
-      <p>Podroid is a real VM, not a translation layer, so it is far more capable than userspace tricks - but on the default QEMU path the CPU is emulated in software, so CPU-heavy work (compiling, <code>npm install</code>, JVM apps) is slow. The <a href="performance.html">Performance</a> page explains exactly why, and how AVF and a few settings help. The <a href="limitations.html">Limitations &amp; troubleshooting</a> page is the place to look when something behaves unexpectedly.</p>
+      <p>OPX is a real VM, not a translation layer, so it is far more capable than userspace tricks - but on the default QEMU path the CPU is emulated in software, so CPU-heavy work (compiling, <code>npm install</code>, JVM apps) is slow. The <a href="performance.html">Performance</a> page explains exactly why, and how AVF and a few settings help. The <a href="limitations.html">Limitations &amp; troubleshooting</a> page is the place to look when something behaves unexpectedly.</p>
 
       <div class="callout tip">
         <span class="label">New here?</span>
@@ -81,7 +81,7 @@
         <span></span>
         <a class="next" href="getting-started.html"><span class="dir">Next</span>Getting started →</a>
       </div>
-      <p class="docfoot">Podroid is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/Podroid/issues">Open an issue</a>.</p>
+      <p class="docfoot">OPX is free software (GPL). Docs for v1.2.8. Found something inaccurate? <a href="https://github.com/ExTV/OPX/issues">Open an issue</a>.</p>
     </main>
   </div>
 
